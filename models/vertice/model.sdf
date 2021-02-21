@@ -1,0 +1,15 @@
+<?xml version='1.0'?>
+<sdf version='1.6'>
+  <model name='vertice'>
+    <static>true</static>
+    <link name='link'>
+      <visual name='visual'>
+        <geometry>
+          <sphere>
+            <radius>0.03</radius>
+          </sphere>
+        </geometry>
+      </visual>
+    </link>
+  </model>
+</sdf>

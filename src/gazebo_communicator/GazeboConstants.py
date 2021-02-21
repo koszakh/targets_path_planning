@@ -1,0 +1,22 @@
+ROBOT_NAMES = ['p3at1', 'p3at2', 'p3at3']
+VERTICE_PATH = '/root/.gazebo/models/vertice/model.sdf'
+RED_VERTICE_PATH = '/root/.gazebo/models/red_vertice/model.sdf'
+GREEN_VERTICE_PATH = '/root/.gazebo/models/green_vertice/model.sdf'
+ROTATION_SPEED = 0.1
+MOVEMENT_SPEED = 0.1
+LIFTING_SPEED = 0.01
+ANGLE_ERROR = 5
+DISTANCE_ERROR = 0.1
+PID_DELAY = 0.2
+KP = 0.0025
+KI = 0.005
+KD = 0.000005
+I_MIN = -1
+I_MAX = 1
+
+ORCA_TIME_STEP = 1.
+ORCA_NEIGHBOR_DIST = 4
+ORCA_MAX_NEIGHBORS = len(ROBOT_NAMES)
+ORCA_TIME_HORIZON = 1.5
+ORCA_TIME_HORIZON_OBST = 2
+ORCA_RADIUS = 0.5
