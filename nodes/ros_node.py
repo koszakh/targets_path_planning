@@ -50,15 +50,19 @@ def make_pose_msg(state, orient):
 
 rospy.init_node('ros_node')
 path_subscriber = rospy.Subscriber('path_data', AllPaths, callback)
-p1_1 = Point(0, 3, 0)
-p1_2 = Point(2, 3, 0)
-p2_1 = Point(0, -3, 0)
-p2_2 = Point(2, -3, 0)
-path1 = [p1_1, p1_2]
-path2 = [p2_1, p2_2]
-orca = ORCAsolver()
-orca.add_agent(gc_const.ROBOT_NAMES[0], path1)
-orca.add_agent(gc_const.ROBOT_NAMES[1], path2)
-orca.run_orca()
+robot = gc.Robot(gc_const.ROBOT_NAMES[0])
+robot_pos = robot.get_robot_position()
+hm = Heightmap()
+hmap, height, width = hm.prepare_heightmap()
+mh = pp.PathPlanner(hmap, height, width)
+configs = [(('128', '107'), ('98', '152')), (('128', '107'), ('146', '77')), (('128', '107'), ('124', '122'))]
+for config in configs:
+    mh.theta_planning(config[0], config[1])
+    del mh
+    mh = pp.PathPlanner(hmap, height, width)
+    mh.astar_planning(config[0], config[1])
+    del mh
+    mh = pp.PathPlanner(hmap, height, width)
+print('Finish!')
 rospy.spin()
 

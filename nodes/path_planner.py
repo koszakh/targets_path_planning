@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 # Path planning node for ground targets
-import path_planning.ThetaPathPlanner as pp
+import path_planning.PathPlanner as pp
 import rospy
 import copy
 from targets_path_planning.msg import Point3d, AllPaths, AllRobotsPos, Path, RobotPos
@@ -24,10 +24,10 @@ def callback(msg_data):
         robot_pos = convert_to_point(msg.pos)
         start_id, goal_id = map_handler.get_start_and_goal_id(robot_pos)
         print('Path planning for ' + robot_name + ' has begun!')
-        path = map_handler.find_theta_path(start_id, goal_id)
-        if path:
-            #gc.visualise_path(path, gc_const.RED_VERTICE_PATH, 'v_' + robot_num + '_')
-            msg = prepare_path_msg(path, robot_name)
+        path, path_ids, path_cost = map_handler.find_path(start_id, goal_id)
+        smoothed_path = map_handler.curve_smoothing(path_ids)
+        if smoothed_path:
+            msg = prepare_path_msg(smoothed_path, robot_name)
             paths_msg.path_list.append(msg)
     path_publisher.publish(paths_msg)
 

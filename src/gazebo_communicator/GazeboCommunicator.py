@@ -190,14 +190,15 @@ def make_pose_msg(state, orient):
 # model_directory: the location on the device of the folder with the object model used when rendering the path
 # obj_name: the name used when rendering the waypoint
 def visualise_path(path, model_directory, obj_name):
-    i = 0
-    for state in path:
-        i += 1
-        if state.id:
-            vertice_name = obj_name + str(i) + '_' + str(state.id)
-        else:
-            vertice_name = obj_name + str(i)
-        spawn_sdf_model(vertice_name, model_directory, state)
+    if path:
+        i = 0
+        for state in path:
+            i += 1
+            if state.id:
+                vertice_name = obj_name + str(i) + '_' + str(state.id)
+            else:
+                vertice_name = obj_name + str(i)
+            spawn_sdf_model(vertice_name, model_directory, state)
 
 # Getting data about a property of the world in the Gazebo environment
 
