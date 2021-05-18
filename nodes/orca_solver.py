@@ -7,7 +7,7 @@ from path_planning.Point import Point, Vector2d
 from geometry_msgs.msg import Pose, Twist
 import gazebo_communicator.GazeboCommunicator as gc
 import gazebo_communicator.GazeboConstants as gc_const
-import path_planning.ThetaPathPlanner as pp
+import path_planning.PathPlanner as pp
 import path_planning.Constants as const
 from path_planning.ORCA import ORCAsolver
 from path_planning.Heightmap import Heightmap
