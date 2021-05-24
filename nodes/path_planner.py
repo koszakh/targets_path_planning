@@ -25,7 +25,8 @@ def callback(msg_data):
         start_id, goal_id = map_handler.get_start_and_goal_id(robot_pos)
         print('Path planning for ' + robot_name + ' has begun!')
         path, path_ids, path_cost = map_handler.find_path(start_id, goal_id)
-        smoothed_path = map_handler.curve_smoothing(path_ids)
+        if path_ids:
+            smoothed_path = map_handler.curve_smoothing(path_ids)
         if smoothed_path:
             msg = prepare_path_msg(smoothed_path, robot_name)
             paths_msg.path_list.append(msg)
