@@ -9,28 +9,39 @@ from path_planning.Point import Point
 from path_planning.Heightmap import Heightmap
 import gazebo_communicator.GazeboCommunicator as gc
 import gazebo_communicator.GazeboConstants as gc_const
+from path_planning.ORCA import ORCAsolver
 
 def callback(msg_data):
-    path_publisher = rospy.Publisher('path_data', AllPaths, queue_size=10)
     paths_msg = AllPaths()
     paths_msg.path_list = []
     hm = Heightmap()
-    hmap, height, width = hm.prepare_heightmap()
-    map_handler = pp.PathPlanner(hmap, height, width)
+    hmap, height, width, x_step, y_step, grid_step = hm.prepare_heightmap()
+    map_handler = pp.PathPlanner(hmap, height, width, grid_step)
+    map_handler.cell_maker()
+    cells = map_handler.cells
     map_handler.gridmap_preparing()
+    orca = ORCAsolver(hmap, cells, x_step, y_step)
+    #f = open("/root/catkin_ws/src/targets_path_planning/paths_data.txt", "w+")
+    #f.close()
+    smoothed_paths = {}
+    robot_names = []
     for msg in msg_data.pos_list:
         robot_name = msg.robot_name
-        #robot_num = robot_name[len(robot_name) - 1]
+        robot_names.append(robot_name)
         robot_pos = convert_to_point(msg.pos)
         start_id, goal_id = map_handler.get_start_and_goal_id(robot_pos)
-        print('Path planning for ' + robot_name + ' has begun!')
+        print('\nPath planning for ' + robot_name + ' has begun!')
         path, path_ids, path_cost = map_handler.find_path(start_id, goal_id)
-        if path_ids:
-            smoothed_path = map_handler.curve_smoothing(path_ids)
-        if smoothed_path:
-            msg = prepare_path_msg(smoothed_path, robot_name)
-            paths_msg.path_list.append(msg)
-    path_publisher.publish(paths_msg)
+        if path:
+            smoothed_paths[robot_name] = map_handler.curve_smoothing(path_ids)
+            gc.visualise_path(smoothed_paths[robot_name], gc_const.VERTICE_PATH, 'v_' + str(robot_name))
+	    #f = open("/root/catkin_ws/src/targets_path_planning/paths_data.txt", "a+")
+	    #f.write(str(robot_name) + ': ' + str(smoothed_path) + '\n\n')
+            #f.close()
+        if smoothed_paths[robot_name]:
+            orca.add_agent(robot_name, smoothed_paths[robot_name])
+        print('Current agents count: ' + str(orca.sim.getNumAgents()))
+    orca.run_orca()
 
 def convert_to_point(msg):
     x = msg.x

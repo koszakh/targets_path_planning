@@ -4,10 +4,9 @@
     <arg name="world_name" value="$(find targets_path_planning)/worlds/heightmap.world"/>
     <arg name="paused" value="false"/>
   </include>
-  <node name="spawn_urdf1" pkg="gazebo_ros" type="spawn_model" args="-file $(find targets_path_planning)/urdf/pioneer3at_1.urdf -urdf -x -10.78 -y -0.18 -z 1.56 -R 0.075 -P -0.067 -Y -1.63 -model p3at1" />
-  <node name="spawn_urdf2" pkg="gazebo_ros" type="spawn_model" args="-file $(find targets_path_planning)/urdf/pioneer3at_2.urdf -urdf -x -10.78 -y 1.5 -z 1.565 -R 0.075 -P -0.067 -Y -1.63 -model p3at2" />
-  <node name="spawn_urdf3" pkg="gazebo_ros" type="spawn_model" args="-file $(find targets_path_planning)/urdf/pioneer3at_3.urdf -urdf -x -10.78 -y 3.3 -z 1.565 -R 0.075 -P -0.067 -Y -1.63  -model p3at3" />
+  <node name="spawn_urdf1" pkg="gazebo_ros" type="spawn_model" args="-file $(find targets_path_planning)/models/jeep/jeep1.urdf -urdf -x -16.9 -y 6.1 -z 3.88 -R -0.18 -P 0.02 -Y -2.73 -model jeep1" />
+  <node name="spawn_urdf2" pkg="gazebo_ros" type="spawn_model" args="-file $(find targets_path_planning)/models/jeep/jeep2.urdf -urdf -x -4.81 -y 4.42 -z 3.52 -R 0.043 -P 0.085 -Y -2.47 -model jeep2" />
+  <node name="spawn_urdf3" pkg="gazebo_ros" type="spawn_model" args="-file $(find targets_path_planning)/models/jeep/jeep3.urdf -urdf -x -8.49 -y -3.087 -z 3.18 -R -0.03 -P 0.0945 -Y -3.022 -model jeep3" />
   <node name="robot_localizator" pkg="targets_path_planning" type="robot_localizator.py" output="screen" />
   <node name="path_planner" pkg="targets_path_planning" type="path_planner.py" output="screen" />
-  <node name="orca_solver" pkg="targets_path_planning" type="orca_solver.py" output="screen" />
 </launch>

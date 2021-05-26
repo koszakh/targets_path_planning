@@ -28,6 +28,7 @@ class Cell:
             for j in range(2):
                 v_id = (str(col + i), str(row + j))
                 self.corners.append(v_id)
+        self.edges = [(self.corners[0], self.corners[1]), (self.corners[1], self.corners[3]), (self.corners[3], self.corners[2]), (self.corners[2], self.corners[0])]
         self.pos = pos
         self.obstacle = False
 
@@ -42,14 +43,18 @@ class Cell:
 # closed: list of keys of visited vertices
 
 class PathPlanner:
-    def __init__(self, heightmap, height, width):
+    def __init__(self, heightmap, height, width, grid_range):
         self.map = heightmap
         self.obstacles = []
         self.height = height
         self.width = width
+	self.grid_range = int(grid_range)
         self.start_id = None
         self.open = []
         self.closed = []
+	print('height: ' + str(self.height))
+	print('width: ' + str(self.width))
+	print('grid_range: ' + str(self.grid_range))
 
 # Deleting vertices lying outside the boundaries of the height map and clearing them from lists of neighboring vertices
     def false_neighbors_deleting(self):
@@ -71,6 +76,7 @@ class PathPlanner:
             id_2 = (str(i), str(self.width - 1))
             id_3 = (str(0), str(i))
             id_4 = (str(self.height - 1), str(i))
+            #print(id_1, id_2, id_3, id_4)
             self.mark_as_obstacle(id_1)
             self.mark_as_obstacle(id_2)
             self.mark_as_obstacle(id_3)
@@ -91,6 +97,8 @@ class PathPlanner:
                         vertice.set_max_height_diff(max_height_diff)
                         vertice.set_local_roughness(local_roughness)
         print('Obstacle-vertices count: ' + str(len(self.obstacles)))
+        #for vertice_id in self.obstacles:
+            #self.calc_local_riskiness(vertice_id)
 
 # Marking a vertex as an obstacle
 # Input
@@ -112,7 +120,7 @@ class PathPlanner:
         v2 = self.map[v2_id]
         edge_cost = (const.ROUGHNESS_COEF * max(v1.local_roughness, v2.local_roughness) + 1) * \
                     (const.HD_COEF * max(v1.max_height_diff, v2.max_height_diff) + 1) * \
-                    v1.get_distance_to(v2)
+                    v1.get_distance_to(v2) #+ fabs(v1.riskiness - v2.riskiness)
         return edge_cost
 
     def calc_all_edge_costs(self):
@@ -123,6 +131,68 @@ class PathPlanner:
                     neighbor = self.map[neighbor_id]
                     edge_cost = self.calc_edge_cost(key, neighbor_id)
                     vertice.set_edge_cost(neighbor, edge_cost)
+
+    def calc_local_riskiness(self, vertice_id):
+	ids = self.calc_grid_range(vertice_id)
+        vertice = self.map[vertice_id]
+	for v_id in ids:
+	    v = self.map[v_id]
+            if not v.obstacle:
+                dist = vertice.get_distance_to(v)
+                if dist < const.INNER_RADIUS:
+                    v.obstacle = True
+                if dist > const.INNER_RADIUS and dist < const.OUTER_RADIUS:
+                    riskiness = self.calc_riskiness(v_id)
+                    v.set_riskiness(riskiness)
+
+    def calc_grid_range(self, vertice_id):
+        col = int(vertice_id[0])
+	row = int(vertice_id[1])
+	ids = []
+        min_col = col - self.grid_range
+        max_col = col + self.grid_range + 1
+        min_row = row - self.grid_range
+        max_row = row + self.grid_range + 1
+        if min_col < 0:
+            min_col = 0
+        if max_col > self.height:
+            max_col = self.height
+        if min_row < 0:
+            min_row = 0
+        if max_row > self.width:
+            max_row = self.width
+        for i in range(min_col, max_col):
+            for j in range(min_row, max_row):
+                v_id = (str(i), str(j))
+                ids.append(v_id)
+	#print(ids, vertice_id)
+        ids.remove(vertice_id)
+        #print('\nmin_col: ' + str(min_col) + '\nmax_col: ' + str(max_col) + '\nmin_row: ' + str(min_row) + '\nmax_row: ' + str(max_row))
+	return ids
+
+    def calc_riskiness(self, vertice_id):
+        d_lethal, c_max = self.calc_dist_to_obstacle(vertice_id)
+        riskiness = c_max * (cos((d_lethal - const.INNER_RADIUS) * pi / (const.OUTER_RADIUS - const.INNER_RADIUS)) + 1)
+        return riskiness
+
+    def calc_dist_to_obstacle(self, vertice_id):
+        min_dist = float('inf')
+	ids = self.calc_grid_range(vertice_id)
+	vertice = self.map[vertice_id]
+	for v_id in ids:
+	    v = self.map[v_id]
+	    if v.obstacle:
+                dist = vertice.get_distance_to(v)
+                if dist < min_dist:
+                    min_dist = dist
+                    obst_cost = self.calc_obst_cost(v_id)
+        return min_dist, obst_cost
+
+    def calc_obst_cost(self, vertice_id):
+        max_height_diff = self.calc_max_height_difference(vertice_id)
+        local_roughness = self.calc_local_roughness(vertice_id)
+        obst_cost = const.ROUGHNESS_COEF * local_roughness * const.HD_COEF * max_height_diff
+        return obst_cost
 
 # Calculation of the local roughness parameter for a vertex
 # Input
@@ -136,7 +206,7 @@ class PathPlanner:
         sum_angles = 0
         for v_id in vertice.neighbors_list.values():
             v = self.map[v_id]
-            surf_angle = self.calc_surf_angle(vertice, v)
+            surf_angle = self.calc_surf_angle(vertice_id, v_id)
             sum_angles += fabs(surf_angle)
         roughness = fabs(sum_angles / ln_count)
         return roughness
@@ -147,7 +217,9 @@ class PathPlanner:
 
 # Output
 # surf_angle: angle of inclination of the surface between the vertices
-    def calc_surf_angle(self, v1, v2):
+    def calc_surf_angle(self, v1_id, v2_id):
+        v1 = self.map[v1_id]
+	v2 = self.map[v2_id]
         z1 = v1.z
         z2 = v2.z
         cathet = z1 - z2
@@ -229,10 +301,14 @@ class PathPlanner:
         goal_v = self.map[goal_id]
         start_v = self.map[start_id]
         dist = goal_v.get_distance_to(start_v)
-        while start_v.obstacle or goal_v.obstacle or goal_id == start_id or dist > 20:
+        while 1:
             goal_id = random.choice(list(self.map.keys()))
             goal_v = self.map[goal_id]
             dist = goal_v.get_distance_to(start_v)
+            if not(start_v.obstacle or goal_v.obstacle or goal_id == start_id or dist > 15):
+	        path, path_ids, path_cost = self.find_path(start_id, goal_id)
+		if path:
+		    break
         return goal_id
 
 # Creating Cell class objects and marking impassable cells
@@ -315,7 +391,6 @@ class PathPlanner:
             self.closed.append(current_v_id)
             if current_v_id in self.open:
                 self.open.remove(current_v_id)
-
         if not goal_v.get_predecessor() == None:
             print('Path was found!')
             current_v = goal_v
@@ -352,7 +427,7 @@ class PathPlanner:
         for key in self.map.keys():
             vertice = self.map[key]
             dist = vertice.get_distance_to(point)
-            if dist < min_dist and not vertice.obstacle:
+            if dist < min_dist and not vertice.obstacle and not vertice.edge_attach:
                 min_dist = dist
                 selected_key = key
         return selected_key
@@ -371,13 +446,12 @@ class PathPlanner:
         print('Initial curvature: ' + str(path_curvature))
         previous_curvature = path_curvature
         goal_id = path_ids[len(path_ids) - 1]
-        max_dist_from_path = 10
         iteration = 0
         while path_curvature > const.CURVATURE_THRESHOLD:
             iteration += 1
-            new_path = []
+            new_path_ids = []
             p1 = path_ids[0]
-            new_path.append(p1)
+            new_path_ids.append(p1)
             i = 2
             while True:
                 p2 = tmp_path_ids[i - 1]
@@ -389,42 +463,35 @@ class PathPlanner:
                 else:
                     sub_curve_ids = self.edge_smoothing(vertices)
                 for v_id in sub_curve_ids:
-                    new_path.append(v_id)
-                p1 = new_path[len(new_path) - 1]
+                    if not v_id in sub_curve_ids:
+                        new_path_ids.append(v_id)
+                p1 = new_path_ids[len(new_path_ids) - 1]
                 if p3 == goal_id:
                     break
                 i += 1
-            new_path.append(goal_id)
-            new_path = self.delete_doubled_vertices(new_path)
-            new_path = self.path_loops_deleting(new_path)
-            path_curvature = self.get_path_curvature_ids(new_path)
-            max_dist_from_path = self.get_max_dist_from_path(path_ids, new_path)
-            tmp_path_ids = copy.copy(new_path)
+            new_path_ids.append(goal_id)
+            print('path_ids: ' + str(new_path_ids))
+            new_path_ids = self.delete_doubled_vertices(new_path_ids)
+            new_path_ids = self.path_loops_deleting(new_path_ids)
+            print('new_path_ids: ' + str(new_path_ids))
+            path_curvature = self.get_path_curvature_ids(new_path_ids)
+            tmp_path_ids = copy.copy(new_path_ids)
             if path_curvature < previous_curvature:
                 previous_curvature = path_curvature
-                smoothed_path_ids = copy.copy(new_path)
-            print('New path length: ' + str(len(new_path)))
-            print('New path curvature: ' + str(path_curvature))
-            print('Current smoothed path curvature: ' + str(previous_curvature))
-            print('New max dist: ' + str(max_dist_from_path))
+                smoothed_path_ids = copy.copy(new_path_ids)
             if iteration == const.MAX_ITERATIONS_COUNT:
                 print(str(iteration) + ' iterations passed')
                 break
         if smoothed_path_ids:
             curve_smoothing_time = time.time() - start_time
-            last_path = []
-            for v_id in new_path:
-                v = self.map[v_id]
-                last_path.append(v)
             init_path = []
             for v_id in path_ids:
                 v = self.map[v_id]
                 init_path.append(v)
             smoothed_path_ids = self.delete_doubled_vertices(smoothed_path_ids)
             smoothed_path_ids = self.path_loops_deleting(smoothed_path_ids)
-            max_dist = self.get_max_dist_from_path(path_ids, smoothed_path_ids)
             path_curvature = self.get_path_curvature_ids(smoothed_path_ids)
-            print('\nPath length: ' + str(len(smoothed_path_ids)) + '\nPath_curvature: ' + str(path_curvature) + '\nMax_dist: ' + str(max_dist) + '\nNumber of iterations: ' + str(iteration))
+            print('\nPath length: ' + str(len(smoothed_path_ids)) + '\nPath_curvature: ' + str(path_curvature) + '\nNumber of iterations: ' + str(iteration))
             print('Curve smoothing time: ' + str(curve_smoothing_time))
             self.curve_averaging(smoothed_path_ids)
             smoothed_path_ids.pop(0)
@@ -451,7 +518,7 @@ class PathPlanner:
         v2 = p1.get_dir_vector_between_points(p2)
         new_points = []
         neighbors = p2.neighbors_list.values()
-        angle = v1.get_angle_between_vectors(v2)
+        angle = v2.get_angle_between_vectors(v1)
         if angle > 0:
             N = self.get_up_neighbors(p1, p2, p3)
         else:
@@ -465,15 +532,18 @@ class PathPlanner:
             if dist > const.DIST_FROM_PATH:
                 new_p = p2.get_point_at_distance_and_angle(new_p, const.DIST_FROM_PATH)
                 dist = new_p.get_distance_to(p2)
-            new_p.init_point = p2.id
-            id1 = p2.id
-            id2 = neighbor.id
-            new_p.edge_attach = (id1, id2)
-            new_id = self.get_new_edge_id(new_p)
-            new_p.set_id(new_id)
-            self.map[new_id] = new_p
-            new_points.append(new_id)
-            last_p = new_p
+            if dist > gc_const.DISTANCE_ERROR:
+                new_p.init_point = p2.id
+                id1 = p2.id
+                id2 = neighbor.id
+                new_p.edge_attach = (id1, id2)
+                new_id = self.get_new_edge_id(new_p)
+                new_p.set_id(new_id)
+                self.map[new_id] = new_p
+                new_points.append(new_id)
+                last_p = new_p
+            else:
+                new_points.append(p2.id)
         return new_points
 
 # Smoothing a segment of a path whose midpoint is on an edge of the graph
@@ -525,6 +595,7 @@ class PathPlanner:
             e3 = p3.edge_attach
             e4 = p4.edge_attach
             if e3 and e4:
+		#print('e3: ' + str(e3) + ' | e4: ' + str(e4))
                 id3 = p3.id
                 id4 = p4.id
                 p1_e3 = self.map[e3[0]]
@@ -566,8 +637,6 @@ class PathPlanner:
         finish_time = time.time()
         print('Curve averaging time: ' + str(finish_time - start_time))
         final_curvature = self.get_path_curvature_ids(curve_ids)
-        perc_reduction = 100 - (final_curvature / (init_curvature / 100))
-        print('Reducing the curvature of the path in percent: ' + str(perc_reduction))
         print('Final curvature: ' + str(final_curvature))
 
 # Getting a list of neighboring vertices located on "top" of the vertices
@@ -635,12 +704,12 @@ class PathPlanner:
 # new_id: new vertex number
     def get_new_edge_id(self, p):
         e = p.edge_attach
-        edge_id = str(e[0] + e[1])
+        edge_id = str((str(e[0]), str(e[1])))
         i = 0
         new_id = edge_id
         while new_id in self.map.keys():
             i += 1
-            new_id = edge_id + str(i)
+            new_id = edge_id + ' - ' + str(i)
         return new_id
 
 # Sorting an array of vertices by distance from some vertex
@@ -727,34 +796,37 @@ class PathPlanner:
 # Output
 # new_path_ids: final path vertex ids
     def path_loops_deleting(self, path_ids):
+        #print('Path loops deleting')
         new_path_ids = copy.copy(path_ids)
         i = len(path_ids) - 1
         goal = path_ids[0]
-        while True:
-            p1 = self.map[path_ids[i - 2]]
-            p2 = self.map[path_ids[i - 1]]
-            p3 = self.map[path_ids[i]]
-            dist_a = p1.get_2d_distance(p2)
-            dist_b = p2.get_2d_distance(p3)
-            if dist_a == 0 or dist_b == 0:
-                new_path_ids.remove(p2.id)
-                i -= 2
-            else:
-                dist1 = p1.get_2d_distance(p3)
-                dist2 = p2.get_2d_distance(p3)
-                v1 = p1.get_dir_vector_between_points(p2)
-                v2 = p2.get_dir_vector_between_points(p3)
-                angle_difference = fabs(v1.get_angle_between_vectors(v2))
-                if dist1 < dist2 or angle_difference > 90:
-                    if p2.id in new_path_ids:
-                        new_path_ids.remove(p2.id)
+        if len(path_ids) >= 3:
+            while True:
+                p1 = self.map[path_ids[i - 2]]
+                if p1.id == goal:
+                    break
+                p2 = self.map[path_ids[i - 1]]
+                p3 = self.map[path_ids[i]]
+                print(i, len(path_ids))
+                dist_a = p1.get_2d_distance(p2)
+                dist_b = p2.get_2d_distance(p3)
+                if dist_a == 0 or dist_b == 0:
+                    new_path_ids.remove(p2.id)
                     i -= 2
                 else:
-                    i -= 1
-            if p1.id == goal:
-                break
-            if i < 2:
-                i = 2
+                    dist1 = p1.get_2d_distance(p3)
+                    dist2 = p2.get_2d_distance(p3)
+                    v1 = p1.get_dir_vector_between_points(p2)
+                    v2 = p2.get_dir_vector_between_points(p3)
+                    angle_difference = fabs(v1.get_angle_between_vectors(v2))
+                    if dist1 < dist2 or angle_difference > 90:
+                        if p2.id in new_path_ids:
+                            new_path_ids.remove(p2.id)
+                        i -= 2
+                    else:
+                        i -= 1
+                if i < 2:
+                    i = 2
         return new_path_ids
 
 # Deleting invalid path vertices
@@ -764,23 +836,26 @@ class PathPlanner:
 # Output
 # new_path_ids: final path vertex ids
     def delete_doubled_vertices(self, path_ids):
+        #print('Deleting of doubled vertices')
         new_path_ids = copy.copy(path_ids)
         i = 1
         goal = path_ids[len(path_ids) - 1]
         while True:
+            #print(i, len(path_ids))
             id1 = path_ids[i - 1]
             id2 = path_ids[i]
             p1 = self.map[id1]
             p2 = self.map[id2]
-            dist = p1.get_2d_distance(p2)
-            if dist < 0.01 or id1 == id2:
-                new_path_ids.remove(p2.id)
-                i += 2
-            else:
-                i += 1
             if p2.id == goal:
                 break
-            if i >= len(path_ids):
+            dist = p1.get_2d_distance(p2)
+            if dist < gc_const.DISTANCE_ERROR or id1 == id2:
+                if id2 in new_path_ids:
+                    new_path_ids.remove(id2)
+                    i += 2
+            else:
+                i += 1
+            if i > len(path_ids) - 1:
                 i = len(path_ids) - 1
         return new_path_ids
 

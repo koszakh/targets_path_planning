@@ -1,8 +1,11 @@
-HEIGHTMAP_PATH = '/root/.gazebo/models/heightmap/materials/textures/heightmap.png'
-HIGH_BOUND_HEIGHT_DIFF = 0.33
-MAX_ROUGHNESS = 33
+HEIGHTMAP_PATH = '/root/.gazebo/models/heightmap/materials/textures/hmap4.png'
+HIGH_BOUND_HEIGHT_DIFF = 1#0.33
+MAX_ROUGHNESS = 55#33
 ROUGHNESS_COEF = 0.5
 HD_COEF = 0.5
+ROBOT_RADIUS = 1.93#0.5
+INNER_RADIUS = ROBOT_RADIUS
+OUTER_RADIUS = ROBOT_RADIUS + 0.3
 CURVE_AVG_STEP = 0.05
 CURVATURE_THRESHOLD = 30
 DIST_FROM_PATH = 0.5
