@@ -14,22 +14,22 @@ class Heightmap:
 
 # Converting a grayscale image to a heightmap vertex list        
     def heightmap_builder(self):
-        print('Map scale: ' + str(const.MAP_SCALE))
+        print('Map height scale: ' + str(const.MAP_SCALE))
         image = cv2.imread(const.HEIGHTMAP_PATH, 0)
-        print(image.shape[0], image.shape[1])
         self.map_height = image.shape[0]
         self.map_width = image.shape[1]
-        x_step_size = const.MAP_HEIGHT / (image.shape[0] - 1)
-        y_step_size = const.MAP_WIDTH / (image.shape[1] - 1)
-        print('x_step_size: ' + str(x_step_size))
-        print('y_step_size: ' + str(y_step_size))
+        self.x_step_size = const.MAP_HEIGHT / (image.shape[0] - 1)
+        self.y_step_size = const.MAP_WIDTH / (image.shape[1] - 1)
+	self.grid_range = const.ROBOT_RADIUS // self.x_step_size + 1
+        print('x_step_size: ' + str(self.x_step_size))
+        print('y_step_size: ' + str(self.y_step_size))
         max_z = 0
         min_z = 10000
         for i in range(image.shape[0]):  # traverses through height of the image
             self.heightmap.append([])
             for j in range(image.shape[1]):  # traverses through width of the image
-                x = -const.MAP_HEIGHT / 2 + j * x_step_size 
-                y = const.MAP_WIDTH / 2 - i * y_step_size
+                x = -const.MAP_HEIGHT / 2 + j * self.x_step_size 
+                y = const.MAP_WIDTH / 2 - i * self.y_step_size
                 z = image[i][j] / const.MAP_SCALE
                 if z > max_z:
                     max_z = z
@@ -38,6 +38,7 @@ class Heightmap:
                 p = Point(x, y, z)
                 p_id = (str(i), str(j))
                 p.set_id(p_id)
+                p.set_neighbors_list()
                 self.heightmap[i].append(p)
         print('min_z: ' + str(min_z) + '\nmax_z: ' + str(max_z))
 
@@ -76,7 +77,7 @@ class Heightmap:
     def prepare_heightmap(self):
         self.heightmap_builder()
         hmap = self.convert_to_dict(self.heightmap)
-        return hmap, self.map_height, self.map_width
+        return hmap, self.map_height, self.map_width, self.x_step_size, self.y_step_size, self.grid_range
 
 # Finding a Key in a Dictionary by Value
 def get_key(d, value):

@@ -34,7 +34,7 @@ class Vector2d:
     def get_angle_between_vectors(self, v):
         v_angle = v.vector_to_angle()
         self_angle = self.vector_to_angle()
-        angle = self_angle - v_angle
+        angle = v_angle - self_angle
         if angle > 180:
             angle = -(360 - angle)
         elif angle < -180:
@@ -62,6 +62,7 @@ class Point:
         self.z = z
         self.max_height_diff = 0
         self.local_roughness = 0
+	self.riskiness = 0
         self.edges = {}
         self.path_cost = None
         self.predecessor = None
@@ -141,7 +142,10 @@ class Point:
 # Output
 # direction_vector: vector value between points
     def get_dir_vector_between_points(self, point):
-        direction_vector = Vector2d(point.x - self.x, point.y - self.y)
+        #print('self: ' + str(self) + ' - ' + str(self.id) + ' | point: ' + str(point) + ' - ' + str(self.id) )
+        #vector_mod = sqrt((point.x - self.x) ** 2 + (point.y - self.y) ** 2)
+        #print('vector_mod: ' + str(vector_mod))
+        direction_vector = Vector2d(float(point.x - self.x), float(point.y - self.y))
         return direction_vector
 
 # Calculating the vector between points (as an angle)
@@ -240,24 +244,28 @@ class Point:
     def set_max_height_diff(self, value):
         self.max_height_diff = value
 
+    def set_riskiness(self, value):
+        self.riskiness = value
+
 # Setting unique point id and filling the list of neighbors
 # Input
 # value: unique point id value
     def set_id(self, value):
         self.id = value
-        if not isinstance(value, str):
-            v1 = int(value[0])
-            v2 = int(value[1])
-            self.neighbors_list = {
-                '1' : (str(v1), str(v2 - 1)),
-                '2' : (str(v1 - 1), str(v2 - 1)),
-                '3' : (str(v1 - 1), str(v2)),
-                '4' : (str(v1 - 1), str(v2 + 1)),
-                '5' : (str(v1), str(v2 + 1)),
-                '6' : (str(v1 + 1), str(v2 + 1)),
-                '7' : (str(v1 + 1), str(v2)),
-                '8': (str(v1 + 1), str(v2 - 1)),
-            }
+
+    def set_neighbors_list(self):
+        v1 = int(self.id[0])
+        v2 = int(self.id[1])
+        self.neighbors_list = {
+            '1' : (str(v1), str(v2 - 1)),
+            '2' : (str(v1 - 1), str(v2 - 1)),
+            '3' : (str(v1 - 1), str(v2)),
+            '4' : (str(v1 - 1), str(v2 + 1)),
+            '5' : (str(v1), str(v2 + 1)),
+            '6' : (str(v1 + 1), str(v2 + 1)),
+            '7' : (str(v1 + 1), str(v2)),
+            '8': (str(v1 + 1), str(v2 - 1)),
+        }
 
 # Establishing the weight of an edge between a given vertex and another vertex
 # Input
@@ -274,12 +282,15 @@ class Point:
 # Output
 # p: intersection point of lines
     def find_intersection_of_lines(self, p2, p3, p4):
+        #print('self: ' + str(self.id) + ' - ' + str(self) + '\np2: ' + str(p2.id) + ' - ' + str(p2) + '\np3: ' + str(p3.id) + ' - ' + str(p3) + '\np4: ' + str(p4.id) + ' - ' + str(p4) + '\n')
         k_a = float(p2.y - self.y)
         k1_a = float(self.y * p2.x - p2.y * self.x)
         k2_a = float(p2.x - self.x)
         k_b = float(p4.y - p3.y)
         k1_b = float(p3.y * p4.x - p4.y * p3.x)
         k2_b = float(p4.x - p3.x)
+        #print(k_a, k1_a, k2_a)
+        #print(k_b, k1_b, k2_b)
         if k_a == 0 and k2_b == 0:
             x = p3.x
             y, z = self.get_yz_coords(p2, x)
@@ -320,6 +331,8 @@ class Point:
 # z: z-coordinate of the desired point
     def get_yz_coords(self, p, x):
         k1 = float(p.x - self.x)
+        #if k1 == 0:
+            #print('self.id: ' + str(self.id) + ' | p.id: ' + str(p.id))
         k_y = self.y * p.x - p.y * self.x
         k2_y = p.y - self.y
         y = (k2_y * x + k_y) / k1
@@ -385,6 +398,7 @@ class Point:
         delta_x = p.x - self.x
         delta_y = p.y - self.y
         delta_z = p.z - self.z
+        #print('self: ' + str(self) + ' - ' + str(self.id) + ' | p: ' + str(p) + ' - ' + str(p.id))
         mod_v = sqrt(delta_x ** 2 + delta_y ** 2 + delta_z ** 2)
         v = Point(delta_x / mod_v, delta_y / mod_v, delta_z / mod_v)
         x = self.x + distance * v.x

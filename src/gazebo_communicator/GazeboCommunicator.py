@@ -33,12 +33,15 @@ class Robot(thr.Thread):
         self.vel_publisher = rospy.Publisher(topic_name, Twist, queue_size=10)
         msg = Twist()
         self.vel_publisher.publish(msg)
+	sleep(0.5)
         self.name = robot_name
         self.dir_point = robot_name + '::dir_point'
         self.init_path = None
         self.final_path = None
         self.finished_planning = False
         self.last_goal = None
+	self.goal_point = None
+
 
 # Getting the position of the robot in 3D space in the Gazebo environment
 
@@ -75,6 +78,16 @@ class Robot(thr.Thread):
         angle_difference = get_3d_angle(new_rv, goal_vect)
         return angle_difference
 
+    def get_angle_difference2(self, goal_pos):
+        rv = self.get_robot_orientation_vector()
+        robot_pos = self.get_robot_position()
+        goal_vect = get_orientation_vector(robot_pos, goal_pos)
+        #angle_difference = get_3d_angle(rv, goal_vect)
+        rv_2d = convert_3d_to_2d_vect(rv)
+        goal_vect_2d = convert_3d_to_2d_vect(goal_vect)
+	angle_difference = rv_2d.get_angle_between_vectors(goal_vect_2d)
+        return angle_difference
+
 # Moving the robot to a point with a PID controller
 # Input
 # goal: target point
@@ -85,9 +98,11 @@ class Robot(thr.Thread):
         old_error = 0
         error_sum = 0
         real_error_sum = 0
-        while self.get_robot_position().get_distance_to(goal) > const.DISTANCE_ERROR:
+        while self.get_robot_position().get_2d_distance(goal) > const.DISTANCE_ERROR:
             #self.control_move_incline()
-            error = self.get_angle_difference(goal)
+            dist = self.get_robot_position().get_2d_distance(goal)
+            #point_dist = self.get_robot_position().get_2d_distance(self.last_goal)
+            error = self.get_angle_difference2(goal)
             error_sum += error
             real_error_sum += fabs(error)
             if error_sum < const.I_MIN:
@@ -99,30 +114,38 @@ class Robot(thr.Thread):
             ud = const.KD * (error - old_error)
             old_error = error
             u = up + ui + ud
+            #f = open("/root/catkin_ws/src/targets_path_planning/orca_3d_movement_data.txt", "a+")
+            #f.write(str(point_dist) + '\n')
+            #f.close()
+            print('error: ' + str(error) + ' | dist: ' + str(dist))
             self.movement(const.MOVEMENT_SPEED, u)
             sleep(const.PID_DELAY)
+        #print('real_error_sum: ' + str(real_error_sum))
         self.stop()
 
 # Robot movement to a point, including a preliminary rotation to the required angle
 # Input
 # goal: target point
     def move_to_point(self, goal):
-        angle_difference = self.get_angle_difference(goal)
+        angle_difference = self.get_angle_difference2(goal)
         if fabs(angle_difference) > const.ANGLE_ERROR:
+            print('The robot ' + self.name + ' turns to the point ' + str(goal))
             self.turn_to_point(goal)
+        print('The robot ' + self.name + ' moves to the point ' + str(goal))
         self.move_with_PID(goal)
 
 # Rotate the robot towards a point
 # Input
 # goal: target point
     def turn_to_point(self, goal):
-        angle_difference = self.get_angle_difference(goal)
+        angle_difference = self.get_angle_difference2(goal)
         while fabs(angle_difference) > const.ANGLE_ERROR:
-            angle_difference = self.get_angle_difference(goal)
+            angle_difference = self.get_angle_difference2(goal)
+            #print(str(self.name) + ' angle difference: ' + str(angle_difference))
             if angle_difference > 0:
-                self.movement(0, const.ROTATION_SPEED)
+                self.movement(-0.1, const.ROTATION_SPEED)
             else:
-                self.movement(0, -const.ROTATION_SPEED)
+                self.movement(-0.1, -const.ROTATION_SPEED)
             #sleep(0.1)
         self.stop()	
 
@@ -148,6 +171,7 @@ class Robot(thr.Thread):
 # path: list of path points
     def set_init_path(self, path):
         self.init_path = path
+	self.goal_point = path[len(path) - 1]
 
 # Setting the final path for the robot
 # Input
@@ -161,8 +185,18 @@ class Robot(thr.Thread):
     def run(self):
         print('Robot ' + self.name + ' started moving along the path')
         if self.final_path:
+            #f = open("/root/catkin_ws/src/targets_path_planning/orca_3d_movement_data.txt", "a+")
+            #f.write('\n')
+            #f.close()
+            self.last_goal = self.final_path[0]
             for state in self.final_path:
-                self.move_to_point(state)
+                robot_pos = self.get_robot_position()
+                dist = robot_pos.get_2d_distance(state)
+                if dist > const.DISTANCE_ERROR:
+                    self.move_to_point(state)
+                self.last_goal = state
+            #self.stop()
+            print('The robot ' + str(self.name) + ' has finished!')
         else:
             print('Path is empty!')
 

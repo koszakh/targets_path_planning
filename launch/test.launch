@@ -4,6 +4,6 @@
     <arg name="world_name" value="$(find targets_path_planning)/worlds/heightmap.world"/>
     <arg name="paused" value="false"/>
   </include>
-  <node name="spawn_urdf1" pkg="gazebo_ros" type="spawn_model" args="-file $(find targets_path_planning)/urdf/pioneer3at_1.urdf -urdf -x -10.78 -y -0.18 -z 1.56 -R 0.075 -P -0.067 -Y -1.63 -model p3at1" />
+  <node name="spawn_urdf1" pkg="gazebo_ros" type="spawn_model" args="-file $(find targets_path_planning)/models/jeep/jeep1.urdf -urdf -x -8.49 -y -3.087 -z 3.18 -R -0.03 -P 0.0945 -Y -3.022 -model jeep1" />
   <node name="ros_node" pkg="targets_path_planning" type="ros_node.py" output="screen" />
 </launch>
