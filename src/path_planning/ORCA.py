@@ -1,16 +1,25 @@
 # The module for calculating the path, taking into account the avoidance of potential collisions between targets
 
+import rospy
 import path_planning.Constants as const
 import gazebo_communicator.GazeboCommunicator as gc
 import gazebo_communicator.GazeboConstants as gc_const
 from path_planning.Point import Point
+from targets_path_planning.msg import Point3d, Path
 import copy
 import rvo2
+from time import sleep
+from math import fabs
+
 
 # A class that implements the calculation of non-collisionless trajectories of a group of target objects
 
 # ms: initial robot speed
 # sim: group of targets movement simulator instance
+# heightmap: a dictionary containing all vertices of the heightmap
+# cells: a dictionary containing all cells of the heightmap (includes four vertices)
+# x_step: distance between adjacent vertices of the height map in x
+# y_step: distance between adjacent vertices of the height map in y
 # robots: Target Management Object Dictionary in Gazebo
 # agents: dictionary of agents used in sim
 # final_paths: dictionary of final routes of robots
@@ -30,6 +39,7 @@ gc_const.ORCA_RADIUS, self.ms)
         self.agents = {}
         self.final_paths = {}
         self.init_paths = {}
+        self.path_subs = {}
 
 # Adding an agent to the group movement simulation
 # Input
@@ -38,25 +48,44 @@ gc_const.ORCA_RADIUS, self.ms)
     def add_agent(self, robot_name, path):
         self.robots[robot_name] = gc.Robot(robot_name)
         robot_pos = self.robots[robot_name].get_robot_position()
+        self.robots[robot_name].last_point = robot_pos
         init_dist = robot_pos.get_distance_to(path[0])
-        if init_dist < gc_const.DISTANCE_ERROR:
-            path.pop(0)
         self.robots[robot_name].set_init_path(path)
-        if robot_name == 'p3at1':
-            gc.visualise_path(path, gc_const.VERTICE_PATH, 'v' + str(robot_name) + '_')
-        elif robot_name == 'p3at2':
-            gc.visualise_path(path, gc_const.RED_VERTICE_PATH, 'v' + str(robot_name) + '_')
-        elif robot_name == 'p3at3':
-            gc.visualise_path(path, gc_const.GREEN_VERTICE_PATH, 'v' + str(robot_name) + '_')
         print('Robot ' + robot_name + ' initial path length: ' + str(len(path)))
         self.robots[robot_name].current_goal = path[0]
         self.init_paths[robot_name] = copy.copy(self.robots[robot_name].init_path)
         self.robots[robot_name].last_goal = robot_pos
+        self.path_subs[robot_name] = rospy.Subscriber('/sim_' + robot_name + '/waypoints_array', Path, self.set_final_path)
         robot_pos_2d = robot_pos.get_xy()
         self.agents[robot_name] = self.sim.addAgent(robot_pos_2d)
-        vel_vect = self.calc_vel_vect_2d(robot_name, robot_pos)
+        robot_vect = self.robots[robot_name].get_robot_orientation_vector()
+        vel_vect = (robot_vect.x * self.ms, robot_vect.y * self.ms)
         self.sim.setAgentPrefVelocity(self.agents[robot_name], vel_vect)
         self.final_paths[robot_name] = []
+        radius = self.sim.getAgentRadius(self.agents[robot_name])
+        print(robot_name + ' radius: ' + str(radius))
+
+# Calculating the smallest distance from a given agent to any of the others
+
+# Input
+# robot_name: the name of this robot
+
+# Output
+# min_dist: distance to nearest robot
+    def calc_min_neighbor_dist(self, robot_name):
+        agents_copy = copy.copy(self.agents)
+        current_agent = self.agents[robot_name]
+        current_agent_pos_2d = self.sim.getAgentPosition(current_agent)
+        current_agent_pos = Point(current_agent_pos_2d[0], current_agent_pos_2d[1], 0)
+        agents_copy.pop(robot_name)
+        min_dist = float('inf')
+        for agent_name in agents_copy:
+            agent_pos_2d = self.sim.getAgentPosition(self.agents[agent_name])
+            agent_pos = Point(agent_pos_2d[0], agent_pos_2d[1], 0)
+            dist = current_agent_pos.get_distance_to(agent_pos)
+            if dist < min_dist:
+                min_dist = dist
+        return min_dist
 
 # Calculate a 2D velocity vector that takes into account the slope of the surface
 # Input
@@ -67,21 +96,33 @@ gc_const.ORCA_RADIUS, self.ms)
     def calc_vel_vect_3d(self, robot_name, robot_pos):
         robot = self.robots[robot_name]
         current_goal = robot.current_goal
-        robot_vect = gc.convert_3d_to_2d_vect(gc.get_orientation_vector(robot_pos, current_goal))
+        last_p = robot.last_point
+        if self.calc_min_neighbor_dist(robot_name) > gc_const.ORCA_NEIGHBOR_DIST + (gc_const.DISTANCE_ERROR * 2):
+            last_vect = last_p.get_dir_vector_between_points(robot_pos)
+            new_vect = last_p.get_dir_vector_between_points(current_goal)
+            angle_difference = last_vect.get_angle_between_vectors(new_vect)
+            if angle_difference > gc_const.ANGLE_ERROR:
+                vect = last_vect.get_rotated_vector(gc_const.ANGLE_ERROR)
+            elif angle_difference < -gc_const.ANGLE_ERROR:
+                vect = last_vect.get_rotated_vector(-gc_const.ANGLE_ERROR)
+            else:
+                vect = last_p.get_dir_vector_between_points(current_goal)
+        else:
+            last_vect = last_p.get_dir_vector_between_points(current_goal)
+            vect = last_vect.get_rotated_vector(gc_const.ANGLE_ERROR)
         goal_dist = current_goal.get_distance_to(robot_pos)
         goal_dist_2d = current_goal.get_2d_distance(robot_pos)
         current_ms = float(goal_dist_2d / goal_dist) * self.ms
-        vel_vect = (robot_vect.x * current_ms, robot_vect.y * current_ms)
+        vel_vect = (vect.x * current_ms, vect.y * current_ms)
         return vel_vect
 
-    def calc_vel_vect_2d(self, robot_name, robot_pos):
-        robot = self.robots[robot_name]
-        current_goal = robot.current_goal
-        robot_vect = gc.convert_3d_to_2d_vect(gc.get_orientation_vector(robot_pos, current_goal))
-        vel_vect = (robot_vect.x * self.ms, robot_vect.y * self.ms)
-        return vel_vect
+# Finding the edge closest to a point on a height map
+# Input
+# p3: initial point
+# cell: closest cell to the point
 
-
+# Output
+# current_edge: closest edge id
     def find_nearest_edge(self, p3, cell):
         current_edge = None
         min_dist = float('inf')
@@ -99,13 +140,19 @@ gc_const.ORCA_RADIUS, self.ms)
                 current_edge = edge
         return current_edge
 
-    def find_z(self, p):
-        x = p.x
-        y = p.y
+# Finding the height value of an adjacent point on a height map
+# Input
+# x: point x-coordinate value 
+# y: point y-coordinate value
+
+# Output
+# z: calculated point z-coordinate value
+    def find_z(self, x, y):
+        p = Point(x, y, 0)
         j = (x + (const.MAP_HEIGHT / 2)) // self.x_step
         i = ((const.MAP_WIDTH / 2) - y) // self.y_step
         cell_id = (str(int(i)), str(int(j)))
-        if cell_id:
+        if cell_id in self.cells.keys():
           n_cell = self.cells[cell_id]
           edge = self.find_nearest_edge(p, n_cell)
           p3 = self.heightmap[edge[0]]
@@ -114,6 +161,8 @@ gc_const.ORCA_RADIUS, self.ms)
           z = n_cell.pos.find_z_coord(new_p, p.x, p.y)
           return z
         else:
+          print(p, cell_id)
+          print('Cell id doesnt exist!')
           return None
 
 # Checking the reachability of the target point by the robot
@@ -124,7 +173,7 @@ gc_const.ORCA_RADIUS, self.ms)
         robot = self.robots[robot_name]
         current_goal = robot.current_goal
         dist_2d = robot_pos.get_2d_distance(current_goal)
-        if dist_2d < gc_const.DISTANCE_ERROR:
+        if dist_2d < gc_const.DISTANCE_ERROR * 3:
             if len(self.init_paths[robot_name]) > 1:
                 robot.last_goal = current_goal
                 self.init_paths[robot_name].pop(0)
@@ -134,30 +183,11 @@ gc_const.ORCA_RADIUS, self.ms)
                 self.sim.setAgentPrefVelocity(self.agents[robot_name], vel_vect)
             else:
                 self.sim.setAgentPrefVelocity(self.agents[robot_name], (0, 0))
+                self.sim.setAgentVelocity(self.agents[robot_name], (0, 0))
                 robot.finished_planning = True
                 print('Robot ' + robot_name + ' reached the target point. Path length: ' + str(len(self.final_paths[robot_name])))
         else:
-            vel_vect = self.calc_vel_vect_2d(robot_name, robot_pos)
-            self.sim.setAgentPrefVelocity(self.agents[robot_name], vel_vect)
-
-    def goal_achievement_check_2d(self, robot_name, robot_pos):
-        robot = self.robots[robot_name]
-        current_goal = robot.current_goal
-        dist_2d = robot_pos.get_2d_distance(current_goal)
-        if dist_2d < gc_const.DISTANCE_ERROR:
-            if len(self.init_paths[robot_name]) > 1:
-                robot.last_goal = current_goal
-                self.init_paths[robot_name].pop(0)
-                new_goal = self.init_paths[robot_name][0]
-                robot.current_goal = new_goal
-                vel_vect = self.calc_vel_vect_2d(robot_name, robot_pos)
-                self.sim.setAgentPrefVelocity(self.agents[robot_name], vel_vect)
-            else:
-                self.sim.setAgentPrefVelocity(self.agents[robot_name], (0, 0))
-                robot.finished_planning = True
-                print('Robot ' + robot_name + ' reached the target point. Path length: ' + str(len(self.final_paths[robot_name])))
-        else:
-            vel_vect = self.calc_vel_vect_2d(robot_name, robot_pos)
+            vel_vect = self.calc_vel_vect_3d(robot_name, robot_pos)
             self.sim.setAgentPrefVelocity(self.agents[robot_name], vel_vect)
 
 # Running a simulation of the movement of a group of targets
@@ -171,71 +201,76 @@ gc_const.ORCA_RADIUS, self.ms)
                 if not self.robots[key].finished_planning:
                     cont_flag = True
                     pos = self.sim.getAgentPosition(self.agents[key])
-                    p1 = self.robots[key].last_goal
-                    p2 = self.robots[key].current_goal
-                    z = self.find_z(p2)
+                    z = self.find_z(pos[0], pos[1])
                     robot_pos = Point(pos[0], pos[1], z)
-                    goal = self.robots[key].goal_point
-                    dist = robot_pos.get_distance_to(goal)
-                    vel = self.sim.getAgentVelocity(self.agents[key])
-                    #print(key + ' dist to goal: ' + str(dist))
-                    #print(self.robots[key].name + ' velocity: ' + str(vel))
-                    #gc.spawn_sdf_model('v_' + key + '_' + str(len(self.final_paths[key])), gc_const.VERTICE_PATH, robot_pos)
+                    #gc.spawn_sdf_model(key + '_v_' + str(len(self.final_paths[key])), gc_const.VERTICE_PATH, robot_pos)
                     self.final_paths[key].append(robot_pos)
                     self.goal_achievement_check(key, robot_pos)
-        print('ORCA for ' + str(len(self.agents)) + ' agents is completed!')
-        #f = open("/root/catkin_ws/src/targets_path_planning/orca_3d_data.txt", "a+")
-        #f.write('\n\nORCA3D\n')
-        #f.close()
+                    self.robots[key].last_point = robot_pos
+        print('ORCA3D for ' + str(len(self.agents)) + ' agents is completed!')
+        self.waypoints_pub = {}
         for key in self.robots.keys():
-            self.robots[key].set_final_path(self.final_paths[key])
-            #f = open("/root/catkin_ws/src/targets_path_planning/orca_3d_data.txt", "a+")
-	    #f.write(str(key) + ': [')
-            #f.close()
-            #for state in self.final_paths[key]:
-            #    f = open("/root/catkin_ws/src/targets_path_planning/orca_3d_data.txt", "a+")
-	    #    f.write('Point(' + str(state.x) + ', ' + str(state.y) + ', ' + str(state.z) + '), ')
-            #    f.close()
-            #f = open("/root/catkin_ws/src/targets_path_planning/orca_3d_data.txt", "a+")
-	    #f.write(']\n\n')
-            #f.close()
+            self.waypoints_pub[key] = rospy.Publisher('/sim_' + key + '/waypoints_array', Path, queue_size=10)
+            final_path = self.final_paths[key]
+            path = deleting_intermediate_points(final_path)
+            gc.visualise_path(path, gc_const.PATH_COLORS[int(self.agents[key])], key + '_v_')
+            msg = prepare_path_msg(key, final_path)
+            self.waypoints_pub[key].publish(msg)
+        sleep(1)
+        for key in self.robots.keys():
             self.robots[key].start()
 
-    def run_orca_2d(self):
-        print('\nORCA for ' + str(len(self.agents)) + ' agents is running.')
-        cont_flag = True
-        while cont_flag:
-            cont_flag = False
-            self.sim.doStep()
-            for key in self.robots.keys():
-                if not self.robots[key].finished_planning:
-                    cont_flag = True
-                    pos = self.sim.getAgentPosition(self.agents[key])
-                    p1 = self.robots[key].last_goal
-                    p2 = self.robots[key].current_goal
-                    z = self.find_z(p2)
-                    robot_pos = Point(pos[0], pos[1], z)
-                    goal = self.robots[key].goal_point
-                    dist = robot_pos.get_distance_to(goal)
-                    vel = self.sim.getAgentVelocity(self.agents[key])
-                    #print(self.robots[key].name + ' velocity: ' + str(vel))
-                    #gc.spawn_sdf_model('v_' + key + '_' + str(len(self.final_paths[key])), gc_const.VERTICE_PATH, robot_pos)
-                    self.final_paths[key].append(robot_pos)
-                    self.goal_achievement_check_2d(key, robot_pos)
-        print('ORCA for ' + str(len(self.agents)) + ' agents is completed!')
-        f = open("/root/catkin_ws/src/targets_path_planning/orca_data.txt", "a+")
-        f.write('\n\nORCA\n')
-        f.close()
-        for key in self.robots.keys():
-            self.robots[key].set_final_path(self.final_paths[key])
-            f = open("/root/catkin_ws/src/targets_path_planning/orca_data.txt", "a+")
-	    f.write(str(key) + ': [')
-            f.close()
-            for state in self.final_paths[key]:
-                f = open("/root/catkin_ws/src/targets_path_planning/orca_data.txt", "a+")
-	        f.write('Point(' + str(state.x) + ', ' + str(state.y) + ', ' + str(state.z) + '), ')
-                f.close()
-            f = open("/root/catkin_ws/src/targets_path_planning/orca_data.txt", "a+")
-	    f.write(']\n\n')
-            f.close()
-            #self.robots[key].start()
+# Setting the final path for the robot
+# Input
+# path: list of path points
+    def set_final_path(self, msg_data):
+        name = msg_data.robot_name
+        path = convert_to_path(msg_data.path)
+        print(name + ' path vertices count: ' + str(len(path)))
+        print(name + ' path curvature: ' + str(get_path_curvature(path)))
+        self.robots[msg_data.robot_name].final_path = path
+
+def convert_to_path(msg):
+    path = []
+    for state in msg:
+        x = state.x
+        y = state.y
+        z = state.z
+        p = Point(x, y, z)
+        path.append(p)
+    return path
+
+def prepare_path_msg(name, path):
+    msg = Path()
+    msg.path = []
+    msg.robot_name = name
+    for state in path:
+        point = Point3d()
+        point.x = state.x
+        point.y = state.y
+        point.z = state.z
+        msg.path.append(point)
+    return msg
+
+# Output
+# max_curvature: path curvature
+def get_path_curvature(path):
+    max_curvature = 0
+    for i in range(0, len(path) - 2):
+        p1 = path[i]
+        p2 = path[i + 1]
+        p3 = path[i + 2]
+        v1 = p1.get_dir_vector_between_points(p2)
+        v2 = p2.get_dir_vector_between_points(p3)
+        angle_difference = fabs(v1.get_angle_between_vectors(v2))
+        if angle_difference > max_curvature:
+            max_curvature = angle_difference
+    return max_curvature
+
+def deleting_intermediate_points(path):
+    path_copy = copy.copy(path)
+    for i in range(len(path)):
+        if (i % 7 == 1 or i % 7 == 2 or i % 7 == 3 or i % 7 == 4 or i % 7 == 5 or i % 7 == 6) and not(i == len(path) - 1):
+            if path[i] in path_copy:
+                path_copy.remove(path[i])
+    return path_copy

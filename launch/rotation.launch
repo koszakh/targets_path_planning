@@ -12,8 +12,6 @@
     <arg name="use_sim_time" value="$(arg use_sim_time)"/>
     <arg name="headless" value="$(arg headless)"/>
   </include>
-  <node name="spawn_urdf1" pkg="gazebo_ros" type="spawn_model" args="-file $(find targets_path_planning)/urdf/pioneer3at_1.urdf -urdf -x 0 -y 3 -z 0.1 -R 0 -P -0.000143 -Y -1.501 -model p3at1" />
-  <node name="spawn_urdf2" pkg="gazebo_ros" type="spawn_model" args="-file $(find targets_path_planning)/urdf/pioneer3at_2.urdf -urdf -x -2 -y -3 -z 0.1 -R 0 -P -0.000143 -Y 0.92 -model p3at2" />
-  <node name="spawn_urdf3" pkg="gazebo_ros" type="spawn_model" args="-file $(find targets_path_planning)/urdf/pioneer3at_3.urdf -urdf -x 2 -y -3 -z 0.1 -R 0 -P -0.000143 -Y 2.44 -model p3at3" />
+  <node name="spawn_urdf" pkg="gazebo_ros" type="spawn_model" args="-file $(find targets_path_planning)/urdf/pioneer3at_1.urdf -urdf -x 0 -y 0 -z 0.2 -model p3at1" />
   <node name="ros_node" pkg="targets_path_planning" type="ros_node.py" output="screen" />
 </launch>

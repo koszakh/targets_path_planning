@@ -271,7 +271,7 @@
     <inertial>
       <mass value="12"/>
       <origin rpy="0 0 0" xyz="0 0 0"/>
-      <inertia ixx="0.5" ixy="0" ixz="0" iyy="0.5" iyz="0" izz="1"/>
+      <inertia ixx="0.012411765597" ixy="0" ixz="0" iyy="0.015218160428" iyz="0" izz="0.011763977943"/>
     </inertial>
     <collision name="collision">
       <origin rpy="-1.57079 0 0" xyz="0 0 0"/>
@@ -290,7 +290,7 @@
     <inertial>
       <mass value="12"/>
       <origin rpy="0 0 0" xyz="0 0 0"/>
-      <inertia ixx="0.5" ixy="0" ixz="0" iyy="0.5" iyz="0" izz="1"/>
+      <inertia ixx="0.012411765597" ixy="0" ixz="0" iyy="0.015218160428" iyz="0" izz="0.011763977943"/>
     </inertial>
     <collision name="collision">
       <origin rpy="-1.57079 0 0" xyz="0 0 0"/> <!-- -0.38277 -0.02 0.11997 -->
@@ -309,7 +309,7 @@
     <inertial>
       <mass value="12"/>
       <origin rpy="0 0 0" xyz="0 0 0"/>
-      <inertia ixx="0.5" ixy="0" ixz="0" iyy="0.5" iyz="0" izz="1"/>
+      <inertia ixx="0.012411765597" ixy="0" ixz="0" iyy="0.015218160428" iyz="0" izz="0.011763977943"/>
     </inertial>
     <collision name="collision">
       <origin rpy="-1.57079 0 0" xyz="0 0 0"/> <!-- -1.47 0.88 0.31 -->
@@ -328,7 +328,7 @@
     <inertial>
       <mass value="12"/>
       <origin rpy="0 0 0" xyz="0 0 0"/>
-      <inertia ixx="0.5" ixy="0" ixz="0" iyy="0.5" iyz="0" izz="1"/>
+      <inertia ixx="0.012411765597" ixy="0" ixz="0" iyy="0.015218160428" iyz="0" izz="0.011763977943"/>
     </inertial>
     <collision name="collision">
       <origin rpy="-1.57079 0 0" xyz="0 0 0"/>

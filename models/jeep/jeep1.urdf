@@ -271,7 +271,7 @@
     <inertial>
       <mass value="12"/>
       <origin rpy="0 0 0" xyz="0 0 0"/>
-      <inertia ixx="0.5" ixy="0" ixz="0" iyy="0.5" iyz="0" izz="1"/>
+      <inertia ixx="0.001" ixy="0" ixz="0" iyy="0.001" iyz="0" izz="0.011763977943"/>
     </inertial>
     <collision name="collision">
       <origin rpy="-1.57079 0 0" xyz="0 0 0"/>
@@ -290,7 +290,7 @@
     <inertial>
       <mass value="12"/>
       <origin rpy="0 0 0" xyz="0 0 0"/>
-      <inertia ixx="0.5" ixy="0" ixz="0" iyy="0.5" iyz="0" izz="1"/>
+      <inertia ixx="0.001" ixy="0" ixz="0" iyy="0.001" iyz="0" izz="0.011763977943"/>
     </inertial>
     <collision name="collision">
       <origin rpy="-1.57079 0 0" xyz="0 0 0"/> <!-- -0.38277 -0.02 0.11997 -->
@@ -299,7 +299,7 @@
       </geometry>
     </collision>
     <visual name="visual">
-      <origin rpy="0 0 1.57079" xyz="-1.475 0.88 -0.31"/>
+      <origin rpy="0 0 1.57079" xyz="-1.47 0.88 -0.31"/>
       <geometry>
         <mesh filename="package://targets_path_planning/models/jeep/meshes/wheel.stl" scale="1.003700111 0.886200464 0.886200464"/>
       </geometry>
@@ -309,7 +309,7 @@
     <inertial>
       <mass value="12"/>
       <origin rpy="0 0 0" xyz="0 0 0"/>
-      <inertia ixx="0.5" ixy="0" ixz="0" iyy="0.5" iyz="0" izz="1"/>
+      <inertia ixx="0.001" ixy="0" ixz="0" iyy="0.001" iyz="0" izz="0.011763977943"/>
     </inertial>
     <collision name="collision">
       <origin rpy="-1.57079 0 0" xyz="0 0 0"/> <!-- -1.47 0.88 0.31 -->
@@ -318,7 +318,7 @@
       </geometry>
     </collision>
     <visual name="visual">
-      <origin rpy="0 0 -1.57079" xyz="1.465 -0.88 -0.31"/>
+      <origin rpy="0 0 -1.57079" xyz="1.47 -0.88 -0.31"/>
       <geometry>
         <mesh filename="package://targets_path_planning/models/jeep/meshes/wheel.stl" scale="1.003700111 0.886200464 0.886200464"/>
       </geometry>
@@ -328,7 +328,7 @@
     <inertial>
       <mass value="12"/>
       <origin rpy="0 0 0" xyz="0 0 0"/>
-      <inertia ixx="0.5" ixy="0" ixz="0" iyy="0.5" iyz="0" izz="1"/>
+      <inertia ixx="0.001" ixy="0" ixz="0" iyy="0.001" iyz="0" izz="0.011763977943"/>
     </inertial>
     <collision name="collision">
       <origin rpy="-1.57079 0 0" xyz="0 0 0"/>
@@ -337,7 +337,7 @@
       </geometry>
     </collision>
     <visual name="visual">
-      <origin rpy="0 0 1.57079" xyz="-1.475 0.88 -0.31"/>
+      <origin rpy="0 0 1.57079" xyz="-1.47 0.88 -0.31"/>
       <geometry>
         <mesh filename="package://targets_path_planning/models/jeep/meshes/wheel.stl" scale="1.003700111 0.886200464 0.886200464"/>
       </geometry>
@@ -346,44 +346,48 @@
   <gazebo reference="front_left_wheel">
     <kp>100000000.0</kp>
     <!-- kp and kd for rubber -->
-    <kd>100.0</kd>
+    <kd>1.0</kd>
+    <maxContacts>1</maxContacts>
+    <fdir1>0 0 1</fdir1>
+    <maxVel>1.0</maxVel>
     <mu1>1.0</mu1>
-    <!-- was 10 -->
     <mu2>1.0</mu2>
-    <maxVel>10.0</maxVel>
     <minDepth>0.005</minDepth>
     <material value="Gazebo/Black"/>
   </gazebo>
   <gazebo reference="front_right_wheel">
     <kp>100000000.0</kp>
     <!-- kp and kd for rubber -->
-    <kd>100.0</kd>
+    <kd>1.0</kd>
+    <maxContacts>1</maxContacts>
+    <fdir1>0 0 1</fdir1>
+    <maxVel>1.0</maxVel>
     <mu1>1.0</mu1>
-    <!-- was 10 -->
     <mu2>1.0</mu2>
-    <maxVel>10.0</maxVel>
     <minDepth>0.005</minDepth>
     <material value="Gazebo/Black"/>
   </gazebo>
   <gazebo reference="rear_left_wheel">
     <kp>100000000.0</kp>
     <!-- kp and kd for rubber -->
-    <kd>100.0</kd>
+    <kd>1.0</kd>
+    <maxContacts>1</maxContacts>
+    <fdir1>0 0 1</fdir1>
+    <maxVel>1.0</maxVel>
     <mu1>1.0</mu1>
-    <!-- was 10 -->
     <mu2>1.0</mu2>
-    <maxVel>10.0</maxVel>
     <minDepth>0.005</minDepth>
     <material value="Gazebo/Black"/>
   </gazebo>
   <gazebo reference="rear_right_wheel">
     <kp>100000000.0</kp>
     <!-- kp and kd for rubber -->
-    <kd>100.0</kd>
+    <kd>1.0</kd>
+    <fdir1>0 0 1</fdir1>
+    <maxContacts>1</maxContacts>
+    <maxVel>1.0</maxVel>
     <mu1>1.0</mu1>
-    <!-- was 10 -->
     <mu2>1.0</mu2>
-    <maxVel>10.0</maxVel>
     <minDepth>0.005</minDepth>
     <material value="Gazebo/Black"/>
   </gazebo>
@@ -391,7 +395,7 @@
     <inertial>
       <mass value="0.1"/>
       <origin xyz="0.1 0 0" rpy="0 0 0"/>
-      <inertia ixx="0.3338" ixy="0.0" ixz="0.0" iyy="0.4783" iyz="0.0" izz="0.3338"/>
+      <inertia ixx="140" ixy="0.0" ixz="0.0" iyy="550" iyz="0.0" izz="550"/>
     </inertial>
     <visual>
       <geometry>
@@ -421,7 +425,7 @@
       <wheelSeparation>1.8</wheelSeparation>
       <wheelDiameter>0.835</wheelDiameter>
       <robotBaseFrame>base_link</robotBaseFrame>
-      <torque>700</torque>
+      <torque>1400</torque>
       <commandTopic>cmd_vel</commandTopic>
       <odometryTopic>odom</odometryTopic>
       <odometryFrame>odom</odometryFrame>

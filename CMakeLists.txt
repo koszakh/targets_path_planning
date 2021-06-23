@@ -56,6 +56,7 @@ add_message_files(
   RobotPos.msg
   AllPaths.msg
   AllRobotsPos.msg
+  Vector2d.msg
 )
 
 ## Generate services in the 'srv' folder
