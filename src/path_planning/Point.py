@@ -1,6 +1,6 @@
 # The module includes classes for working with points in three-dimensional space and vectors
 
-from math import sqrt, acos, fabs, pi
+from math import sqrt, acos, fabs, pi, cos, sin
 
 # 2D vector class
 
@@ -43,6 +43,16 @@ class Vector2d:
     
     def __str__(self):
         return str(self.x) + ", " + str(self.y)
+
+    def get_rotated_vector(self, angle):
+        self_angle = self.vector_to_angle()
+        v_angle = self_angle + angle
+        if v_angle > 180:
+            v_angle = -(360 - v_angle)
+        elif angle < -180:
+            v_angle = 360 + v_angle
+        vect = angle_to_vector(v_angle)
+        return vect
 
 # Class of points in three-dimensional space
 # x, y, z: point coordinates
@@ -142,9 +152,10 @@ class Point:
 # Output
 # direction_vector: vector value between points
     def get_dir_vector_between_points(self, point):
-        #print('self: ' + str(self) + ' - ' + str(self.id) + ' | point: ' + str(point) + ' - ' + str(self.id) )
-        #vector_mod = sqrt((point.x - self.x) ** 2 + (point.y - self.y) ** 2)
-        #print('vector_mod: ' + str(vector_mod))
+        #det_x = float(point.x - self.x)
+        #det_y = float(point.y - self.y)
+        #print('self: ' + str(self) + ' | point: ' + str(point))
+        #print('det_x: ' + str(det_x) + ' | det_y: ' + str(det_y))
         direction_vector = Vector2d(float(point.x - self.x), float(point.y - self.y))
         return direction_vector
 
@@ -195,11 +206,11 @@ class Point:
         if not k_x == 0:
             k_z = self.z * p.x - p.z * self.x
             k2_z = p.z - self.z
-            z = (k2_z * x + k_z) / k_x
+            z = float((k2_z * x + k_z) / k_x)
         elif not k_y == 0:
             k_z = self.z * p.y - p.z * self.y
             k2_z = p.z - self.z
-            z = (k2_z * y + k_z) / k_y
+            z = float((k2_z * y + k_z) / k_y)
         else:
             z = 0
         return z
@@ -264,7 +275,7 @@ class Point:
             '5' : (str(v1), str(v2 + 1)),
             '6' : (str(v1 + 1), str(v2 + 1)),
             '7' : (str(v1 + 1), str(v2)),
-            '8': (str(v1 + 1), str(v2 - 1)),
+            '8': (str(v1 + 1), str(v2 - 1))
         }
 
 # Establishing the weight of an edge between a given vertex and another vertex
@@ -416,3 +427,12 @@ class Point:
 def radians_to_degrees(radians):
     angle = radians * 180 / pi
     return angle
+
+def degrees_to_radians(angle):
+    radians = angle * pi / 180
+    return radians
+
+def angle_to_vector(angle):
+    rad_angle = degrees_to_radians(angle)
+    vector = Vector2d(cos(rad_angle), sin(rad_angle))
+    return vector

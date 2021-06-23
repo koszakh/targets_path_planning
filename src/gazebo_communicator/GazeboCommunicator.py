@@ -5,8 +5,9 @@
 import rospy
 import rospkg
 from path_planning.Point import Point, Vector2d
+from targets_path_planning.msg import Point3d, Path
 import GazeboConstants as const
-from time import sleep
+import time
 from math import sqrt, fabs, sin, asin, pi, cos, acos
 from gazebo_msgs.msg import ModelState
 from geometry_msgs.msg import Pose, Twist
@@ -29,11 +30,13 @@ import threading as thr
 class Robot(thr.Thread):
     def __init__(self, robot_name):
         thr.Thread.__init__(self)
-        topic_name = '/sim_' + robot_name + '/cmd_vel'
-        self.vel_publisher = rospy.Publisher(topic_name, Twist, queue_size=10)
+        subtopic_name = '/sim_' + robot_name
+        self.vel_publisher = rospy.Publisher(subtopic_name + '/cmd_vel', Twist, queue_size=10)
+        self.waypoint_sub = rospy.Subscriber(subtopic_name + '/waypoint', Point3d, self.add_path_point)
+        self.waypoint_pub = rospy.Publisher(subtopic_name + '/waypoint', Point3d, queue_size=10)
         msg = Twist()
         self.vel_publisher.publish(msg)
-	sleep(0.5)
+	time.sleep(0.1)
         self.name = robot_name
         self.dir_point = robot_name + '::dir_point'
         self.init_path = None
@@ -41,7 +44,7 @@ class Robot(thr.Thread):
         self.finished_planning = False
         self.last_goal = None
 	self.goal_point = None
-
+        self.has_finished = False
 
 # Getting the position of the robot in 3D space in the Gazebo environment
 
@@ -58,7 +61,7 @@ class Robot(thr.Thread):
     def get_robot_orientation_vector(self):
         robot_pos = self.get_robot_position()
         dir_point_pos = get_link_position(self.dir_point)
-        dir_vector = get_orientation_vector(robot_pos, dir_point_pos)
+        dir_vector = robot_pos.get_dir_vector_between_points(dir_point_pos)
         return dir_vector
 
 # Getting the angle difference between the direction vector of the robot and the vector directed towards the point
@@ -71,38 +74,21 @@ class Robot(thr.Thread):
         rv = self.get_robot_orientation_vector()
         robot_pos = self.get_robot_position()
         goal_vect = get_orientation_vector(robot_pos, goal_pos)
-        rv_2d = convert_3d_to_2d_vect(rv)
-        dist_2d = goal_pos.get_2d_distance(robot_pos)
-        sub_point = Point(robot_pos.x + rv_2d.x * dist_2d, robot_pos.y + rv_2d.y * dist_2d, goal_pos.z)
-        new_rv = get_orientation_vector(robot_pos, sub_point)
-        angle_difference = get_3d_angle(new_rv, goal_vect)
-        return angle_difference
-
-    def get_angle_difference2(self, goal_pos):
-        rv = self.get_robot_orientation_vector()
-        robot_pos = self.get_robot_position()
-        goal_vect = get_orientation_vector(robot_pos, goal_pos)
-        #angle_difference = get_3d_angle(rv, goal_vect)
-        rv_2d = convert_3d_to_2d_vect(rv)
-        goal_vect_2d = convert_3d_to_2d_vect(goal_vect)
-	angle_difference = rv_2d.get_angle_between_vectors(goal_vect_2d)
+	angle_difference = rv.get_angle_between_vectors(goal_vect)
         return angle_difference
 
 # Moving the robot to a point with a PID controller
 # Input
 # goal: target point
     def move_with_PID(self, goal):
-        """
-        Function that regulates control effect on the wheels to align trajectory
-        """
+        self.turn_to_point(goal)
         old_error = 0
         error_sum = 0
         real_error_sum = 0
-        while self.get_robot_position().get_2d_distance(goal) > const.DISTANCE_ERROR:
-            #self.control_move_incline()
-            dist = self.get_robot_position().get_2d_distance(goal)
-            #point_dist = self.get_robot_position().get_2d_distance(self.last_goal)
-            error = self.get_angle_difference2(goal)
+        robot_pos = self.get_robot_position()
+        while robot_pos.get_distance_to(goal) > const.DISTANCE_ERROR:
+            robot_pos = self.get_robot_position()
+            error = self.get_angle_difference(goal)
             error_sum += error
             real_error_sum += fabs(error)
             if error_sum < const.I_MIN:
@@ -114,39 +100,22 @@ class Robot(thr.Thread):
             ud = const.KD * (error - old_error)
             old_error = error
             u = up + ui + ud
-            #f = open("/root/catkin_ws/src/targets_path_planning/orca_3d_movement_data.txt", "a+")
-            #f.write(str(point_dist) + '\n')
-            #f.close()
-            print('error: ' + str(error) + ' | dist: ' + str(dist))
             self.movement(const.MOVEMENT_SPEED, u)
-            sleep(const.PID_DELAY)
-        #print('real_error_sum: ' + str(real_error_sum))
-        self.stop()
+            time.sleep(const.PID_DELAY)
 
-# Robot movement to a point, including a preliminary rotation to the required angle
-# Input
-# goal: target point
-    def move_to_point(self, goal):
-        angle_difference = self.get_angle_difference2(goal)
-        if fabs(angle_difference) > const.ANGLE_ERROR:
-            print('The robot ' + self.name + ' turns to the point ' + str(goal))
-            self.turn_to_point(goal)
-        print('The robot ' + self.name + ' moves to the point ' + str(goal))
-        self.move_with_PID(goal)
 
 # Rotate the robot towards a point
 # Input
 # goal: target point
     def turn_to_point(self, goal):
-        angle_difference = self.get_angle_difference2(goal)
+        angle_difference = self.get_angle_difference(goal)
         while fabs(angle_difference) > const.ANGLE_ERROR:
-            angle_difference = self.get_angle_difference2(goal)
+            angle_difference = self.get_angle_difference(goal)
             #print(str(self.name) + ' angle difference: ' + str(angle_difference))
             if angle_difference > 0:
-                self.movement(-0.1, const.ROTATION_SPEED)
+                self.movement(0, const.ROTATION_SPEED)
             else:
-                self.movement(-0.1, -const.ROTATION_SPEED)
-            #sleep(0.1)
+                self.movement(0, -const.ROTATION_SPEED)
         self.stop()	
 
 # Stopping the robot
@@ -173,29 +142,24 @@ class Robot(thr.Thread):
         self.init_path = path
 	self.goal_point = path[len(path) - 1]
 
-# Setting the final path for the robot
-# Input
-# path: list of path points
-    def set_final_path(self, path):
-        print(self.name + ' path length: ' + str(len(path)))
-        self.final_path = path
+    def add_path_point(self, msg):
+        point = convert_to_point(msg)
+        self.final_path.insert(0, point)
 
 # The movement of the robot along a given final route
 # Start of thread
     def run(self):
-        print('Robot ' + self.name + ' started moving along the path')
         if self.final_path:
-            #f = open("/root/catkin_ws/src/targets_path_planning/orca_3d_movement_data.txt", "a+")
-            #f.write('\n')
-            #f.close()
-            self.last_goal = self.final_path[0]
+            print('Robot ' + self.name + ' started moving along the path\n')
+            i = 0
             for state in self.final_path:
+                i += 1
                 robot_pos = self.get_robot_position()
                 dist = robot_pos.get_2d_distance(state)
                 if dist > const.DISTANCE_ERROR:
-                    self.move_to_point(state)
-                self.last_goal = state
-            #self.stop()
+                    self.move_with_PID(state)
+            self.stop()
+            self.has_finished = True
             print('The robot ' + str(self.name) + ' has finished!')
         else:
             print('Path is empty!')
@@ -384,10 +348,11 @@ def set_model_state(model_name, pose, orient):
 # Output
 # dir_vector: vector between given points
 def get_orientation_vector(p1, p2):
-    x = p2.x - p1.x
-    y = p2.y - p1.y
-    z = p2.z - p1.z
-    dir_vector = vector3d.vector.Vector(x, y, z).normalize()
+    det_x = p2.x - p1.x
+    det_y = p2.y - p1.y
+    dir_vector = Vector2d(det_x, det_y)
+    #z = p2.z - p1.z
+    #dir_vector = vector3d.vector.Vector(x, y, z).normalize()
     return dir_vector
 
 # Getting the angle between 3D vectors
@@ -419,3 +384,24 @@ def get_3d_angle(v1, v2):
 def convert_3d_to_2d_vect(vector_3d):
     vect2d = Vector2d(vector_3d.x, vector_3d.y)
     return vect2d
+
+# Converting msg to Point object
+# Input
+# msg: message containing the coordinates of the point
+
+# Output
+# point: Point object
+def convert_to_point(msg):
+    x = msg.x
+    y = msg.y
+    z = msg.z
+    point = Point(x, y, z)
+    return point
+
+def prepare_point_msg(p):
+    msg = Point3d()
+    msg.x = p.x
+    msg.y = p.y
+    msg.z = p.z
+    return msg
+

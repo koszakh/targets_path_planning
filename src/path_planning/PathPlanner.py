@@ -38,20 +38,27 @@ class Cell:
 # obstacles: list of keys of impassable vertices
 # height: heightmap height (at vertices)
 # width: heightmap width (at vertices)
+# grid_range: the size of the range of cells for which the riskiness parameter is calculated
+# x_step: distance between adjacent vertices of the height map in x
+# y_step: distance between adjacent vertices of the height map in y
 # start_id: starting vertex key from map dictionary
 # open: list of keys of vertices available for visiting
 # closed: list of keys of visited vertices
+# closed_goals: list of keys of occupied goal vertices
 
 class PathPlanner:
-    def __init__(self, heightmap, height, width, grid_range):
+    def __init__(self, heightmap, height, width, grid_range, x_step, y_step):
         self.map = heightmap
         self.obstacles = []
         self.height = height
         self.width = width
 	self.grid_range = int(grid_range)
+        self.x_step = x_step
+        self.y_step = y_step
         self.start_id = None
         self.open = []
         self.closed = []
+        self.closed_goals = []
 	print('height: ' + str(self.height))
 	print('width: ' + str(self.width))
 	print('grid_range: ' + str(self.grid_range))
@@ -123,6 +130,7 @@ class PathPlanner:
                     v1.get_distance_to(v2) #+ fabs(v1.riskiness - v2.riskiness)
         return edge_cost
 
+# Calculating the weights of all edges of the heightmap
     def calc_all_edge_costs(self):
         for key in self.map.keys():
             vertice = self.map[key]
@@ -132,6 +140,9 @@ class PathPlanner:
                     edge_cost = self.calc_edge_cost(key, neighbor_id)
                     vertice.set_edge_cost(neighbor, edge_cost)
 
+# Calculation of the risk parameter for vertices located at a short distance from the obstacle
+# Input
+# vertice_id: obstacle vertex number
     def calc_local_riskiness(self, vertice_id):
 	ids = self.calc_grid_range(vertice_id)
         vertice = self.map[vertice_id]
@@ -145,6 +156,11 @@ class PathPlanner:
                     riskiness = self.calc_riskiness(v_id)
                     v.set_riskiness(riskiness)
 
+# Finding a list of keys for vertices that are in the desired range
+# Input
+# vertice_id: starting vertex number
+
+# ids: list of vertex keys lying in the desired range
     def calc_grid_range(self, vertice_id):
         col = int(vertice_id[0])
 	row = int(vertice_id[1])
@@ -165,16 +181,27 @@ class PathPlanner:
             for j in range(min_row, max_row):
                 v_id = (str(i), str(j))
                 ids.append(v_id)
-	#print(ids, vertice_id)
         ids.remove(vertice_id)
-        #print('\nmin_col: ' + str(min_col) + '\nmax_col: ' + str(max_col) + '\nmin_row: ' + str(min_row) + '\nmax_row: ' + str(max_row))
 	return ids
 
+# Calculation of the riskiness parameter for a specific vertex
+# Input
+# vertice_id: id of this vertex
+
+# Output
+# riskiness: riskiness parameter value
     def calc_riskiness(self, vertice_id):
         d_lethal, c_max = self.calc_dist_to_obstacle(vertice_id)
         riskiness = c_max * (cos((d_lethal - const.INNER_RADIUS) * pi / (const.OUTER_RADIUS - const.INNER_RADIUS)) + 1)
         return riskiness
 
+# Calculating the distance to the nearest obstacle for a specific vertex
+# Input
+# vertice_id: id of this vertex
+
+# Output
+# min_dist: distance to nearest obstacle
+# obst_cost: weight of this obstacle
     def calc_dist_to_obstacle(self, vertice_id):
         min_dist = float('inf')
 	ids = self.calc_grid_range(vertice_id)
@@ -188,6 +215,12 @@ class PathPlanner:
                     obst_cost = self.calc_obst_cost(v_id)
         return min_dist, obst_cost
 
+# Calculating the weight of an obstacle
+# Input
+# vertice_id: obstacle vertex id
+
+# Output
+# obst_cost: weight of this obstacle
     def calc_obst_cost(self, vertice_id):
         max_height_diff = self.calc_max_height_difference(vertice_id)
         local_roughness = self.calc_local_roughness(vertice_id)
@@ -293,10 +326,11 @@ class PathPlanner:
 # Finding a random target vertex for path planning
 # Input
 # start_id: starting vertex key
+# start_orient: the vector of the initial orientation of the robot
 
 # Output
 # goal_id: target vertex key
-    def get_random_goal_id(self, start_id):
+    def get_random_goal_id(self, start_id, start_orient):
         goal_id = random.choice(list(self.map.keys()))
         goal_v = self.map[goal_id]
         start_v = self.map[start_id]
@@ -305,9 +339,10 @@ class PathPlanner:
             goal_id = random.choice(list(self.map.keys()))
             goal_v = self.map[goal_id]
             dist = goal_v.get_distance_to(start_v)
-            if not(start_v.obstacle or goal_v.obstacle or goal_id == start_id or dist > 15):
-	        path, path_ids, path_cost = self.find_path(start_id, goal_id)
+            if not(start_v.obstacle or goal_v.obstacle or goal_id == start_id or dist > 15 or goal_id in self.closed_goals):
+	        path, path_ids, path_cost = self.find_path(start_id, goal_id, start_orient)
 		if path:
+                    self.closed_goals.append(goal_id)
 		    break
         return goal_id
 
@@ -344,14 +379,15 @@ class PathPlanner:
 # Finding the closest vertex of the heightmap to a given position
 # Choosing a random target vertex
 # Input
-# initial_pos: initial robot position
+# pos: initial robot position
+# orient: initial robot orieantation
 
 # Output
 # start_id: starting vertex key
 # goal_id: target vertex key
-    def get_start_and_goal_id(self, initial_pos):
-        start_id = self.get_nearest_vertice_id(initial_pos)
-        goal_id = self.get_random_goal_id(start_id)
+    def get_start_and_goal_id(self, pos, orient):
+        start_id = self.get_nearest_vertice_id(pos, orient)
+        goal_id = self.get_random_goal_id(start_id, orient)
         return start_id, goal_id
 
 # Path planning with an LRLHD* algorithm
@@ -361,7 +397,7 @@ class PathPlanner:
 
 # Output
 # path: path vertex list (None if path cannot be built)
-    def find_path(self, start_id, goal_id):
+    def find_path(self, start_id, goal_id, start_orient):
         start_v = self.map[start_id]
         goal_v = self.map[goal_id]
         current_v = start_v
@@ -369,11 +405,15 @@ class PathPlanner:
         current_neighbors = current_v.neighbors_list.values()
         self.closed.append(current_v.id)
         iter = 0
+        current_v.dir_vect = start_orient
         while not current_v.id == goal_id and iter < len(self.map) / 10:
             iter += 1
             for v_id in current_neighbors:
                 v = self.map[v_id]
-                if not v.obstacle:
+                vect = current_v.get_dir_vector_between_points(v)
+                angle_difference = fabs(current_v.dir_vect.get_angle_between_vectors(vect))
+                if not v.obstacle and angle_difference < const.ORIENT_BOUND:
+                    v.dir_vect = vect
                     if not v_id in self.open and not v_id in self.closed:
                         self.open.append(v_id)
                     if not v.edges.get(current_v.id):
@@ -405,8 +445,10 @@ class PathPlanner:
                 path_ids.insert(0, predecessor_id)
             path_length = get_path_length(path)
             path_cost = goal_v.path_cost
+            path_curvature = self.get_path_curvature_ids(path_ids)
             print('Path cost: ' + str(path_cost))
             print('Path length: ' + str(path_length))
+            print('Path curvature: ' + str(path_curvature))
             print('Number of vertices = ' + str(len(path)))
             self.clear_path_costs()
             return path, path_ids, path_cost
@@ -421,338 +463,37 @@ class PathPlanner:
 
 # Output
 # selected_key: closest vertex key
-    def get_nearest_vertice_id(self, point):
-        min_dist = float('inf')
-        selected_key = None
-        for key in self.map.keys():
-            vertice = self.map[key]
-            dist = vertice.get_distance_to(point)
-            if dist < min_dist and not vertice.obstacle and not vertice.edge_attach:
-                min_dist = dist
-                selected_key = key
-        return selected_key
-
-# Smoothing the trajectory of the robot
-# Input
-# path_ids: path vertex ids
-
-# Output
-# smoothed_path: an array of smoothed path points
-    def curve_smoothing(self, path_ids):
-        start_time = time.time()
-        smoothed_path_ids = []
-        tmp_path_ids = copy.copy(path_ids)
-        path_curvature = self.get_path_curvature_ids(path_ids)
-        print('Initial curvature: ' + str(path_curvature))
-        previous_curvature = path_curvature
-        goal_id = path_ids[len(path_ids) - 1]
-        iteration = 0
-        while path_curvature > const.CURVATURE_THRESHOLD:
-            iteration += 1
-            new_path_ids = []
-            p1 = path_ids[0]
-            new_path_ids.append(p1)
-            i = 2
-            while True:
-                p2 = tmp_path_ids[i - 1]
-                p3 = tmp_path_ids[i]
-                vertices = [p1, p2, p3]
-                current_v = self.map[p2]
-                if not current_v.edge_attach:
-                    sub_curve_ids = self.vertice_smoothing(vertices)
-                else:
-                    sub_curve_ids = self.edge_smoothing(vertices)
-                for v_id in sub_curve_ids:
-                    if not v_id in sub_curve_ids:
-                        new_path_ids.append(v_id)
-                p1 = new_path_ids[len(new_path_ids) - 1]
-                if p3 == goal_id:
-                    break
-                i += 1
-            new_path_ids.append(goal_id)
-            print('path_ids: ' + str(new_path_ids))
-            new_path_ids = self.delete_doubled_vertices(new_path_ids)
-            new_path_ids = self.path_loops_deleting(new_path_ids)
-            print('new_path_ids: ' + str(new_path_ids))
-            path_curvature = self.get_path_curvature_ids(new_path_ids)
-            tmp_path_ids = copy.copy(new_path_ids)
-            if path_curvature < previous_curvature:
-                previous_curvature = path_curvature
-                smoothed_path_ids = copy.copy(new_path_ids)
-            if iteration == const.MAX_ITERATIONS_COUNT:
-                print(str(iteration) + ' iterations passed')
-                break
-        if smoothed_path_ids:
-            curve_smoothing_time = time.time() - start_time
-            init_path = []
-            for v_id in path_ids:
-                v = self.map[v_id]
-                init_path.append(v)
-            smoothed_path_ids = self.delete_doubled_vertices(smoothed_path_ids)
-            smoothed_path_ids = self.path_loops_deleting(smoothed_path_ids)
-            path_curvature = self.get_path_curvature_ids(smoothed_path_ids)
-            print('\nPath length: ' + str(len(smoothed_path_ids)) + '\nPath_curvature: ' + str(path_curvature) + '\nNumber of iterations: ' + str(iteration))
-            print('Curve smoothing time: ' + str(curve_smoothing_time))
-            self.curve_averaging(smoothed_path_ids)
-            smoothed_path_ids.pop(0)
-            smoothed_path = []
-            for v_id in smoothed_path_ids:
-                v = self.map[v_id]
-                smoothed_path.append(v)
-            return smoothed_path
-        else:
-            print('This path cant be smoothed.')
-            return None
-
-# Smoothing a section of the path, the midpoint of which corresponds to the vertice of the heightmap
-# Input
-# vertice_ids: path segment vertex numbers
-
-# Output
-# new_points: new positions of points of this segment of the path
-    def vertice_smoothing(self, vertice_ids):
-        p1 = self.map[vertice_ids[0]]
-        p2 = self.map[vertice_ids[1]]
-        p3 = self.map[vertice_ids[2]]
-        v1 = p1.get_dir_vector_between_points(p3)
-        v2 = p1.get_dir_vector_between_points(p2)
-        new_points = []
-        neighbors = p2.neighbors_list.values()
-        angle = v2.get_angle_between_vectors(v1)
-        if angle > 0:
-            N = self.get_up_neighbors(p1, p2, p3)
-        else:
-            N = self.get_down_neighbors(p1, p2, p3)
-        last_p = p1
-        sorted_N = self.sort_by_dist(p3, N)
-        for neighbor_id in sorted_N:
-            neighbor = self.map[neighbor_id]
-            new_p = last_p.find_intersection_of_lines(p3, p2, neighbor)
-            dist = new_p.get_distance_to(p2)
-            if dist > const.DIST_FROM_PATH:
-                new_p = p2.get_point_at_distance_and_angle(new_p, const.DIST_FROM_PATH)
-                dist = new_p.get_distance_to(p2)
-            if dist > gc_const.DISTANCE_ERROR:
-                new_p.init_point = p2.id
-                id1 = p2.id
-                id2 = neighbor.id
-                new_p.edge_attach = (id1, id2)
-                new_id = self.get_new_edge_id(new_p)
-                new_p.set_id(new_id)
-                self.map[new_id] = new_p
-                new_points.append(new_id)
-                last_p = new_p
-            else:
-                new_points.append(p2.id)
-        return new_points
-
-# Smoothing a segment of a path whose midpoint is on an edge of the graph
-# Input
-# vertice_ids: path segment vertex numbers
-
-# Output
-# new_points: new positions of points of this segment of the path  
-    def edge_smoothing(self, vertice_ids):
-        p1 = self.map[vertice_ids[0]]
-        p2 = self.map[vertice_ids[1]]
-        p3 = self.map[vertice_ids[2]]
-        new_points = []
-        E = p2.edge_attach
-        p_e1 = self.map[E[0]]
-        p_e2 = self.map[E[1]]
-        new_p = p1.find_intersection_of_lines(p3, p_e1, p_e2)
-        init_point = self.map[p2.init_point]
-        dist = new_p.get_distance_to(init_point)
-        if dist > const.DIST_FROM_PATH:
-            new_p = init_point.get_point_at_distance_and_angle(new_p, const.DIST_FROM_PATH)
-        new_p.init_point = p2.init_point
-        new_p.edge_attach = E
-        new_id = self.get_new_edge_id(new_p)
-        new_p.set_id(new_id)
-        self.map[new_id] = new_p
-        new_points.append(new_p.id)
-        return new_points
-
-# Final averaging of the smoothed trajectory
-# Input
-# curve_ids: smoothed path point ids
-    def curve_averaging(self, curve_ids):
-        start_time = time.time()
-        init_curvature = self.get_path_curvature_ids(curve_ids)
-        init_path = []
-        for v_id in curve_ids:
-            v = self.map[v_id]
-            init_path.append(v)
-        path_length = get_path_length(init_path)
-        print('Init curvature: ' + str(init_curvature))
-        for i in range(5, len(curve_ids) - 1):
-            sub_curve = []
-            for j in range(i - 5, i + 1):
-                p = self.map[curve_ids[j]]
-                sub_curve.append(p)
-            p3 = sub_curve[2]
-            p4 = sub_curve[3]
-            e3 = p3.edge_attach
-            e4 = p4.edge_attach
-            if e3 and e4:
-		#print('e3: ' + str(e3) + ' | e4: ' + str(e4))
-                id3 = p3.id
-                id4 = p4.id
-                p1_e3 = self.map[e3[0]]
-                p2_e3 = self.map[e3[1]]
-                p1_e4 = self.map[e4[0]]
-                p2_e4 = self.map[e4[1]]
-                p3_init_id = p3.init_point
-                p3_init = self.map[p3_init_id]
-                p4_init_id = p4.init_point
-                p4_init = self.map[p4_init_id]
-                p3_1 = p3.get_point_at_distance_and_angle(p1_e3, const.CURVE_AVG_STEP)
-                p3_2 = p3.get_point_at_distance_and_angle(p1_e3, const.CURVE_AVG_STEP * 2)
-                p3_3 = p3.get_point_at_distance_and_angle(p2_e3, const.CURVE_AVG_STEP)
-                p3_4 = p3.get_point_at_distance_and_angle(p2_e3, const.CURVE_AVG_STEP * 2)
-
-                p4_1 = p4.get_point_at_distance_and_angle(p1_e4, const.CURVE_AVG_STEP)
-                p4_2 = p4.get_point_at_distance_and_angle(p1_e4, const.CURVE_AVG_STEP * 2)
-                p4_3 = p4.get_point_at_distance_and_angle(p2_e4, const.CURVE_AVG_STEP)
-                p4_4 = p4.get_point_at_distance_and_angle(p2_e4, const.CURVE_AVG_STEP * 2)
-
-                p3_alts = [p3, p3_1, p3_2, p3_3, p3_4]
-                p4_alts = [p4, p4_1, p4_2, p4_3, p4_4]
-                best_p3 = p3
-                best_p4 = p4
-                current_curve = [sub_curve[0], sub_curve[1], p3, p4, sub_curve[4], sub_curve[5]]
-                min_curvature = get_path_curvature(current_curve)
-                for new_p3 in p3_alts:
-                    for new_p4 in p4_alts:
-                        new_sub_curve = [sub_curve[0], sub_curve[1], new_p3, new_p4, sub_curve[4], sub_curve[5]]
-                        path_curvature = get_path_curvature(new_sub_curve)
-                        p3_init_dist = p3_init.get_distance_to(new_p3)
-                        p4_init_dist = p4_init.get_distance_to(new_p4)
-                        if path_curvature < min_curvature and p3_init_dist < const.DIST_FROM_PATH and p4_init_dist < const.DIST_FROM_PATH:
-                            min_curvature = path_curvature
-                            best_p3 = new_p3
-                            best_p4 = new_p4
-                self.map[id3].set_xyz(best_p3)
-                self.map[id4].set_xyz(best_p4)
-        finish_time = time.time()
-        print('Curve averaging time: ' + str(finish_time - start_time))
-        final_curvature = self.get_path_curvature_ids(curve_ids)
-        print('Final curvature: ' + str(final_curvature))
-
-# Getting a list of neighboring vertices located on "top" of the vertices
-# Input
-# p1, p2, p3: three consecutive waypoints
-
-# Output
-# up_neighbors: list of neighboring vertices        
-    def get_up_neighbors(self, p1, p2, p3):
-        angle1 = p2.get_angle_between_points(p1)
-        angle2 = p2.get_angle_between_points(p3)
-        neighbors = p2.neighbors_list.values()
-        up_neighbors = []
-        closed_neighbors = []
-        if angle1 < angle2:
-            angle1 = p2.get_360_angle(p1)
-            angle2 = p2.get_360_angle(p3)
-            for neighbor_id in neighbors:
-                neighbor = self.map[neighbor_id]
-                current_angle = p2.get_360_angle(neighbor)
-                if current_angle < angle1 and current_angle > angle2:
-                    up_neighbors.append(neighbor_id)
-        else:
-            for neighbor_id in neighbors:
-                neighbor = self.map[neighbor_id]
-                current_angle = p2.get_angle_between_points(neighbor)
-                if current_angle < angle1 and current_angle > angle2:
-                    up_neighbors.append(neighbor_id)
-        return up_neighbors
-
-# List of vertices located below the given vertices 
-# Input
-# p1, p2, p3: three consecutive waypoints
-
-# Output
-# down_neighbors: list of neighboring vertices
-    def get_down_neighbors(self, p1, p2, p3):
-        angle1 = p2.get_angle_between_points(p1)
-        angle2 = p2.get_angle_between_points(p3)
-        angle = p2.get_360_angle(p3)
-        neighbors = p2.neighbors_list.values()
-        down_neighbors = []
-        closed_neighbors = []
-        if angle2 < angle1:
-            angle1 = p2.get_360_angle(p1)
-            angle2 = p2.get_360_angle(p3)
-            for neighbor_id in neighbors:
-                neighbor = self.map[neighbor_id]
-                current_angle = p2.get_360_angle(neighbor)
-                if current_angle > angle1 and current_angle < angle2:
-                    down_neighbors.append(neighbor_id)
-        else:
-            for neighbor_id in neighbors:
-                neighbor = self.map[neighbor_id]
-                current_angle = p2.get_angle_between_points(neighbor)
-                if current_angle > angle1 and current_angle < angle2:
-                    down_neighbors.append(neighbor_id)
-        return down_neighbors
-
-# Obtaining an id for a vertex located on an edge of a graph
-# Input
-# p: vertex on an edge
-
-# Output
-# new_id: new vertex number
-    def get_new_edge_id(self, p):
-        e = p.edge_attach
-        edge_id = str((str(e[0]), str(e[1])))
-        i = 0
-        new_id = edge_id
-        while new_id in self.map.keys():
+    def get_nearest_vertice_id(self, point, robot_vect):
+        x = point.x
+        y = point.y
+        j = int((x + (const.MAP_HEIGHT / 2)) // self.x_step)
+        i = int(((const.MAP_WIDTH / 2) - y) // self.y_step)
+        j_mod = (x + (const.MAP_HEIGHT / 2)) % self.x_step
+        i_mod = ((const.MAP_WIDTH / 2) - y) % self.y_step
+        if j_mod > self.x_step / 2:
+            j += 1
+        if i_mod > self.y_step / 2:
             i += 1
-            new_id = edge_id + ' - ' + str(i)
-        return new_id
-
-# Sorting an array of vertices by distance from some vertex
-# Input
-# p: vertex, the distance to which is calculated
-# mas: original vertex array
-
-# Output
-# sorted_mas: sorted array
-    def sort_by_dist(self, p, mas):
-        sorted_mas = []
-        while len(mas) > 0:
-            max_dist = 0
-            for v_id in mas:
-                v = self.map[v_id]
-                dist = p.get_distance_to(v)
-                if dist > max_dist:
-                    max_dist = dist
-                    current_v_id = v_id
-            sorted_mas.append(current_v_id)
-            mas.remove(current_v_id)
-        return sorted_mas
-
-# Calculating the maximum distance of the found path from the original path
-# Input
-# path_ids: initial path
-# curve_ids: smoothed path
-
-# Output
-# max_dist: maximum distance from the initial path
-    def get_max_dist_from_path(self, path_ids, curve_ids):
-        max_dist = 0
-        for path_id in path_ids:
-            min_dist = 999
-            init_vertice = self.map[path_id]
-            for curve_id in curve_ids:
-                vertice = self.map[curve_id]
-                dist = vertice.get_distance_to(init_vertice)
-                if dist < min_dist:
-                    min_dist = dist
-            if min_dist > max_dist:
-                max_dist = min_dist
-        return max_dist
+        p_id = (str(i), str(j))
+        min_dist = float('inf')
+        min_angle = 360
+        points = []
+        for l in range(-2, 3):
+            for k in range(-2, 3):
+                new_id = (str(i + l), str(j + k))
+                v = self.map[new_id]
+                new_vect = point.get_dir_vector_between_points(v)
+                angle_difference = fabs(robot_vect.get_angle_between_vectors(new_vect))
+                if angle_difference < const.ORIENT_BOUND and not v.obstacle:
+                    dist = point.get_2d_distance(v)
+                    if angle_difference < min_angle:
+                        min_angle = angle_difference
+                        min_dist = dist
+                        current_id = new_id
+                points.append(v)
+        current_p = self.map[current_id]
+        print('Min dist: ' + str(min_dist) + ' | Angle difference: ' + str(min_angle))
+        return current_id
 
 # Analysis of the heightmap, search for obstacles on it and outlining heightmap boundaries
     def gridmap_preparing(self):
@@ -788,76 +529,6 @@ class PathPlanner:
             if angle_difference > max_curvature:
                 max_curvature = angle_difference
         return max_curvature
-
-# Deleting vertices creating loops
-# Input
-# path_ids: initial path vertex ids
-
-# Output
-# new_path_ids: final path vertex ids
-    def path_loops_deleting(self, path_ids):
-        #print('Path loops deleting')
-        new_path_ids = copy.copy(path_ids)
-        i = len(path_ids) - 1
-        goal = path_ids[0]
-        if len(path_ids) >= 3:
-            while True:
-                p1 = self.map[path_ids[i - 2]]
-                if p1.id == goal:
-                    break
-                p2 = self.map[path_ids[i - 1]]
-                p3 = self.map[path_ids[i]]
-                print(i, len(path_ids))
-                dist_a = p1.get_2d_distance(p2)
-                dist_b = p2.get_2d_distance(p3)
-                if dist_a == 0 or dist_b == 0:
-                    new_path_ids.remove(p2.id)
-                    i -= 2
-                else:
-                    dist1 = p1.get_2d_distance(p3)
-                    dist2 = p2.get_2d_distance(p3)
-                    v1 = p1.get_dir_vector_between_points(p2)
-                    v2 = p2.get_dir_vector_between_points(p3)
-                    angle_difference = fabs(v1.get_angle_between_vectors(v2))
-                    if dist1 < dist2 or angle_difference > 90:
-                        if p2.id in new_path_ids:
-                            new_path_ids.remove(p2.id)
-                        i -= 2
-                    else:
-                        i -= 1
-                if i < 2:
-                    i = 2
-        return new_path_ids
-
-# Deleting invalid path vertices
-# Input
-# path_ids: initial path vertex ids
-
-# Output
-# new_path_ids: final path vertex ids
-    def delete_doubled_vertices(self, path_ids):
-        #print('Deleting of doubled vertices')
-        new_path_ids = copy.copy(path_ids)
-        i = 1
-        goal = path_ids[len(path_ids) - 1]
-        while True:
-            #print(i, len(path_ids))
-            id1 = path_ids[i - 1]
-            id2 = path_ids[i]
-            p1 = self.map[id1]
-            p2 = self.map[id2]
-            if p2.id == goal:
-                break
-            dist = p1.get_2d_distance(p2)
-            if dist < gc_const.DISTANCE_ERROR or id1 == id2:
-                if id2 in new_path_ids:
-                    new_path_ids.remove(id2)
-                    i += 2
-            else:
-                i += 1
-            if i > len(path_ids) - 1:
-                i = len(path_ids) - 1
-        return new_path_ids
 
 # Calculating path length
 # Input
