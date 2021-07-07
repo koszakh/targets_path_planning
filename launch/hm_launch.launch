@@ -9,4 +9,5 @@
   <node name="spawn_urdf3" pkg="gazebo_ros" type="spawn_model" args="-file $(find targets_path_planning)/urdf/pioneer3at_3.urdf -urdf -x -10.78 -y 3.3 -z 1.565 -R 0.075 -P -0.067 -Y -1.63  -model p3at3" />
   <node name="robot_localizator" pkg="targets_path_planning" type="robot_localizator.py" output="screen" />
   <node name="path_planner" pkg="targets_path_planning" type="path_planner.py" output="screen" />
+  <node name="robot_navigator" pkg="targets_path_planning" type="robot_navigator.py" output="screen" />
 </launch>
