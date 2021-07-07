@@ -5,7 +5,7 @@
 import rospy
 import rospkg
 from path_planning.Point import Point, Vector2d
-from targets_path_planning.msg import Point3d, Path
+from targets_path_planning.msg import Point3d, Path, RobotFinished
 import GazeboConstants as const
 import time
 from math import sqrt, fabs, sin, asin, pi, cos, acos
@@ -30,21 +30,19 @@ import threading as thr
 class Robot(thr.Thread):
     def __init__(self, robot_name):
         thr.Thread.__init__(self)
+        print('\n!!! ' + robot_name + ' initialised !!!\n')
         subtopic_name = '/sim_' + robot_name
         self.vel_publisher = rospy.Publisher(subtopic_name + '/cmd_vel', Twist, queue_size=10)
-        self.waypoint_sub = rospy.Subscriber(subtopic_name + '/waypoint', Point3d, self.add_path_point)
         self.waypoint_pub = rospy.Publisher(subtopic_name + '/waypoint', Point3d, queue_size=10)
+        self.waypoint_sub = rospy.Subscriber(subtopic_name + '/waypoint', Point3d, self.waypoint_callback)
+        self.waypoints_pub = rospy.Publisher(subtopic_name + '/waypoints_array', Path, queue_size=10)
+        self.waypoints_sub = rospy.Subscriber(subtopic_name + '/waypoints_array', Path, self.set_path)
         msg = Twist()
         self.vel_publisher.publish(msg)
-	time.sleep(0.1)
+	time.sleep(0.5)
         self.name = robot_name
-        self.dir_point = robot_name + '::dir_point'
-        self.init_path = None
-        self.final_path = None
-        self.finished_planning = False
-        self.last_goal = None
-	self.goal_point = None
-        self.has_finished = False
+        self.dir_point = robot_name + const.DIR_POINT_SUFFIX
+        self.path = []
 
 # Getting the position of the robot in 3D space in the Gazebo environment
 
@@ -81,7 +79,7 @@ class Robot(thr.Thread):
 # Input
 # goal: target point
     def move_with_PID(self, goal):
-        self.turn_to_point(goal)
+        #self.turn_to_point(goal)
         old_error = 0
         error_sum = 0
         real_error_sum = 0
@@ -135,31 +133,40 @@ class Robot(thr.Thread):
         msg.angular.z = rotation_speed
         self.vel_publisher.publish(msg)
 
-# Setting the initial path for the robot
+    def waypoint_callback(self, msg):
+        point = convert_to_point(msg.point)
+        self.path.append(point)
+
+    def waypoint_publisher(self, point):
+        msg = prepare_point_msg(point)
+        self.waypoint_pub.publish(msg)
+
+    def waypoints_publisher(self, path):
+        msg = prepare_path_msg(self.name, path)
+        self.waypoints_pub.publish(msg)
+
+# Setting the final path for the robot
 # Input
 # path: list of path points
-    def set_init_path(self, path):
-        self.init_path = path
-	self.goal_point = path[len(path) - 1]
-
-    def add_path_point(self, msg):
-        point = convert_to_point(msg)
-        self.final_path.insert(0, point)
+    def set_path(self, msg_data):
+        path = convert_to_path(msg_data.path)
+        print(self.name + ' path vertices count: ' + str(len(path)))
+        print(self.name + ' path curvature: ' + str(get_path_curvature(path)))
+        self.path = path
 
 # The movement of the robot along a given final route
 # Start of thread
     def run(self):
-        if self.final_path:
-            print('Robot ' + self.name + ' started moving along the path\n')
-            i = 0
-            for state in self.final_path:
-                i += 1
-                robot_pos = self.get_robot_position()
-                dist = robot_pos.get_2d_distance(state)
+        print(self.name + ' path length: ' + str(len(self.path)))
+        if len(self.path) > 0:
+            for state in self.path:
+                dist = state.get_distance_to(self.get_robot_position())
                 if dist > const.DISTANCE_ERROR:
+                    #print('True | ' + self.name + ' dist to point: ' + str(dist) + ' | ' + ' moving to the ' + str(p) + ' point.')
                     self.move_with_PID(state)
+                #else: 
+                    #print('False | ' + self.name + ' dist to point: ' + str(dist))
             self.stop()
-            self.has_finished = True
             print('The robot ' + str(self.name) + ' has finished!')
         else:
             print('Path is empty!')
@@ -283,6 +290,12 @@ def get_link_position(link_name):
         print "Service call failed: %s" % e
         return None
 
+def get_robot_orientation_vector(robot_name):
+        robot_pos = get_model_position(robot_name)
+        dir_point_pos = get_link_position(robot_name + const.DIR_POINT_SUFFIX)
+        dir_vector = robot_pos.get_dir_vector_between_points(dir_point_pos)
+        return dir_vector
+
 # Getting the state of a model in the Gazebo environment (including model orientation)
 # Input
 # model_name: model name in Gazebo environment
@@ -398,6 +411,33 @@ def convert_to_point(msg):
     point = Point(x, y, z)
     return point
 
+# Output
+# max_curvature: path curvature
+def get_path_curvature(path):
+    max_curvature = 0
+    for i in range(0, len(path) - 2):
+        p1 = path[i]
+        p2 = path[i + 1]
+        p3 = path[i + 2]
+        v1 = p1.get_dir_vector_between_points(p2)
+        v2 = p2.get_dir_vector_between_points(p3)
+        angle_difference = fabs(v1.get_angle_between_vectors(v2))
+        if angle_difference > max_curvature:
+            max_curvature = angle_difference
+    return max_curvature
+
+def prepare_path_msg(name, path):
+    msg = Path()
+    msg.path = []
+    msg.robot_name = name
+    for state in path:
+        point = Point3d()
+        point.x = state.x
+        point.y = state.y
+        point.z = state.z
+        msg.path.append(point)
+    return msg
+
 def prepare_point_msg(p):
     msg = Point3d()
     msg.x = p.x
@@ -405,3 +445,18 @@ def prepare_point_msg(p):
     msg.z = p.z
     return msg
 
+def prepare_robot_finished_msg(name):
+    msg = RobotFinished()
+    msg.finished = True
+    msg.robot_name = name
+    return msg
+
+def convert_to_path(msg):
+    path = []
+    for state in msg:
+        x = state.x
+        y = state.y
+        z = state.z
+        p = Point(x, y, z)
+        path.append(p)
+    return path

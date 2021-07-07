@@ -1,4 +1,5 @@
 ROBOT_NAMES = ['p3at1', 'p3at2', 'p3at3']#['jeep1', 'jeep2', 'jeep3']
+DIR_POINT_SUFFIX = '::dir_point'
 VERTICE_PATH = '/root/.gazebo/models/vertice/model.sdf'
 RED_VERTICE_PATH = '/root/.gazebo/models/red_vertice/model.sdf'
 GREEN_VERTICE_PATH = '/root/.gazebo/models/green_vertice/model.sdf'
@@ -12,7 +13,7 @@ DISTANCE_ERROR = 0.1
 PID_DELAY = 0.2
 KP = 0.0025#0.0025#1
 KI = 0.0375#0.025#0.1
-KD = 0.001#0.015#0.005
+KD = 0.005#0.015#0.005
 I_MIN = -5
 I_MAX = 5
 
