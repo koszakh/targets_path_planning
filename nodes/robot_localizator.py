@@ -45,7 +45,6 @@ def prepare_all_robots_pos_msg(robot_names):
 rospy.init_node('robot_localizator')
 robot_pos_pub = rospy.Publisher('robots_pos_data', AllRobotsPos, queue_size=10)
 sleep(2)
-print('Robot localization started!')
 poses_msg = prepare_all_robots_pos_msg(const.ROBOT_NAMES)
 robot_pos_pub.publish(poses_msg)
 rospy.spin()
