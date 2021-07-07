@@ -30,7 +30,6 @@ import threading as thr
 class Robot(thr.Thread):
     def __init__(self, robot_name):
         thr.Thread.__init__(self)
-        print('\n!!! ' + robot_name + ' initialised !!!\n')
         subtopic_name = '/sim_' + robot_name
         self.vel_publisher = rospy.Publisher(subtopic_name + '/cmd_vel', Twist, queue_size=10)
         self.waypoint_pub = rospy.Publisher(subtopic_name + '/waypoint', Point3d, queue_size=10)
@@ -168,6 +167,7 @@ class Robot(thr.Thread):
                     #print('False | ' + self.name + ' dist to point: ' + str(dist))
             self.stop()
             print('The robot ' + str(self.name) + ' has finished!')
+	    self.path = []
         else:
             print('Path is empty!')
 
