@@ -339,7 +339,7 @@ class PathPlanner:
             goal_id = random.choice(list(self.map.keys()))
             goal_v = self.map[goal_id]
             dist = goal_v.get_distance_to(start_v)
-            if not(start_v.obstacle or goal_v.obstacle or goal_id == start_id or dist > 15 or goal_id in self.closed_goals):
+            if not(start_v.obstacle or goal_v.obstacle or goal_id == start_id or dist > 5 or goal_id in self.closed_goals):
 	        path, path_ids, path_cost = self.find_path(start_id, goal_id, start_orient)
 		if path:
                     self.closed_goals.append(goal_id)
