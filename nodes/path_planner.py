@@ -4,7 +4,7 @@
 import path_planning.PathPlanner as pp
 import rospy
 import copy
-from targets_path_planning.msg import Point3d, AllPaths, AllRobotsPos, Path, RobotPos
+from targets_path_planning.msg import Point3d, AllPaths, Path, AllRobotsPos
 from path_planning.Point import Point, Vector2d
 from path_planning.Heightmap import Heightmap
 import gazebo_communicator.GazeboCommunicator as gc
@@ -12,8 +12,7 @@ import gazebo_communicator.GazeboConstants as gc_const
 from path_planning.ORCA import ORCAsolver
 
 def callback(msg_data):
-    paths_msg = AllPaths()
-    paths_msg.path_list = []
+    paths_pub = rospy.Publisher('all_paths_data', AllPaths, queue_size=10)
     hm = Heightmap()
     hmap, height, width, x_step, y_step, grid_step = hm.prepare_heightmap()
     map_handler = pp.PathPlanner(hmap, height, width, grid_step, x_step, y_step)
@@ -21,8 +20,6 @@ def callback(msg_data):
     cells = map_handler.cells
     map_handler.gridmap_preparing()
     orca = ORCAsolver(hmap, cells, x_step, y_step)
-    #f = open("/root/catkin_ws/src/targets_path_planning/paths_data.txt", "w+")
-    #f.close()
     smoothed_paths = {}
     robot_names = []
     for msg in msg_data.pos_list:
@@ -36,7 +33,30 @@ def callback(msg_data):
         if path:
             orca.add_agent(robot_name, path)
         print('Current agents count: ' + str(orca.sim.getNumAgents()))
-    orca.run_orca()
+    paths = orca.run_orca()
+    msg = prepare_paths_msg(paths.keys(), paths)
+    paths_pub.publish(msg)
+
+def prepare_paths_msg(names, paths):
+    msg = AllPaths()
+    msg.path_list = []
+    for name in names:
+        path = paths[name]
+        path_msg = prepare_path_msg(name, path)
+        msg.path_list.append(path_msg)
+    return msg
+
+def prepare_path_msg(name, path):
+    msg = Path()
+    msg.path = []
+    msg.robot_name = name
+    for state in path:
+        point = Point3d()
+        point.x = state.x
+        point.y = state.y
+        point.z = state.z
+        msg.path.append(point)
+    return msg
 
 def convert_to_vector(msg_data):
     x = msg_data.x

@@ -37,15 +37,15 @@ def prepare_all_robots_pos_msg(robot_names):
     poses_msg.pos_list = []
     for name in robot_names:
         robot_pos = gc.get_model_position(name)
-        robot = gc.Robot(name)
-        robot_orient = robot.get_robot_orientation_vector()
+        robot_orient = gc.get_robot_orientation_vector(name)
         msg = prepare_robot_pos_msg(robot_pos, robot_orient, name)
         poses_msg.pos_list.append(msg)
     return poses_msg
 
 rospy.init_node('robot_localizator')
 robot_pos_pub = rospy.Publisher('robots_pos_data', AllRobotsPos, queue_size=10)
-sleep(1)
+sleep(2)
+print('Robot localization started!')
 poses_msg = prepare_all_robots_pos_msg(const.ROBOT_NAMES)
 robot_pos_pub.publish(poses_msg)
 rospy.spin()
