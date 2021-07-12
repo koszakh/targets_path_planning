@@ -11,7 +11,7 @@ import gazebo_communicator.GazeboCommunicator as gc
 import gazebo_communicator.GazeboConstants as gc_const
 from path_planning.ORCA import ORCAsolver
 
-def callback(msg_data):
+def group_path_planning():
     paths_pub = rospy.Publisher('all_paths_data', AllPaths, queue_size=10)
     hm = Heightmap()
     hmap, height, width, x_step, y_step, grid_step = hm.prepare_heightmap()
@@ -19,19 +19,20 @@ def callback(msg_data):
     map_handler.cell_maker()
     cells = map_handler.cells
     map_handler.gridmap_preparing()
-    orca = ORCAsolver(hmap, cells, x_step, y_step)
+    orca = ORCAsolver(map_handler.map, cells, x_step, y_step)
     smoothed_paths = {}
     robot_names = []
-    for msg in msg_data.pos_list:
-        robot_name = msg.robot_name
-        robot_names.append(robot_name)
-        robot_pos = convert_to_point(msg.pos)
-        robot_orient = convert_to_vector(msg.vector)
+    for name in gc_const.ROBOT_NAMES:
+        robot_names.append(name)
+        model_directory = gc_const.ROBOT_MODEL_PATH + name[len(name) - 1] + ".urdf"
+        robot_pos = map_handler.get_random_start_pos()
+        gc.spawn_urdf_model(name, model_directory, robot_pos)
+        robot_orient = gc.get_robot_orientation_vector(name)
         start_id, goal_id = map_handler.get_start_and_goal_id(robot_pos, robot_orient)
-        print('\nPath planning for ' + robot_name + ' has begun!')
+        print('\nPath planning for ' + name + ' has begun!')
         path, path_ids, path_cost = map_handler.find_path(start_id, goal_id, robot_orient)
         if path:
-            orca.add_agent(robot_name, path)
+            orca.add_agent(name, path)
         print('Current agents count: ' + str(orca.sim.getNumAgents()))
     paths = orca.run_orca()
     msg = prepare_paths_msg(paths.keys(), paths)
@@ -72,5 +73,5 @@ def convert_to_point(msg_data):
     return point
 
 rospy.init_node('path_planner')
-robot_pos_sub = rospy.Subscriber('robots_pos_data', AllRobotsPos, callback)
+group_path_planning()
 rospy.spin()
