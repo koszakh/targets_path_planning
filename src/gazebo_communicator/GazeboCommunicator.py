@@ -4,13 +4,13 @@
 
 import rospy
 import rospkg
-from path_planning.Point import Point, Vector2d
-from targets_path_planning.msg import Point3d, Path, RobotFinished
+import path_planning.Point as PointGeom
+from targets_path_planning.msg import Path
 import GazeboConstants as const
 import time
 from math import sqrt, fabs, sin, asin, pi, cos, acos
 from gazebo_msgs.msg import ModelState
-from geometry_msgs.msg import Pose, Twist
+from geometry_msgs.msg import Pose, Twist, Quaternion, Point
 from std_msgs.msg import Float64, Time, Duration
 from gazebo_msgs.srv import SetModelState, GetModelState, ApplyJointEffort, GetModelProperties, SpawnModel, GetWorldProperties, GetLinkState
 import vector3d
@@ -30,10 +30,11 @@ import threading as thr
 class Robot(thr.Thread):
     def __init__(self, robot_name):
         thr.Thread.__init__(self)
+        print('\n!!! ' + robot_name + ' initialised !!!\n')
         subtopic_name = '/sim_' + robot_name
         self.vel_publisher = rospy.Publisher(subtopic_name + '/cmd_vel', Twist, queue_size=10)
-        self.waypoint_pub = rospy.Publisher(subtopic_name + '/waypoint', Point3d, queue_size=10)
-        self.waypoint_sub = rospy.Subscriber(subtopic_name + '/waypoint', Point3d, self.waypoint_callback)
+        self.waypoint_pub = rospy.Publisher(subtopic_name + '/waypoint', Point, queue_size=10)
+        self.waypoint_sub = rospy.Subscriber(subtopic_name + '/waypoint', Point, self.waypoint_callback)
         self.waypoints_pub = rospy.Publisher(subtopic_name + '/waypoints_array', Path, queue_size=10)
         self.waypoints_sub = rospy.Subscriber(subtopic_name + '/waypoints_array', Path, self.set_path)
         msg = Twist()
@@ -167,7 +168,6 @@ class Robot(thr.Thread):
                     #print('False | ' + self.name + ' dist to point: ' + str(dist))
             self.stop()
             print('The robot ' + str(self.name) + ' has finished!')
-	    self.path = []
         else:
             print('Path is empty!')
 
@@ -261,7 +261,7 @@ def get_model_position(model_name):
         x = object_state.pose.position.x
         y = object_state.pose.position.y
         z = object_state.pose.position.z
-        pose = Point(x, y, z)
+        pose = PointGeom.Point(x, y, z)
         return pose
     else:
         return None
@@ -284,7 +284,7 @@ def get_link_position(link_name):
         x = pos.x
         y = pos.y
         z = pos.z
-        state = Point(x, y, z)
+        state = PointGeom.Point(x, y, z)
         return state
     except rospy.ServiceException, e:
         print "Service call failed: %s" % e
@@ -332,6 +332,15 @@ def spawn_sdf_model(model_name, model_directory, state):
     except rospy.ServiceException, e:
         print "Service call failed: %s" % e
 
+def spawn_urdf_model(model_name, model_directory, state):
+    rospy.wait_for_service('/gazebo/spawn_urdf_model')
+    try:
+        spawn_model_client = rospy.ServiceProxy('/gazebo/spawn_urdf_model', SpawnModel)
+        spawn_model_client(model_name, open(model_directory, 'r').read(),
+                    "/rover", Pose(position=Point(state.x, state.y, state.z), orientation=Quaternion(0, 0, 0, 0)), "world")
+    except rospy.ServiceException, e:
+        print "Service call failed: %s" % e
+
 # Setting the object of the required position and orientation in space
 # model_name: the name of the object in the Gazebo environment
 # pose: position of an object in 3D space
@@ -363,7 +372,7 @@ def set_model_state(model_name, pose, orient):
 def get_orientation_vector(p1, p2):
     det_x = p2.x - p1.x
     det_y = p2.y - p1.y
-    dir_vector = Vector2d(det_x, det_y)
+    dir_vector = PointGeom.Vector2d(det_x, det_y)
     #z = p2.z - p1.z
     #dir_vector = vector3d.vector.Vector(x, y, z).normalize()
     return dir_vector
@@ -395,7 +404,7 @@ def get_3d_angle(v1, v2):
 # Output
 # vect2D: 2D vector representation
 def convert_3d_to_2d_vect(vector_3d):
-    vect2d = Vector2d(vector_3d.x, vector_3d.y)
+    vect2d = PointGeom.Vector2d(vector_3d.x, vector_3d.y)
     return vect2d
 
 # Converting msg to Point object
@@ -408,7 +417,7 @@ def convert_to_point(msg):
     x = msg.x
     y = msg.y
     z = msg.z
-    point = Point(x, y, z)
+    point = PointGeom.Point(x, y, z)
     return point
 
 # Output
@@ -445,18 +454,12 @@ def prepare_point_msg(p):
     msg.z = p.z
     return msg
 
-def prepare_robot_finished_msg(name):
-    msg = RobotFinished()
-    msg.finished = True
-    msg.robot_name = name
-    return msg
-
 def convert_to_path(msg):
     path = []
     for state in msg:
         x = state.x
         y = state.y
         z = state.z
-        p = Point(x, y, z)
+        p = PointGeom.Point(x, y, z)
         path.append(p)
     return path
