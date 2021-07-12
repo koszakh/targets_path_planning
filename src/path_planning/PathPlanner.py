@@ -59,6 +59,7 @@ class PathPlanner:
         self.open = []
         self.closed = []
         self.closed_goals = []
+        self.closed_start_points = []
 	print('height: ' + str(self.height))
 	print('width: ' + str(self.width))
 	print('grid_range: ' + str(self.grid_range))
@@ -386,7 +387,7 @@ class PathPlanner:
 # start_id: starting vertex key
 # goal_id: target vertex key
     def get_start_and_goal_id(self, pos, orient):
-        start_id = self.get_nearest_vertice_id(pos, orient)
+        start_id = self.get_start_vertice_id(pos, orient)
         goal_id = self.get_random_goal_id(start_id, orient)
         return start_id, goal_id
 
@@ -457,13 +458,21 @@ class PathPlanner:
             print('Path to this vertex cannot be found.')
             return None, None, None
 
-# Finding the closest vertice of the heightmap to a given point
-# Input
-# point: point coordinates
+    def get_random_start_pos(self):
+        while True:
+            x = random.uniform(-const.MAP_HEIGHT / 2, const.MAP_HEIGHT / 2)
+            y = random.uniform(-const.MAP_WIDTH / 2, const.MAP_WIDTH / 2)
+            p = Point(x, y, 0)
+            i, j = self.get_nearest_vertice_id(p)
+            new_p_id = (str(i), str(j))
+            new_p = self.map[new_p_id]
+            if not new_p.obstacle and not new_p_id in self.closed_start_points:
+                self.closed_start_points.append(new_p_id)
+                p.set_z(new_p.z + 0.25)
+                break
+        return p
 
-# Output
-# selected_key: closest vertex key
-    def get_nearest_vertice_id(self, point, robot_vect):
+    def get_nearest_vertice_id(self, point):
         x = point.x
         y = point.y
         j = int((x + (const.MAP_HEIGHT / 2)) // self.x_step)
@@ -474,7 +483,16 @@ class PathPlanner:
             j += 1
         if i_mod > self.y_step / 2:
             i += 1
-        p_id = (str(i), str(j))
+        return i, j
+
+# Finding the closest vertice of the heightmap to a given point
+# Input
+# point: point coordinates
+
+# Output
+# selected_key: closest vertex key
+    def get_start_vertice_id(self, point, robot_vect):
+        i, j = self.get_nearest_vertice_id(point)
         min_dist = float('inf')
         min_angle = 360
         points = []
