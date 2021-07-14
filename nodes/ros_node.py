@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 import rospy
-from targets_path_planning.msg import Point3d, AllPaths, Path
+from targets_path_planning.msg import AllPaths, Path
 from path_planning.Point import Point, Vector2d
 from geometry_msgs.msg import Pose, Twist
 import gazebo_communicator.GazeboCommunicator as gc
