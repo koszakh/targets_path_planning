@@ -4,7 +4,7 @@
 
 import rospy
 import rvo2
-from targets_path_planning.msg import Point3d, AllPaths, AllRobotsPos, RobotPos, Vector2d
+from targets_path_planning.msg import AllPaths, AllRobotsPos, RobotPos, Vector2d
 from path_planning.Point import Point
 import gazebo_communicator.GazeboConstants as const
 import gazebo_communicator.GazeboCommunicator as gc

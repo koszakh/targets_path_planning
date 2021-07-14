@@ -4,8 +4,9 @@
 import path_planning.PathPlanner as pp
 import rospy
 import copy
-from targets_path_planning.msg import Point3d, AllPaths, Path, AllRobotsPos
-from path_planning.Point import Point, Vector2d
+from targets_path_planning.msg import AllPaths, Path, AllRobotsPos
+from path_planning.Point import Point as PointGeom, Vector2d
+from geometry_msgs.msg import Point
 from path_planning.Heightmap import Heightmap
 import gazebo_communicator.GazeboCommunicator as gc
 import gazebo_communicator.GazeboConstants as gc_const
@@ -52,7 +53,7 @@ def prepare_path_msg(name, path):
     msg.path = []
     msg.robot_name = name
     for state in path:
-        point = Point3d()
+        point = Point()
         point.x = state.x
         point.y = state.y
         point.z = state.z
@@ -69,7 +70,7 @@ def convert_to_point(msg_data):
     x = msg_data.x
     y = msg_data.y
     z = msg_data.z
-    point = Point(x, y, z)
+    point = PointGeom(x, y, z)
     return point
 
 rospy.init_node('path_planner')
