@@ -440,7 +440,7 @@ def prepare_path_msg(name, path):
     msg.path = []
     msg.robot_name = name
     for state in path:
-        point = Point3d()
+        point = Point()
         point.x = state.x
         point.y = state.y
         point.z = state.z
