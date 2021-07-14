@@ -448,7 +448,7 @@ def prepare_path_msg(name, path):
     return msg
 
 def prepare_point_msg(p):
-    msg = Point3d()
+    msg = Point()
     msg.x = p.x
     msg.y = p.y
     msg.z = p.z
