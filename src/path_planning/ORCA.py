@@ -4,8 +4,7 @@ import rospy
 import path_planning.Constants as const
 import gazebo_communicator.GazeboCommunicator as gc
 import gazebo_communicator.GazeboConstants as gc_const
-from path_planning.Point import Point
-from targets_path_planning.msg import Point3d, Path
+from path_planning.Point import Point 
 import copy
 import rvo2
 from time import sleep
