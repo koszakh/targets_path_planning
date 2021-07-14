@@ -51,12 +51,12 @@ find_package(
 ## Generate messages in the 'msg' folder
 add_message_files(
   FILES
-  Point3d.msg
   Path.msg
   RobotPos.msg
   AllPaths.msg
   AllRobotsPos.msg
   Vector2d.msg
+  RobotFinished.msg
 )
 
 ## Generate services in the 'srv' folder
