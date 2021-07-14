@@ -1,2 +1,2 @@
 string robot_name
-Point3d[] path
+geometry_msgs/Point[] path
