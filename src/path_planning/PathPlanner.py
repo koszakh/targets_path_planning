@@ -48,7 +48,7 @@ class Cell:
 
 class PathPlanner:
     def __init__(self, heightmap, height, width, grid_range, x_step, y_step):
-        self.map = heightmap
+        self.heightmap = heightmap
         self.obstacles = []
         self.height = height
         self.width = width
@@ -66,10 +66,10 @@ class PathPlanner:
 
 # Deleting vertices lying outside the boundaries of the height map and clearing them from lists of neighboring vertices
     def false_neighbors_deleting(self):
-        tmp_map = copy.copy(self.map)
+        tmp_map = copy.copy(self.heightmap)
         for key in tmp_map.keys():
-            if self.map.get(key):
-                v = self.map[key]
+            if self.heightmap.get(key):
+                v = self.heightmap[key]
                 for n_key in v.neighbors_list.keys():
                     n_id = v.neighbors_list[n_key]
                     num1 = int(n_id[0])
@@ -92,10 +92,10 @@ class PathPlanner:
 
 # Analysis of the height map and search for impassable areas on it
     def detect_obstacles(self):
-        tmp_map = copy.copy(self.map)
+        tmp_map = copy.copy(self.heightmap)
         for key in tmp_map.keys():
-            if self.map.get(key):
-                vertice = self.map[key]
+            if self.heightmap.get(key):
+                vertice = self.heightmap[key]
                 if not vertice.obstacle:
                     max_height_diff = self.calc_max_height_difference(key)
                     local_roughness = self.calc_local_roughness(key)
@@ -112,7 +112,7 @@ class PathPlanner:
 # Input
 # key: key of the vertice
     def mark_as_obstacle(self, key):
-        vertice = self.map[key]
+        vertice = self.heightmap[key]
         vertice.obstacle = True
         if not key in self.obstacles:
             self.obstacles.append(key)
@@ -124,8 +124,8 @@ class PathPlanner:
 # Output
 # edge_cost: weight of the edge between vertices with keys v1_id and v2_id
     def calc_edge_cost(self, v1_id, v2_id):
-        v1 = self.map[v1_id]
-        v2 = self.map[v2_id]
+        v1 = self.heightmap[v1_id]
+        v2 = self.heightmap[v2_id]
         edge_cost = (const.ROUGHNESS_COEF * max(v1.local_roughness, v2.local_roughness) + 1) * \
                     (const.HD_COEF * max(v1.max_height_diff, v2.max_height_diff) + 1) * \
                     v1.get_distance_to(v2) #+ fabs(v1.riskiness - v2.riskiness)
@@ -133,11 +133,11 @@ class PathPlanner:
 
 # Calculating the weights of all edges of the heightmap
     def calc_all_edge_costs(self):
-        for key in self.map.keys():
-            vertice = self.map[key]
+        for key in self.heightmap.keys():
+            vertice = self.heightmap[key]
             for neighbor_id in vertice.neighbors_list.values():
                 if not vertice.edges.get(neighbor_id):
-                    neighbor = self.map[neighbor_id]
+                    neighbor = self.heightmap[neighbor_id]
                     edge_cost = self.calc_edge_cost(key, neighbor_id)
                     vertice.set_edge_cost(neighbor, edge_cost)
 
@@ -146,9 +146,9 @@ class PathPlanner:
 # vertice_id: obstacle vertex number
     def calc_local_riskiness(self, vertice_id):
 	ids = self.calc_grid_range(vertice_id)
-        vertice = self.map[vertice_id]
+        vertice = self.heightmap[vertice_id]
 	for v_id in ids:
-	    v = self.map[v_id]
+	    v = self.heightmap[v_id]
             if not v.obstacle:
                 dist = vertice.get_distance_to(v)
                 if dist < const.INNER_RADIUS:
@@ -206,9 +206,9 @@ class PathPlanner:
     def calc_dist_to_obstacle(self, vertice_id):
         min_dist = float('inf')
 	ids = self.calc_grid_range(vertice_id)
-	vertice = self.map[vertice_id]
+	vertice = self.heightmap[vertice_id]
 	for v_id in ids:
-	    v = self.map[v_id]
+	    v = self.heightmap[v_id]
 	    if v.obstacle:
                 dist = vertice.get_distance_to(v)
                 if dist < min_dist:
@@ -235,11 +235,11 @@ class PathPlanner:
 # Output
 # roughness: local roughness parameter value
     def calc_local_roughness(self, vertice_id):
-        vertice = self.map[vertice_id]
+        vertice = self.heightmap[vertice_id]
         ln_count = len(vertice.neighbors_list)
         sum_angles = 0
         for v_id in vertice.neighbors_list.values():
-            v = self.map[v_id]
+            v = self.heightmap[v_id]
             surf_angle = self.calc_surf_angle(vertice_id, v_id)
             sum_angles += fabs(surf_angle)
         roughness = fabs(sum_angles / ln_count)
@@ -252,8 +252,8 @@ class PathPlanner:
 # Output
 # surf_angle: angle of inclination of the surface between the vertices
     def calc_surf_angle(self, v1_id, v2_id):
-        v1 = self.map[v1_id]
-	v2 = self.map[v2_id]
+        v1 = self.heightmap[v1_id]
+	v2 = self.heightmap[v2_id]
         z1 = v1.z
         z2 = v2.z
         cathet = z1 - z2
@@ -269,11 +269,11 @@ class PathPlanner:
 # Output
 # max_height_diff: the value of the maximum height difference between the vertices (in meters)
     def calc_max_height_difference(self, vertice_id):
-        vertice = self.map[vertice_id]
+        vertice = self.heightmap[vertice_id]
         z = vertice.z
         max_height_diff = 0
         for v_id in vertice.neighbors_list.values():
-            v = self.map[v_id]
+            v = self.heightmap[v_id]
             z1 = v.z
             height_diff = fabs(z1 - z)
             if height_diff > max_height_diff:
@@ -282,8 +282,8 @@ class PathPlanner:
 
 # Clearing path cost values for each vertex and clearing open and closed arrays
     def clear_path_costs(self):
-        for key in self.map.keys():
-            v = self.map[key]
+        for key in self.heightmap.keys():
+            v = self.heightmap[key]
             v.path_cost = None
             v.set_predecessor(None)
             v.edges = {}
@@ -294,11 +294,11 @@ class PathPlanner:
 # Input
 # v_id: vertex key
     def clear_neighbors_list(self, v_id):
-        vertice = self.map[v_id]
+        vertice = self.heightmap[v_id]
         neighbor_ids = vertice.neighbors_list.values()
         for neighbor_id in neighbor_ids:
-            if self.map.get(neighbor_id):
-                neighbor = self.map[neighbor_id]
+            if self.heightmap.get(neighbor_id):
+                neighbor = self.heightmap[neighbor_id]
                 vertice.delete_neighbor(neighbor)
             else:
                 vertice.delete_false_neighbor(neighbor_id)
@@ -313,7 +313,7 @@ class PathPlanner:
         min_path_cost = float('inf')
         closest_id = None
         for v_id in self.open:
-            v = self.map[v_id]
+            v = self.heightmap[v_id]
             if not v.obstacle:
                 dist = v.get_distance_to(goal)
                 total_path_cost = v.path_cost + dist
@@ -332,13 +332,13 @@ class PathPlanner:
 # Output
 # goal_id: target vertex key
     def get_random_goal_id(self, start_id, start_orient):
-        goal_id = random.choice(list(self.map.keys()))
-        goal_v = self.map[goal_id]
-        start_v = self.map[start_id]
+        goal_id = random.choice(list(self.heightmap.keys()))
+        goal_v = self.heightmap[goal_id]
+        start_v = self.heightmap[start_id]
         dist = goal_v.get_distance_to(start_v)
         while 1:
-            goal_id = random.choice(list(self.map.keys()))
-            goal_v = self.map[goal_id]
+            goal_id = random.choice(list(self.heightmap.keys()))
+            goal_v = self.heightmap[goal_id]
             dist = goal_v.get_distance_to(start_v)
             if not(start_v.obstacle or goal_v.obstacle or goal_id == start_id or dist > 5 or goal_id in self.closed_goals):
 	        path, path_ids, path_cost = self.find_path(start_id, goal_id, start_orient)
@@ -346,6 +346,20 @@ class PathPlanner:
                     self.closed_goals.append(goal_id)
 		    break
         return goal_id
+
+    def get_goal_id(self, x, y, offset):
+        p = Point(x, y, 0)
+        p_id = self.get_nearest_vertice_id(p)
+        i = int(p_id[0])
+        j = int(p_id[1])
+	while True:
+            l = random.randint(i - offset, i + offset + 1)
+            k = random.randint(j - offset, j + offset + 1)
+            goal_id = (str(l), str(k))
+            goal_v = self.heightmap[goal_id]
+            if not (goal_v.obstacle or goal_id == p_id or goal_id in self.closed_goals):
+                break
+        return goal_v
 
 # Creating Cell class objects and marking impassable cells
     def cell_maker(self):
@@ -362,7 +376,7 @@ class PathPlanner:
                 sum_y = 0
                 sum_z = 0
                 for v_id in p_ids:
-                    v = self.map[v_id]
+                    v = self.heightmap[v_id]
                     sum_x += v.x
                     sum_y += v.y
                     sum_z += v.z
@@ -399,18 +413,18 @@ class PathPlanner:
 # Output
 # path: path vertex list (None if path cannot be built)
     def find_path(self, start_id, goal_id, start_orient):
-        start_v = self.map[start_id]
-        goal_v = self.map[goal_id]
+        start_v = self.heightmap[start_id]
+        goal_v = self.heightmap[goal_id]
         current_v = start_v
         current_v.path_cost = 0
         current_neighbors = current_v.neighbors_list.values()
         self.closed.append(current_v.id)
         iter = 0
         current_v.dir_vect = start_orient
-        while not current_v.id == goal_id and iter < len(self.map) / 10:
+        while not current_v.id == goal_id and iter < len(self.heightmap) / 10:
             iter += 1
             for v_id in current_neighbors:
-                v = self.map[v_id]
+                v = self.heightmap[v_id]
                 vect = current_v.get_dir_vector_between_points(v)
                 angle_difference = fabs(current_v.dir_vect.get_angle_between_vectors(vect))
                 if not v.obstacle and angle_difference < const.ORIENT_BOUND:
@@ -427,7 +441,7 @@ class PathPlanner:
             current_v_id = self.best_vertice_choice(goal_v)
             if current_v_id == None or len(self.open) == 0:
                 break
-            current_v = self.map[current_v_id]
+            current_v = self.heightmap[current_v_id]
             current_neighbors = copy.copy(current_v.neighbors_list.values())
             self.closed.append(current_v_id)
             if current_v_id in self.open:
@@ -441,7 +455,7 @@ class PathPlanner:
             path_ids.insert(0, current_v.id)
             while not current_v == start_v:
                 predecessor_id = current_v.get_predecessor()
-                current_v = self.map[predecessor_id]
+                current_v = self.heightmap[predecessor_id]
                 path.insert(0, current_v)
                 path_ids.insert(0, predecessor_id)
             path_length = get_path_length(path)
@@ -465,7 +479,7 @@ class PathPlanner:
             p = Point(x, y, 0)
             i, j = self.get_nearest_vertice_id(p)
             new_p_id = (str(i), str(j))
-            new_p = self.map[new_p_id]
+            new_p = self.heightmap[new_p_id]
             if not new_p.obstacle and not new_p_id in self.closed_start_points:
                 self.closed_start_points.append(new_p_id)
                 p.set_z(new_p.z + 0.25)
@@ -499,7 +513,7 @@ class PathPlanner:
         for l in range(-2, 3):
             for k in range(-2, 3):
                 new_id = (str(i + l), str(j + k))
-                v = self.map[new_id]
+                v = self.heightmap[new_id]
                 new_vect = point.get_dir_vector_between_points(v)
                 angle_difference = fabs(robot_vect.get_angle_between_vectors(new_vect))
                 if angle_difference < const.ORIENT_BOUND and not v.obstacle:
@@ -509,7 +523,7 @@ class PathPlanner:
                         min_dist = dist
                         current_id = new_id
                 points.append(v)
-        current_p = self.map[current_id]
+        current_p = self.heightmap[current_id]
         print('Min dist: ' + str(min_dist) + ' | Angle difference: ' + str(min_angle))
         return current_id
 
@@ -534,12 +548,12 @@ class PathPlanner:
         max_curvature = 0
         path = []
         for v_id in path_ids:
-            v = self.map[v_id]
+            v = self.heightmap[v_id]
             path.append(v)
         for i in range(0, len(path_ids) - 2):
-            p1 = self.map[path_ids[i]]
-            p2 = self.map[path_ids[i + 1]]
-            p3 = self.map[path_ids[i + 2]]
+            p1 = self.heightmap[path_ids[i]]
+            p2 = self.heightmap[path_ids[i + 1]]
+            p3 = self.heightmap[path_ids[i + 2]]
             v1 = p1.get_dir_vector_between_points(p2)
             v2 = p2.get_dir_vector_between_points(p3)
             angle_difference = fabs(v1.get_angle_between_vectors(v2))
