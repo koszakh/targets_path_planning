@@ -1,4 +1,4 @@
-ROBOT_NAMES = ['p3at1', 'p3at2', 'p3at3']
+ROBOT_NAMES = ['p3at1']#, 'p3at2', 'p3at3']
 ROBOT_MODEL_PATH = "/root/catkin_ws/src/targets_path_planning/urdf/pioneer3at_"
 DIR_POINT_SUFFIX = '::dir_point'
 VERTICE_PATH = '/root/.gazebo/models/vertice/model.sdf'
