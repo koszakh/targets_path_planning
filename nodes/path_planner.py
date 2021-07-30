@@ -26,8 +26,8 @@ def group_path_planning():
     for name in gc_const.ROBOT_NAMES:
         robot_names.append(name)
         model_directory = gc_const.ROBOT_MODEL_PATH + name[len(name) - 1] + ".urdf"
-        robot_pos = map_handler.get_random_start_pos()
-        gc.spawn_urdf_model(name, model_directory, robot_pos)
+        robot_pos, orient = map_handler.get_random_start_pos()
+        gc.spawn_target(name, robot_pos, orient)
         robot_orient = gc.get_robot_orientation_vector(name)
         start_id, goal_id = map_handler.get_start_and_goal_id(robot_pos, robot_orient)
         print('\nPath planning for ' + name + ' has begun!')
