@@ -14,7 +14,7 @@
                        * http://en.wikipedia.org/wiki/List_of_moment_of_inertia_tensors  
                 -->
     <inertial>
-      <mass value="21.5"/>
+      <mass value="31"/>
       <!-- P3AT 18.6kg plus three batteries @ 2.4kg each  minus four wheels @ 1.4 kg ea and top plate @ 0.1 kg-->
       <origin xyz=" -0.1 0 0.177"/>
       <inertia ixx="0.3338" ixy="0.0" ixz="0.0" iyy="0.4783" iyz="0.0" izz="0.3338"/>
@@ -571,7 +571,7 @@
       <wheelDiameter>0.215</wheelDiameter>
       <robotBaseFrame>base_link</robotBaseFrame>
       <MaxForce>5.0</MaxForce>
-      <torque>200</torque>
+      <torque>400</torque>
       <commandTopic>cmd_vel</commandTopic>
       <odometryTopic>odom</odometryTopic>
       <odometryFrame>odom</odometryFrame>
