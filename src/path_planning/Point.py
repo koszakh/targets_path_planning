@@ -406,7 +406,7 @@ class Point:
 # Output
 # new_p: position of the desired point
     def get_point_at_distance_and_angle(self, p, distance):
-        delta_x = p.x - self.x
+	delta_x = p.x - self.x
         delta_y = p.y - self.y
         delta_z = p.z - self.z
         #print('self: ' + str(self) + ' - ' + str(self.id) + ' | p: ' + str(p) + ' - ' + str(p.id))
@@ -416,6 +416,25 @@ class Point:
         y = self.y + distance * v.y
         z = self.z + distance * v.z
         new_p = Point(x, y, z)
+        return new_p
+
+# Calculating the position of a point lying on a straight line between points at a certain distance in 2d environment
+# Input
+# p: second point of the straight line
+# distance: the distance from the new point to the first point forming a straight line
+
+# Output
+# new_p: position of the desired point
+    def get_point_at_distance_and_angle_2d(self, p, distance):
+	delta_x = p.x - self.x
+        delta_y = p.y - self.y
+        #print('self: ' + str(self) + ' - ' + str(self.id) + ' | p: ' + str(p) + ' - ' + str(p.id))
+        mod_v = sqrt(delta_x ** 2 + delta_y ** 2)
+        v = Point(delta_x / mod_v, delta_y / mod_v, 0)
+        x = self.x + distance * v.x
+        y = self.y + distance * v.y
+        z = self.z + distance * v.z
+        new_p = Point(x, y, self.z)
         return new_p
 
 # Convert an angle value from radians to degrees

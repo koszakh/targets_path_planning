@@ -10,6 +10,7 @@ import time
 import gazebo_communicator.GazeboCommunicator as gc
 import gazebo_communicator.GazeboConstants as gc_const
 import cv2
+from scipy.spatial.transform import Rotation
 
 # A class describing the heightmap cells formed by its vertices.
 # Objects of this class are used when planning collision-free trajectories
@@ -84,7 +85,6 @@ class PathPlanner:
             id_2 = (str(i), str(self.width - 1))
             id_3 = (str(0), str(i))
             id_4 = (str(self.height - 1), str(i))
-            #print(id_1, id_2, id_3, id_4)
             self.mark_as_obstacle(id_1)
             self.mark_as_obstacle(id_2)
             self.mark_as_obstacle(id_3)
@@ -105,8 +105,8 @@ class PathPlanner:
                         vertice.set_max_height_diff(max_height_diff)
                         vertice.set_local_roughness(local_roughness)
         print('Obstacle-vertices count: ' + str(len(self.obstacles)))
-        #for vertice_id in self.obstacles:
-            #self.calc_local_riskiness(vertice_id)
+        for vertice_id in self.obstacles:
+            self.calc_local_riskiness(vertice_id)
 
 # Marking a vertex as an obstacle
 # Input
@@ -251,9 +251,13 @@ class PathPlanner:
 
 # Output
 # surf_angle: angle of inclination of the surface between the vertices
-    def calc_surf_angle(self, v1_id, v2_id):
-        v1 = self.heightmap[v1_id]
-	v2 = self.heightmap[v2_id]
+    def calc_surf_angle(self, v1, v2):
+        if isinstance(v1, tuple):
+            v1_id = v1
+	    v1 = self.heightmap[v1_id]
+        if isinstance(v2, tuple):
+	    v2_id = v2
+	    v2 = self.heightmap[v2_id]
         z1 = v1.z
         z2 = v2.z
         cathet = z1 - z2
@@ -336,16 +340,22 @@ class PathPlanner:
         goal_v = self.heightmap[goal_id]
         start_v = self.heightmap[start_id]
         dist = goal_v.get_distance_to(start_v)
+        iter_count = 0
         while 1:
             goal_id = random.choice(list(self.heightmap.keys()))
             goal_v = self.heightmap[goal_id]
             dist = goal_v.get_distance_to(start_v)
             if not(start_v.obstacle or goal_v.obstacle or goal_id == start_id or dist > 5 or goal_id in self.closed_goals):
+                iter_count += 1
 	        path, path_ids, path_cost = self.find_path(start_id, goal_id, start_orient)
 		if path:
                     self.closed_goals.append(goal_id)
 		    break
+            if iter_count > 100:
+                goal_id = None
+                break
         return goal_id
+
 
     def get_goal_id(self, x, y, offset):
         p = Point(x, y, 0)
@@ -390,6 +400,55 @@ class PathPlanner:
                 if obst_count >= 2:
                     new_cell.obstacle = True
                 self.cells[p1_id] = new_cell
+
+# Finding the height value of an adjacent point on a height map
+# Input
+# x: point x-coordinate value 
+# y: point y-coordinate value
+
+# Output
+# z: calculated point z-coordinate value
+    def find_z(self, x, y):
+        p = Point(x, y, 0)
+        j = (x + (const.MAP_HEIGHT / 2)) // self.x_step
+        i = ((const.MAP_WIDTH / 2) - y) // self.y_step
+        cell_id = (str(int(i)), str(int(j)))
+        if cell_id in self.cells.keys():
+          n_cell = self.cells[cell_id]
+          edge = self.find_nearest_edge(p, n_cell)
+          p3 = self.heightmap[edge[0]]
+          p4 = self.heightmap[edge[1]]
+          new_p = n_cell.pos.find_intersection_of_lines(p, p3, p4)
+          z = n_cell.pos.find_z_coord(new_p, p.x, p.y)
+          return z
+        else:
+          print(p, cell_id)
+          print('Cell id doesnt exist!')
+          return None
+
+# Finding the edge closest to a point on a height map
+# Input
+# p3: initial point
+# cell: closest cell to the point
+
+# Output
+# current_edge: closest edge id
+    def find_nearest_edge(self, p3, cell):
+        current_edge = None
+        min_dist = float('inf')
+        for edge in cell.edges:
+            p1 = self.heightmap[edge[0]]
+            p2 = self.heightmap[edge[1]]
+            k = ((p2.y - p1.y) * (p3.x - p1.x) - (p2.x - p1.x) * (p3.y - p1.y)) / ((p2.y - p1.y) ** 2 + (p2.x - p1.x) ** 2)
+	    x4 = p3.x - k * (p2.y - p1.y)
+	    y4 = p3.y + k * (p2.x - p1.x)
+            z4 = p1.find_z_coord(p2, x4, y4)
+            p4 = Point(x4, y4, z4)
+            dist = p4.get_2d_distance(p3)
+            if dist < min_dist:
+                min_dist = dist
+                current_edge = edge
+        return current_edge
 
 # Finding the closest vertex of the heightmap to a given position
 # Choosing a random target vertex
@@ -476,15 +535,113 @@ class PathPlanner:
         while True:
             x = random.uniform(-const.MAP_HEIGHT / 2, const.MAP_HEIGHT / 2)
             y = random.uniform(-const.MAP_WIDTH / 2, const.MAP_WIDTH / 2)
-            p = Point(x, y, 0)
+            z = self.find_z(x, y)
+            p = Point(x, y, z)
             i, j = self.get_nearest_vertice_id(p)
             new_p_id = (str(i), str(j))
             new_p = self.heightmap[new_p_id]
             if not new_p.obstacle and not new_p_id in self.closed_start_points:
                 self.closed_start_points.append(new_p_id)
-                p.set_z(new_p.z + 0.25)
+		new_p.set_z(new_p.z + const.SPAWN_HEIGHT_OFFSET)
+		#z = self.get_spawn_height(new_p_id)
+                roll, pitch = self.get_start_orientation(new_p_id, p)
+		#p.set_z(new_z)
+                rot = Rotation.from_euler('xyz', [roll, pitch, 0], degrees=True)
+                quat = rot.as_quat()
+                print('Quaternion: ' + str(quat))
                 break
-        return p
+        return new_p, quat
+
+    def get_spawn_height(self, p_id):
+	p = self.heightmap[p_id]
+	neighbors = p.neighbors_list.values()
+	max_z = p.z
+	for v_id in neighbors:
+	    v = self.heightmap[v_id]
+	    if v.z > max_z:
+		max_z = v.z
+	return max_z
+
+    def get_start_orientation(self, v_id, p):
+        v = self.heightmap[v_id]
+        neighbors = v.neighbors_list.values()
+        min_col, max_col, min_row, max_row = self.get_min_max_indices(neighbors)
+        cols = [min_col, max_col]
+        rows = [min_row, max_row]
+        points = []
+	sum_z = 0
+        for col in cols:
+            for row in rows:
+                close_p_id = (str(col), str(row))
+                #close_p = self.heightmap[close_p_id]
+		#sum_z += close_p.z
+                points.append(close_p_id)
+        #avg_z = float(sum_z / len(points)) + const.SPAWN_HEIGHT_OFFSET
+        line_count = 0
+        sum_angle = 0
+        print('\nRolling')
+        for i in range(0, len(points) / 2):
+	    p1_id = points[i]
+	    p2_id = points[i + 2]
+            p1 = self.heightmap[p1_id]
+	    p2 = self.heightmap[p2_id]
+            new_p1 = v.get_point_at_distance_and_angle_2d(p1, const.ROBOT_RADIUS)
+            new_p1_z = self.find_z(new_p1.x, new_p1.y)
+	    new_p1.set_z(new_p1_z)
+	    new_p2 = v.get_point_at_distance_and_angle_2d(p2, const.ROBOT_RADIUS)
+            new_p2_z = self.find_z(new_p2.x, new_p2.y)
+	    new_p2.set_z(new_p2_z)
+	    #gc.spawn_sdf_model(new_p1, gc_const.GREEN_VERTICE_PATH, 'p' + str(new_p1))
+            #gc.spawn_sdf_model(new_p2, gc_const.GREEN_VERTICE_PATH, 'p' + str(new_p2))
+            angle = self.calc_surf_angle(new_p1, new_p2)
+            print('angle: ' + str(angle))
+            sum_angle += angle
+            line_count += 1
+        print('sum_angle: ' + str(sum_angle))
+        roll = float(sum_angle / line_count)
+        print('roll: ' + str(roll))
+        line_count = 0
+        sum_angle = 0
+        print('\nPitching')
+        for i in range(0, len(points), 2):
+	    p1_id = points[i]
+	    p2_id = points[i + 1]
+            p1 = self.heightmap[p1_id]
+	    p2 = self.heightmap[p2_id]
+            new_p1 = v.get_point_at_distance_and_angle_2d(p1, const.ROBOT_RADIUS)
+            new_p1_z = self.find_z(new_p1.x, new_p1.y)
+	    new_p1.set_z(new_p1_z)
+	    new_p2 = v.get_point_at_distance_and_angle_2d(p2, const.ROBOT_RADIUS)
+            new_p2_z = self.find_z(new_p2.x, new_p2.y)
+	    new_p2.set_z(new_p2_z)
+            angle = self.calc_surf_angle(new_p1, new_p2)
+            print('angle: ' + str(angle))
+            sum_angle += angle
+            line_count += 1
+        print('sum_angle: ' + str(sum_angle))
+        pitch = float(sum_angle / line_count)
+        print('pitch: ' + str(pitch))
+
+        return roll, pitch
+
+    def get_min_max_indices(self, id_list):
+        min_col = float('inf')
+        max_col = 0
+        min_row = float('inf')
+        max_row = 0
+        for v_id in id_list:
+            col = int(v_id[0])
+            row = int(v_id[1])
+            if col < min_col:
+                min_col = col
+            elif col > max_col:
+                max_col = col
+            if row < min_row:
+                min_row = row
+            elif row > max_row:
+                max_row = row
+        return min_col, max_col, min_row, max_row
+
 
     def get_nearest_vertice_id(self, point):
         x = point.x
@@ -497,7 +654,8 @@ class PathPlanner:
             j += 1
         if i_mod > self.y_step / 2:
             i += 1
-        return i, j
+        p_id = (str(i), str(j))
+        return p_id
 
 # Finding the closest vertice of the heightmap to a given point
 # Input
@@ -506,7 +664,9 @@ class PathPlanner:
 # Output
 # selected_key: closest vertex key
     def get_start_vertice_id(self, point, robot_vect):
-        i, j = self.get_nearest_vertice_id(point)
+        p_id = self.get_nearest_vertice_id(point)
+        i = int(p_id[0])
+        j = int(p_id[1])
         min_dist = float('inf')
         min_angle = 360
         points = []
