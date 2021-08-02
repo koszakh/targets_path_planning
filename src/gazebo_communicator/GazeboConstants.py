@@ -1,4 +1,3 @@
-ROBOT_NAMES = ['p3at1']#, 'p3at2', 'p3at3']
 ROBOT_MODEL_PATH = "/root/catkin_ws/src/targets_path_planning/urdf/pioneer3at_"
 DIR_POINT_SUFFIX = '::dir_point'
 VERTICE_PATH = '/root/.gazebo/models/vertice/model.sdf'
@@ -17,15 +16,14 @@ KI = 0.0375#0.025#0.1
 KD = 0.005#0.015#0.005
 I_MIN = -5
 I_MAX = 5
+SPAWN_SEC_DELAY = 0
+SPAWN_NSEC_DELAY = 500000000
+SPAWN_GRAVITY = -3
+REAL_GRAVITY = -9.8
 
 ORCA_TIME_STEP = 0.2
 ORCA_NEIGHBOR_DIST = 1
 ORCA_MAX_NEIGHBORS = len(ROBOT_NAMES)
 ORCA_TIME_HORIZON = 1
 ORCA_TIME_HORIZON_OBST = 0.4
-ORCA_RADIUS = 0.5#1.93
-
-orca_3d_file_path = "/root/catkin_ws/src/targets_path_planning/nodes/test/orca_3d_data1.py"
-orca_file_path = "/root/catkin_ws/src/targets_path_planning/nodes/test/orca_data1.py"
-orca_3d_movement_path = "/root/catkin_ws/src/targets_path_planning/logs/orca_3d_movement_data1.txt"
-orca_movement_path = "/root/catkin_ws/src/targets_path_planning/logs/orca_movement_data1.txt"
+ORCA_RADIUS = 0.5#1.93 
