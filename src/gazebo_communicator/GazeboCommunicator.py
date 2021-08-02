@@ -357,10 +357,11 @@ def spawn_sdf_model(state, model_directory, model_name):
 def spawn_target(model_name, state, orient):
 	target_id = model_name[len(model_name) - 1]
 	model_directory = const.ROBOT_MODEL_PATH + target_id + '.urdf'
-	set_physics_properties(0, 0, -4)
+	set_physics_properties(0, 0, const.SPAWN_GRAVITY)
 	spawn_urdf_model(model_name, model_directory, state, orient)
-	time.sleep(0.3)
-	set_physics_properties(0, 0, -9.8)
+	d = rospy.Duration(const.SPAWN_SEC_DELAY, const.SPAWN_NSEC_DELAY)
+	rospy.sleep(d)
+	set_physics_properties(0, 0, const.REAL_GRAVITY)
 
 def spawn_urdf_model(model_name, model_directory, state, orient):
     x = orient[0]
