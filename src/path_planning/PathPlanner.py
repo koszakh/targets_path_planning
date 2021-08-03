@@ -371,6 +371,21 @@ class PathPlanner:
                 break
         return goal_v
 
+    def get_start_id(self, x, y, offset):
+        p = Point(x, y, 0)
+        p_id = self.get_nearest_vertice_id(p)
+        i = int(p_id[0])
+        j = int(p_id[1])
+	while True:
+            l = random.randint(i - offset, i + offset + 1)
+            k = random.randint(j - offset, j + offset + 1)
+            start_id = (str(l), str(k))
+            start_v = self.heightmap[start_id]
+            if not (start_v.obstacle or start_id in self.closed_start_points):
+                break
+        return start_id
+
+
 # Creating Cell class objects and marking impassable cells
     def cell_maker(self):
         self.cells = {}
