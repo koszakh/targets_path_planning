@@ -38,8 +38,6 @@ def paths_callback(msg_data):
         name = path_msg.robot_name
         robot = gc.Robot(path_msg.robot_name)
         robot.waypoints_publisher(final_path)
-        path = deleting_intermediate_points(final_path, 5)
-        gc.visualise_path(path, const.PATH_COLORS[len(robots)], name + '_v_')
         robots.append(robot)	
     sleep(1)
     print('Robot movement has begun!')
