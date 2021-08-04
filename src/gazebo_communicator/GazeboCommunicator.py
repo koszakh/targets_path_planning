@@ -348,15 +348,17 @@ def spawn_sdf_model(state, model_directory, model_name):
     try:
         f = open(model_directory)
         point_xml = f.read()
-        pose = make_pose_msg(state, None)
+	f.close()
+	pose = make_pose_msg(state, None)
         spawn_model = rospy.ServiceProxy('/gazebo/spawn_sdf_model', SpawnModel)
         resp = spawn_model(model_name, point_xml, '', pose, 'world')
     except rospy.ServiceException, e:
         print "Service call failed: %s" % e
 
 def spawn_target(model_name, state, orient):
-	target_id = model_name[len(model_name) - 1]
+	target_id = model_name[4:]
 	model_directory = const.ROBOT_MODEL_PATH + target_id + '.urdf'
+	state.set_z(float(state.z + const.SPAWN_HEIGHT_OFFSET))
 	set_physics_properties(0, 0, const.SPAWN_GRAVITY)
 	spawn_urdf_model(model_name, model_directory, state, orient)
 	d = rospy.Duration(const.SPAWN_SEC_DELAY, const.SPAWN_NSEC_DELAY)
