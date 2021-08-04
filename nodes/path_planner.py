@@ -14,9 +14,9 @@ from path_planning.ORCA import ORCAsolver
 
 def group_path_planning():
     paths_pub = rospy.Publisher('all_paths_data', AllPaths, queue_size=10)
-    hm = Heightmap()
-    hmap, height, width, x_step, y_step, grid_step = hm.prepare_heightmap()
-    map_handler = pp.PathPlanner(hmap, height, width, grid_step, x_step, y_step)
+    hm = Heightmap(const.HEIGHTMAP_PATH, const.HEIGHTMAP_SDF_PATH)
+    hmap, length, width, l_scale, w_scale, x_step, y_step, grid_step = hm.prepare_heightmap()
+    map_handler = pp.PathPlanner(hmap, length, width, l_scale, w_scale, grid_step, x_step, y_step)
     map_handler.cell_maker()
     cells = map_handler.cells
     map_handler.gridmap_preparing()
