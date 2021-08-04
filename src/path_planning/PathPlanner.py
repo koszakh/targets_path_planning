@@ -48,11 +48,13 @@ class Cell:
 # closed_goals: list of keys of occupied goal vertices
 
 class PathPlanner:
-    def __init__(self, heightmap, height, width, grid_range, x_step, y_step):
+    def __init__(self, heightmap, length, width, l_scale, w_scale, grid_range, x_step, y_step):
         self.heightmap = heightmap
         self.obstacles = []
-        self.height = height
+        self.length = length
         self.width = width
+	self.l_scale = l_scale
+	self.w_scale = w_scale
 	self.grid_range = int(grid_range)
         self.x_step = x_step
         self.y_step = y_step
@@ -61,7 +63,7 @@ class PathPlanner:
         self.closed = []
         self.closed_goals = []
         self.closed_start_points = []
-	print('height: ' + str(self.height))
+	print('length: ' + str(self.length))
 	print('width: ' + str(self.width))
 	print('grid_range: ' + str(self.grid_range))
 
@@ -75,16 +77,16 @@ class PathPlanner:
                     n_id = v.neighbors_list[n_key]
                     num1 = int(n_id[0])
                     num2 = int(n_id[1])
-                    if num1 < 0 or num2 < 0 or num1 >= self.height or num2 >= self.width:
+                    if num1 < 0 or num2 < 0 or num1 >= self.length or num2 >= self.width:
                         v.neighbors_list.pop(n_key)
 
 # Marking the vertices lying on the border of the height map as obstacles
     def boundary_cells_marking(self):
-        for i in range(self.height - 1):
+        for i in range(self.length - 1):
             id_1 = (str(i), str(0))
             id_2 = (str(i), str(self.width - 1))
             id_3 = (str(0), str(i))
-            id_4 = (str(self.height - 1), str(i))
+            id_4 = (str(self.length - 1), str(i))
             self.mark_as_obstacle(id_1)
             self.mark_as_obstacle(id_2)
             self.mark_as_obstacle(id_3)
@@ -172,8 +174,8 @@ class PathPlanner:
         max_row = row + self.grid_range + 1
         if min_col < 0:
             min_col = 0
-        if max_col > self.height:
-            max_col = self.height
+        if max_col > self.length:
+            max_col = self.length
         if min_row < 0:
             min_row = 0
         if max_row > self.width:
@@ -328,68 +330,12 @@ class PathPlanner:
             self.open.remove(closest_id)
         return closest_id
 
-# Finding a random target vertex for path planning
-# Input
-# start_id: starting vertex key
-# start_orient: the vector of the initial orientation of the robot
-
-# Output
-# goal_id: target vertex key
-    def get_random_goal_id(self, start_id, start_orient):
-        goal_id = random.choice(list(self.heightmap.keys()))
-        goal_v = self.heightmap[goal_id]
-        start_v = self.heightmap[start_id]
-        dist = goal_v.get_distance_to(start_v)
-        iter_count = 0
-        while 1:
-            goal_id = random.choice(list(self.heightmap.keys()))
-            goal_v = self.heightmap[goal_id]
-            dist = goal_v.get_distance_to(start_v)
-            if not(start_v.obstacle or goal_v.obstacle or goal_id == start_id or dist > 5 or goal_id in self.closed_goals):
-                iter_count += 1
-	        path, path_ids, path_cost = self.find_path(start_id, goal_id, start_orient)
-		if path:
-                    self.closed_goals.append(goal_id)
-		    break
-            if iter_count > 100:
-                goal_id = None
-                break
-        return goal_id
-
-
-    def get_goal_id(self, x, y, offset):
-        p = Point(x, y, 0)
-        p_id = self.get_nearest_vertice_id(p)
-        i = int(p_id[0])
-        j = int(p_id[1])
-	while True:
-            l = random.randint(i - offset, i + offset + 1)
-            k = random.randint(j - offset, j + offset + 1)
-            goal_id = (str(l), str(k))
-            goal_v = self.heightmap[goal_id]
-            if not (goal_v.obstacle or goal_id == p_id or goal_id in self.closed_goals):
-                break
-        return goal_v
-
-    def get_start_id(self, x, y, offset):
-        p = Point(x, y, 0)
-        p_id = self.get_nearest_vertice_id(p)
-        i = int(p_id[0])
-        j = int(p_id[1])
-	while True:
-            l = random.randint(i - offset, i + offset + 1)
-            k = random.randint(j - offset, j + offset + 1)
-            start_id = (str(l), str(k))
-            start_v = self.heightmap[start_id]
-            if not (start_v.obstacle or start_id in self.closed_start_points):
-                break
-        return start_id
 
 
 # Creating Cell class objects and marking impassable cells
     def cell_maker(self):
         self.cells = {}
-        for i in range(self.height - 2):
+        for i in range(self.length - 2):
             for j in range(self.width - 2):
                 p1_id = (str(i), str(j))
                 p2_id = (str(i), str(j + 1))
@@ -425,8 +371,8 @@ class PathPlanner:
 # z: calculated point z-coordinate value
     def find_z(self, x, y):
         p = Point(x, y, 0)
-        j = (x + (const.MAP_HEIGHT / 2)) // self.x_step
-        i = ((const.MAP_WIDTH / 2) - y) // self.y_step
+        j = (x + (self.l_scale / 2)) // self.x_step
+        i = ((self.w_scale / 2) - y) // self.y_step
         cell_id = (str(int(i)), str(int(j)))
         if cell_id in self.cells.keys():
           n_cell = self.cells[cell_id]
@@ -548,8 +494,8 @@ class PathPlanner:
 
     def get_random_start_pos(self):
         while True:
-            x = random.uniform(-const.MAP_HEIGHT / 2, const.MAP_HEIGHT / 2)
-            y = random.uniform(-const.MAP_WIDTH / 2, const.MAP_WIDTH / 2)
+            x = random.uniform(-self.l_scale / 2, self.l_scale / 2)
+            y = random.uniform(-self.w_scale / 2, self.w_scale / 2)
             z = self.find_z(x, y)
             p = Point(x, y, z)
             i, j = self.get_nearest_vertice_id(p)
@@ -557,7 +503,6 @@ class PathPlanner:
             new_p = self.heightmap[new_p_id]
             if not new_p.obstacle and not new_p_id in self.closed_start_points:
                 self.closed_start_points.append(new_p_id)
-		new_p.set_z(new_p.z + const.SPAWN_HEIGHT_OFFSET)
 		#z = self.get_spawn_height(new_p_id)
                 roll, pitch = self.get_start_orientation(new_p_id, p)
 		#p.set_z(new_z)
@@ -606,8 +551,8 @@ class PathPlanner:
 	    new_p2 = v.get_point_at_distance_and_angle_2d(p2, const.ROBOT_RADIUS)
             new_p2_z = self.find_z(new_p2.x, new_p2.y)
 	    new_p2.set_z(new_p2_z)
-	    #gc.spawn_sdf_model(new_p1, gc_const.GREEN_VERTICE_PATH, 'p' + str(new_p1))
-            #gc.spawn_sdf_model(new_p2, gc_const.GREEN_VERTICE_PATH, 'p' + str(new_p2))
+	    gc.spawn_sdf_model(new_p1, gc_const.GREEN_VERTICE_PATH, 'p' + str(new_p1))
+            gc.spawn_sdf_model(new_p2, gc_const.GREEN_VERTICE_PATH, 'p' + str(new_p2))
             angle = self.calc_surf_angle(new_p1, new_p2)
             print('angle: ' + str(angle))
             sum_angle += angle
@@ -661,10 +606,10 @@ class PathPlanner:
     def get_nearest_vertice_id(self, point):
         x = point.x
         y = point.y
-        j = int((x + (const.MAP_HEIGHT / 2)) // self.x_step)
-        i = int(((const.MAP_WIDTH / 2) - y) // self.y_step)
-        j_mod = (x + (const.MAP_HEIGHT / 2)) % self.x_step
-        i_mod = ((const.MAP_WIDTH / 2) - y) % self.y_step
+        j = int((x + (self.l_scale / 2)) // self.x_step)
+        i = int(((self.w_scale / 2) - y) // self.y_step)
+        j_mod = (x + (self.l_scale / 2)) % self.x_step
+        i_mod = ((self.w_scale / 2) - y) % self.y_step
         if j_mod > self.x_step / 2:
             j += 1
         if i_mod > self.y_step / 2:
@@ -701,6 +646,63 @@ class PathPlanner:
         current_p = self.heightmap[current_id]
         print('Min dist: ' + str(min_dist) + ' | Angle difference: ' + str(min_angle))
         return current_id
+
+# Finding a random target vertex for path planning
+# Input
+# start_id: starting vertex key
+# start_orient: the vector of the initial orientation of the robot
+
+# Output
+# goal_id: target vertex key
+    def get_random_goal_id(self, start_id, start_orient):
+        goal_id = random.choice(list(self.heightmap.keys()))
+        goal_v = self.heightmap[goal_id]
+        start_v = self.heightmap[start_id]
+        dist = goal_v.get_distance_to(start_v)
+        iter_count = 0
+        while 1:
+            goal_id = random.choice(list(self.heightmap.keys()))
+            goal_v = self.heightmap[goal_id]
+            dist = goal_v.get_distance_to(start_v)
+            if not(start_v.obstacle or goal_v.obstacle or goal_id == start_id or dist > 5 or goal_id in self.closed_goals):
+                iter_count += 1
+	        path, path_ids, path_cost = self.find_path(start_id, goal_id, start_orient)
+		if path:
+                    self.closed_goals.append(goal_id)
+		    break
+            if iter_count > 100:
+                goal_id = None
+                break
+        return goal_id
+
+
+    def get_goal_id(self, x, y, offset):
+        p = Point(x, y, 0)
+        p_id = self.get_nearest_vertice_id(p)
+        i = int(p_id[0])
+        j = int(p_id[1])
+	while True:
+            l = random.randint(i - offset, i + offset + 1)
+            k = random.randint(j - offset, j + offset + 1)
+            goal_id = (str(l), str(k))
+            goal_v = self.heightmap[goal_id]
+            if not (goal_v.obstacle or goal_id in self.closed_goals):
+                break
+        return goal_id
+
+    def get_start_id(self, x, y, offset):
+        p = Point(x, y, 0)
+        p_id = self.get_nearest_vertice_id(p)
+        i = int(p_id[0])
+        j = int(p_id[1])
+	while True:
+            l = random.randint(i - offset, i + offset + 1)
+            k = random.randint(j - offset, j + offset + 1)
+            start_id = (str(l), str(k))
+            start_v = self.heightmap[start_id]
+            if not (start_v.obstacle or start_id in self.closed_start_points):
+                break
+        return start_id
 
 # Analysis of the heightmap, search for obstacles on it and outlining heightmap boundaries
     def gridmap_preparing(self):

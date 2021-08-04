@@ -1,4 +1,5 @@
 HEIGHTMAP_PATH = "/root/.gazebo/models/heightmap/materials/textures/hmap4.png"
+HEIGHTMAP_SDF_PATH = "/root/.gazebo/models/heightmap/model.sdf"
 HIGH_BOUND_HEIGHT_DIFF = 0.24#1
 MAX_ROUGHNESS = 24#55
 ROUGHNESS_COEF = 0.5
@@ -10,9 +11,5 @@ CURVE_AVG_STEP = 0.05
 CURVATURE_THRESHOLD = 30
 DIST_FROM_PATH = 0.5
 MAX_ITERATIONS_COUNT = 5
-MAP_WIDTH = float(128)
-MAP_HEIGHT = float(128)
-MAX_ELEVATION = float(20)
-MAP_SCALE = float(255 / MAX_ELEVATION)
+MAP_WORDS = ['<collision', '<heightmap', '<size']
 ORIENT_BOUND = 47
-SPAWN_HEIGHT_OFFSET = 0.06
