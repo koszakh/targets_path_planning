@@ -14,7 +14,7 @@
                        * http://en.wikipedia.org/wiki/List_of_moment_of_inertia_tensors  
                 -->
     <inertial>
-      <mass value="31"/>
+      <mass value="26.5"/>
       <!-- P3AT 18.6kg plus three batteries @ 2.4kg each  minus four wheels @ 1.4 kg ea and top plate @ 0.1 kg-->
       <origin xyz=" -0.1 0 0.177"/>
       <inertia ixx="0.3338" ixy="0.0" ixz="0.0" iyy="0.4783" iyz="0.0" izz="0.3338"/>
@@ -35,6 +35,24 @@
       </geometry>
     </collision>
   </link>
+  <link name="hardener">
+    <inertial>
+      <mass value="2"/>
+      <origin xyz="0 0 0"/>
+      <inertia ixx="0.3338" ixy="0.0" ixz="0.0" iyy="0.4783" iyz="0.0" izz="0.3338"/>
+    </inertial>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <box size="0.05 0.05 0.01"/>
+      </geometry>
+    </collision>
+  </link>
+  <joint name="hardener_joint" type="fixed">
+    <origin rpy="0 0 0" xyz="0.16 0 0.074"/>
+    <parent link="base_link"/>
+    <child link="hardener"/>
+  </joint>
   <gazebo reference="base_link">
     <material value="Gazebo/Red"/>
   </gazebo>
@@ -304,7 +322,7 @@
     <!-- fdir1 0 1 0 /fdir1 -->
     <!-- see http://github.com/MobileRobots/amr-ros-config/issues/6 -->
     <maxVel>1.0</maxVel>
-    <minDepth>0.00</minDepth>
+    <minDepth>0.01</minDepth>
     <material value="Gazebo/Black"/>
   </gazebo>
   <gazebo reference="p3at_front_left_wheel">
@@ -321,7 +339,7 @@
     <!-- fdir1 0 1 0 /fdir1 -->
     <!-- see http://github.com/MobileRobots/amr-ros-config/issues/6 -->
     <maxVel>1.0</maxVel>
-    <minDepth>0.00</minDepth>
+    <minDepth>0.01</minDepth>
     <material value="Gazebo/Black"/>
   </gazebo>
   <!-- Front Axles + Wheels + Hubcaps -->
@@ -516,7 +534,7 @@
     <!-- fdir1 0 1 0 /fdir1 -->
     <!-- see http://github.com/MobileRobots/amr-ros-config/issues/6 -->
     <maxVel>1.0</maxVel>
-    <minDepth>0.00</minDepth>
+    <minDepth>0.01</minDepth>
     <material value="Gazebo/Black"/>
   </gazebo>
   <gazebo reference="p3at_front_right_wheel">
@@ -533,7 +551,7 @@
     <!-- fdir1 0 1 0 /fdir1 -->
     <!-- see http://github.com/MobileRobots/amr-ros-config/issues/6 -->
     <maxVel>1.0</maxVel>
-    <minDepth>0.00</minDepth>
+    <minDepth>0.01</minDepth>
     <material value="Gazebo/Black"/>
   </gazebo>
   <link name="dir_point">
@@ -571,7 +589,7 @@
       <wheelDiameter>0.215</wheelDiameter>
       <robotBaseFrame>base_link</robotBaseFrame>
       <MaxForce>5.0</MaxForce>
-      <torque>400</torque>
+      <torque>300</torque>
       <commandTopic>cmd_vel</commandTopic>
       <odometryTopic>odom</odometryTopic>
       <odometryFrame>odom</odometryFrame>
