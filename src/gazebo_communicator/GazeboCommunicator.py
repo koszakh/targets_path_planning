@@ -38,9 +38,10 @@ class Robot(thr.Thread):
 		self.waypoint_sub = rospy.Subscriber(subtopic_name + '/waypoint', Point, self.waypoint_callback)
 		self.waypoints_pub = rospy.Publisher(subtopic_name + '/waypoints_array', Path, queue_size=10)
 		self.waypoints_sub = rospy.Subscriber(subtopic_name + '/waypoints_array', Path, self.set_path)
+		self.pid_delay = rospy.Duration(0, const.PID_NSEC_DELAY)
 		msg = Twist()
 		self.vel_publisher.publish(msg)
-		time.sleep(0.5)
+		rospy.sleep(self.pid_delay)
 		self.name = robot_name
 		self.dir_point = robot_name + const.DIR_POINT_SUFFIX
 		self.path = []
@@ -81,27 +82,30 @@ class Robot(thr.Thread):
 # Input
 # goal: target point
 	def move_with_PID(self, goal):
+		#print(self.name + ' moving to the ' + str(goal) + ' point.')
 		self.turn_to_point(goal)
 		old_error = 0
 		error_sum = 0
 		real_error_sum = 0
 		robot_pos = self.get_robot_position()
 		while robot_pos.get_distance_to(goal) > const.DISTANCE_ERROR:
-		    robot_pos = self.get_robot_position()
-		    error = self.get_angle_difference(goal)
-		    error_sum += error
-		    real_error_sum += fabs(error)
-		    if error_sum < const.I_MIN:
-		        error_sum = const.I_MIN
-		    elif error_sum > const.I_MAX:
-		        error_sum = const.I_MAX
-		    up = const.KP * error
-		    ui = const.KI * error_sum
-		    ud = const.KD * (error - old_error)
-		    old_error = error
-		    u = up + ui + ud
-		    self.movement(const.MOVEMENT_SPEED, u)
-		    time.sleep(const.PID_DELAY)
+			robot_pos = self.get_robot_position()
+			error = self.get_angle_difference(goal)
+			error_sum += error
+			real_error_sum += fabs(error)
+			if error_sum < const.I_MIN:
+				error_sum = const.I_MIN
+			elif error_sum > const.I_MAX:
+				error_sum = const.I_MAX
+			up = const.KP * error
+			ui = const.KI * error_sum
+			ud = const.KD * (error - old_error)
+			old_error = error
+			u = up + ui + ud
+			#print(self.name + ' error: ' + str(error) + ' | u: ' + str(u))
+			self.movement(const.MOVEMENT_SPEED, u)
+			rospy.sleep(self.pid_delay)
+		self.stop()
 
 
 # Rotate the robot towards a point
@@ -110,12 +114,12 @@ class Robot(thr.Thread):
 	def turn_to_point(self, goal):
 		angle_difference = self.get_angle_difference(goal)
 		while fabs(angle_difference) > const.ANGLE_ERROR:
-		    angle_difference = self.get_angle_difference(goal)
-		    #print(str(self.name) + ' angle difference: ' + str(angle_difference))
-		    if angle_difference > 0:
-		        self.movement(0, const.ROTATION_SPEED)
-		    else:
-		        self.movement(0, -const.ROTATION_SPEED)
+			angle_difference = self.get_angle_difference(goal)
+			#print(str(self.name) + ' angle difference: ' + str(angle_difference))
+			if angle_difference > 0:
+				self.movement(0, const.ROTATION_SPEED)
+			else:
+				self.movement(0, -const.ROTATION_SPEED)
 		self.stop()
 
 # Stopping the robot
@@ -152,9 +156,9 @@ class Robot(thr.Thread):
 # path: list of path points
 	def set_path(self, msg_data):
 		path = convert_to_path(msg_data.path)
+		self.path = path
 		print(self.name + ' path vertices count: ' + str(len(path)))
 		print(self.name + ' path curvature: ' + str(get_path_curvature(path)))
-		self.path = path
 
 # The movement of the robot along a given final route
 # Start of thread
@@ -163,9 +167,9 @@ class Robot(thr.Thread):
 		if len(self.path) > 0:
 			for state in self.path:
 				dist = state.get_distance_to(self.get_robot_position())
-				if dist > const.DISTANCE_ERROR:
+				if dist > const.DISTANCE_ERROR * 2:
 					self.move_with_PID(state)
-			self.stop()
+			#self.stop()
 			print('The robot ' + str(self.name) + ' has finished!')
 		else:
 			print('Path is empty!')
@@ -176,17 +180,17 @@ class Robot(thr.Thread):
 # orient: orientation of an object in 3D space
 
 # Output
-# msg: Pose type ROS message       
+# msg: Pose type ROS message 
 def make_pose_msg(state, orient):
-    msg = Pose()
-    msg.position.x = state.x
-    msg.position.y = state.y
-    msg.position.z = state.z
-    if orient:
-        msg.orientation.x = orient[0]
-        msg.orientation.y = orient[1]
-        msg.orientation.z = orient[2]
-    return msg
+	msg = Pose()
+	msg.position.x = state.x
+	msg.position.y = state.y
+	msg.position.z = state.z
+	if orient:
+		msg.orientation.x = orient[0]
+		msg.orientation.y = orient[1]
+		msg.orientation.z = orient[2]
+	return msg
 
 # Visualization of the route in the Gazebo environment
 # Input
@@ -194,15 +198,15 @@ def make_pose_msg(state, orient):
 # model_directory: the location on the device of the folder with the object model used when rendering the path
 # obj_name: the name used when rendering the waypoint
 def visualise_path(path, model_directory, obj_name):
-    if path:
-        i = 0
-        for state in path:
-            i += 1
-            if state.id:
-                vertice_name = obj_name + str(i) + '_' + str(state.id)
-            else:
-                vertice_name = obj_name + str(i)
-            spawn_sdf_model(state, model_directory, vertice_name)
+	if path:
+		i = 0
+		for state in path:
+			i += 1
+			if state.id:
+				vertice_name = obj_name + str(i) + '_' + str(state.id)
+			else:
+				vertice_name = obj_name + str(i)
+			spawn_sdf_model(state, model_directory, vertice_name)
 
 # Getting data about a property of the world in the Gazebo environment
 
@@ -214,14 +218,14 @@ def visualise_path(path, model_directory, obj_name):
 #  bool success
 #  string status_message
 def get_world_properties():
-    rospy.wait_for_service('/gazebo/get_world_properties/')
-    try:
-        get_world_prop = rospy.ServiceProxy('/gazebo/get_world_properties', GetWorldProperties)
-        world_properties = get_world_prop()
-        return world_properties
-    except:
-        print "Service call failed: %s" % e
-        return None
+	rospy.wait_for_service('/gazebo/get_world_properties/')
+	try:
+		get_world_prop = rospy.ServiceProxy('/gazebo/get_world_properties', GetWorldProperties)
+		world_properties = get_world_prop()
+		return world_properties
+	except:
+		print "Service call failed: %s" % e
+		return None
 
 def set_physics_properties(x, y, z):
 	set_gravity = rospy.ServiceProxy('/gazebo/set_physics_properties', SetPhysicsProperties)
@@ -262,14 +266,14 @@ def set_physics_properties(x, y, z):
 #  bool success
 #  string status_message
 def get_model_properties(model_name):
-    rospy.wait_for_service('/gazebo/get_model_properties/')
-    try:
-        get_model_prop = rospy.ServiceProxy('/gazebo/get_model_properties', GetModelProperties)
-        model_properties = get_model_prop(model_name)
-        return model_properties
-    except rospy.ServiceException, e:
-        print "Service call failed: %s" % e
-        return None
+	rospy.wait_for_service('/gazebo/get_model_properties/')
+	try:
+		get_model_prop = rospy.ServiceProxy('/gazebo/get_model_properties', GetModelProperties)
+		model_properties = get_model_prop(model_name)
+		return model_properties
+	except rospy.ServiceException, e:
+		print "Service call failed: %s" % e
+		return None
 
 # Getting the position of an object in the Gazebo environment
 # Input
@@ -278,15 +282,15 @@ def get_model_properties(model_name):
 # Output
 # pose: position of an object in 3D space
 def get_model_position(model_name):
-    object_state = get_model_state(model_name)
-    if object_state:
-        x = object_state.pose.position.x
-        y = object_state.pose.position.y
-        z = object_state.pose.position.z
-        pose = PointGeom.Point(x, y, z)
-        return pose
-    else:
-        return None
+	object_state = get_model_state(model_name)
+	if object_state:
+		x = object_state.pose.position.x
+		y = object_state.pose.position.y
+		z = object_state.pose.position.z
+		pose = PointGeom.Point(x, y, z)
+		return pose
+	else:
+		return None
 
 # Getting the position of a link in the Gazebo environment
 # Input
@@ -298,25 +302,25 @@ def get_model_position(model_name):
 #  bool success
 #  string status_message 
 def get_link_position(link_name):
-    rospy.wait_for_service('/gazebo/get_link_state')
-    try:
-        get_link_state = rospy.ServiceProxy('/gazebo/get_link_state', GetLinkState)
-        link_state = get_link_state(link_name, 'world')
-        pos = link_state.link_state.pose.position
-        x = pos.x
-        y = pos.y
-        z = pos.z
-        state = PointGeom.Point(x, y, z)
-        return state
-    except rospy.ServiceException, e:
-        print "Service call failed: %s" % e
-        return None
+	rospy.wait_for_service('/gazebo/get_link_state')
+	try:
+		get_link_state = rospy.ServiceProxy('/gazebo/get_link_state', GetLinkState)
+		link_state = get_link_state(link_name, 'world')
+		pos = link_state.link_state.pose.position
+		x = pos.x
+		y = pos.y
+		z = pos.z
+		state = PointGeom.Point(x, y, z)
+		return state
+	except rospy.ServiceException, e:
+		print "Service call failed: %s" % e
+		return None
 
 def get_robot_orientation_vector(robot_name):
-        robot_pos = get_model_position(robot_name)
-        dir_point_pos = get_link_position(robot_name + const.DIR_POINT_SUFFIX)
-        dir_vector = robot_pos.get_dir_vector_between_points(dir_point_pos)
-        return dir_vector
+		robot_pos = get_model_position(robot_name)
+		dir_point_pos = get_link_position(robot_name + const.DIR_POINT_SUFFIX)
+		dir_vector = robot_pos.get_dir_vector_between_points(dir_point_pos)
+		return dir_vector
 
 # Getting the state of a model in the Gazebo environment (including model orientation)
 # Input
@@ -329,14 +333,14 @@ def get_robot_orientation_vector(robot_name):
 #  bool success
 #  string status_message
 def get_model_state(model_name):
-    rospy.wait_for_service('/gazebo/get_model_state')
-    try:
-        get_state = rospy.ServiceProxy('/gazebo/get_model_state', GetModelState)
-        model_coordinates = get_state(model_name, 'world')
-        return model_coordinates
-    except rospy.ServiceException, e:
-        print "Service call failed: %s" % e
-        return None
+	rospy.wait_for_service('/gazebo/get_model_state')
+	try:
+		get_state = rospy.ServiceProxy('/gazebo/get_model_state', GetModelState)
+		model_coordinates = get_state(model_name, 'world')
+		return model_coordinates
+	except rospy.ServiceException, e:
+		print "Service call failed: %s" % e
+		return None
 
 # Generation of the object described in the .sdf file in Gazebo the environment
 # Input
@@ -344,60 +348,56 @@ def get_model_state(model_name):
 # model_directory: path to the folder where the model is stored
 # state: the position at which the object will be spawned
 def spawn_sdf_model(state, model_directory, model_name):
-    rospy.wait_for_service('/gazebo/spawn_sdf_model')
-    try:
-        f = open(model_directory)
-        point_xml = f.read()
-	f.close()
-	pose = make_pose_msg(state, None)
-        spawn_model = rospy.ServiceProxy('/gazebo/spawn_sdf_model', SpawnModel)
-        resp = spawn_model(model_name, point_xml, '', pose, 'world')
-    except rospy.ServiceException, e:
-        print "Service call failed: %s" % e
+	rospy.wait_for_service('/gazebo/spawn_sdf_model')
+	try:
+		f = open(model_directory)
+		point_xml = f.read()
+		f.close()
+		pose = make_pose_msg(state, None)
+		spawn_model = rospy.ServiceProxy('/gazebo/spawn_sdf_model', SpawnModel)
+		resp = spawn_model(model_name, point_xml, '', pose, 'world')
+	except rospy.ServiceException, e:
+		print "Service call failed: %s" % e
 
 def spawn_target(model_name, state, orient):
 	target_id = model_name[4:]
 	model_directory = const.ROBOT_MODEL_PATH + target_id + '.urdf'
 	state.set_z(float(state.z + const.SPAWN_HEIGHT_OFFSET))
-	set_physics_properties(0, 0, const.SPAWN_GRAVITY)
 	spawn_urdf_model(model_name, model_directory, state, orient)
-	d = rospy.Duration(const.SPAWN_SEC_DELAY, const.SPAWN_NSEC_DELAY)
-	rospy.sleep(d)
-	set_physics_properties(0, 0, const.REAL_GRAVITY)
-
+	
 def spawn_urdf_model(model_name, model_directory, state, orient):
-    x = orient[0]
-    y = orient[1]
-    z = orient[2]
-    w = orient[3]
-    rospy.wait_for_service('/gazebo/spawn_urdf_model')
-    try:
-        spawn_model_client = rospy.ServiceProxy('/gazebo/spawn_urdf_model', SpawnModel)
-        spawn_model_client(model_name, open(model_directory, 'r').read(),
-                    "/rover", Pose(position=Point(state.x, state.y, state.z), orientation=Quaternion(x, y, z, w)), "world")
-    except rospy.ServiceException, e:
-        print "Service call failed: %s" % e
+	x = orient[0]
+	y = orient[1]
+	z = orient[2]
+	w = orient[3]
+	rospy.wait_for_service('/gazebo/spawn_urdf_model')
+	try:
+		spawn_model_client = rospy.ServiceProxy('/gazebo/spawn_urdf_model', SpawnModel)
+		spawn_model_client(model_name, open(model_directory, 'r').read(),
+					"/rover", Pose(position=Point(state.x, state.y, state.z), orientation=Quaternion(x, y, z, w)), "world")
+	except rospy.ServiceException, e:
+		print "Service call failed: %s" % e
 
 # Setting the object of the required position and orientation in space
 # model_name: the name of the object in the Gazebo environment
 # pose: position of an object in 3D space
 # orient: orientation of an object in 3D space
 def set_model_state(model_name, pose, orient):
-    state_msg = ModelState()
-    state_msg.model_name = model_name
-    state_msg.pose.position.x = pose.x
-    state_msg.pose.position.y = pose.y
-    state_msg.pose.position.z = pose.z
-    state_msg.pose.orientation.x = orient[0]
-    state_msg.pose.orientation.y = orient[1]
-    state_msg.pose.orientation.z = orient[2]
-    state_msg.pose.orientation.w = orient[3]
-    rospy.wait_for_service('/gazebo/set_model_state')
-    try:
-        set_state = rospy.ServiceProxy('/gazebo/set_model_state', SetModelState)
-        resp = set_state(state_msg)
-    except:
-        print "Service call failed: %s" % e
+	state_msg = ModelState()
+	state_msg.model_name = model_name
+	state_msg.pose.position.x = pose.x
+	state_msg.pose.position.y = pose.y
+	state_msg.pose.position.z = pose.z
+	state_msg.pose.orientation.x = orient[0]
+	state_msg.pose.orientation.y = orient[1]
+	state_msg.pose.orientation.z = orient[2]
+	state_msg.pose.orientation.w = orient[3]
+	rospy.wait_for_service('/gazebo/set_model_state')
+	try:
+		set_state = rospy.ServiceProxy('/gazebo/set_model_state', SetModelState)
+		resp = set_state(state_msg)
+	except:
+		print "Service call failed: %s" % e
 
 # Getting a three-dimensional vector directed from point p1 to point p2
 # Input
@@ -407,20 +407,20 @@ def set_model_state(model_name, pose, orient):
 # Output
 # dir_vector: vector between given points
 def get_orientation_vector(p1, p2):
-    det_x = p2.x - p1.x
-    det_y = p2.y - p1.y
-    dir_vector = PointGeom.Vector2d(det_x, det_y)
-    #z = p2.z - p1.z
-    #dir_vector = vector3d.vector.Vector(x, y, z).normalize()
-    return dir_vector
+	det_x = p2.x - p1.x
+	det_y = p2.y - p1.y
+	dir_vector = PointGeom.Vector2d(det_x, det_y)
+	#z = p2.z - p1.z
+	#dir_vector = vector3d.vector.Vector(x, y, z).normalize()
+	return dir_vector
 
 def get_3d_orientation_vector(p1, p2):
-    print('p1: ' + str(p1) + ' | p2: ' + str(p2))
-    x = p2.x - p1.x
-    y = p2.y - p1.y
-    z = p2.z - p1.z
-    dir_vector = vector3d.vector.Vector(x, y, z).normalize()
-    return dir_vector
+	print('p1: ' + str(p1) + ' | p2: ' + str(p2))
+	x = p2.x - p1.x
+	y = p2.y - p1.y
+	z = p2.z - p1.z
+	dir_vector = vector3d.vector.Vector(x, y, z).normalize()
+	return dir_vector
 
 # Getting the angle between 3D vectors
 # Input
@@ -430,19 +430,19 @@ def get_3d_orientation_vector(p1, p2):
 # Output
 # angle: angle between vectors in degrees
 def get_3d_angle(p1, p2, p3):
-    v1 = get_3d_orientation_vector(p2, p1)
-    v2 = get_3d_orientation_vector(p2, p3)
-    z_axis = vector3d.vector.Vector(0, 0, 1)
-    angle = vector3d.vector.angle(v1, v2)
-    if not angle == 0:
-        i = v1.y * v2.z - v1.z * v2.y
-        j = v1.x * v2.z - v1.z * v2.x
-        k = v1.x * v2.y - v1.y * v2.x
-        v3 = vector3d.vector.Vector(i, j, k).normalize()
-        z_angle = vector3d.vector.angle(v3, z_axis)
-        if z_angle > 90:
-            angle = - angle
-    return angle
+	v1 = get_3d_orientation_vector(p2, p1)
+	v2 = get_3d_orientation_vector(p2, p3)
+	z_axis = vector3d.vector.Vector(0, 0, 1)
+	angle = vector3d.vector.angle(v1, v2)
+	if not angle == 0:
+		i = v1.y * v2.z - v1.z * v2.y
+		j = v1.x * v2.z - v1.z * v2.x
+		k = v1.x * v2.y - v1.y * v2.x
+		v3 = vector3d.vector.Vector(i, j, k).normalize()
+		z_angle = vector3d.vector.angle(v3, z_axis)
+		if z_angle > 90:
+			angle = - angle
+	return angle
 
 # Convert 3D vector to 2D
 # Input
@@ -451,8 +451,8 @@ def get_3d_angle(p1, p2, p3):
 # Output
 # vect2D: 2D vector representation
 def convert_3d_to_2d_vect(vector_3d):
-    vect2d = PointGeom.Vector2d(vector_3d.x, vector_3d.y)
-    return vect2d
+	vect2d = PointGeom.Vector2d(vector_3d.x, vector_3d.y)
+	return vect2d
 
 # Converting msg to Point object
 # Input
@@ -461,52 +461,52 @@ def convert_3d_to_2d_vect(vector_3d):
 # Output
 # point: Point object
 def convert_to_point(msg):
-    x = msg.x
-    y = msg.y
-    z = msg.z
-    point = PointGeom.Point(x, y, z)
-    return point
+	x = msg.x
+	y = msg.y
+	z = msg.z
+	point = PointGeom.Point(x, y, z)
+	return point
 
 # Output
 # max_curvature: path curvature
 def get_path_curvature(path):
-    max_curvature = 0
-    for i in range(0, len(path) - 2):
-        p1 = path[i]
-        p2 = path[i + 1]
-        p3 = path[i + 2]
-        v1 = p1.get_dir_vector_between_points(p2)
-        v2 = p2.get_dir_vector_between_points(p3)
-        angle_difference = fabs(v1.get_angle_between_vectors(v2))
-        if angle_difference > max_curvature:
-            max_curvature = angle_difference
-    return max_curvature
+	max_curvature = 0
+	for i in range(0, len(path) - 2):
+		p1 = path[i]
+		p2 = path[i + 1]
+		p3 = path[i + 2]
+		v1 = p1.get_dir_vector_between_points(p2)
+		v2 = p2.get_dir_vector_between_points(p3)
+		angle_difference = fabs(v1.get_angle_between_vectors(v2))
+		if angle_difference > max_curvature:
+			max_curvature = angle_difference
+	return max_curvature
 
 def prepare_path_msg(name, path):
-    msg = Path()
-    msg.path = []
-    msg.robot_name = name
-    for state in path:
-        point = Point()
-        point.x = state.x
-        point.y = state.y
-        point.z = state.z
-        msg.path.append(point)
-    return msg
+	msg = Path()
+	msg.path = []
+	msg.robot_name = name
+	for state in path:
+		point = Point()
+		point.x = state.x
+		point.y = state.y
+		point.z = state.z
+		msg.path.append(point)
+	return msg
 
 def prepare_point_msg(p):
-    msg = Point()
-    msg.x = p.x
-    msg.y = p.y
-    msg.z = p.z
-    return msg
+	msg = Point()
+	msg.x = p.x
+	msg.y = p.y
+	msg.z = p.z
+	return msg
 
 def convert_to_path(msg):
-    path = []
-    for state in msg:
-        x = state.x
-        y = state.y
-        z = state.z
-        p = PointGeom.Point(x, y, z)
-        path.append(p)
-    return path
+	path = []
+	for state in msg:
+		x = state.x
+		y = state.y
+		z = state.z
+		p = PointGeom.Point(x, y, z)
+		path.append(p)
+	return path
