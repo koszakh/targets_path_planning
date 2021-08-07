@@ -47,7 +47,7 @@ class AgentManager:
 # final_paths: dictionary of final routes of robots
 # init_paths: dictionary of initial routes of robots
 class ORCAsolver:
-    def __init__(self, heightmap, cells, x_step, y_step):
+    def __init__(self, heightmap, cells, x_step, y_step, l_scale, w_scale):
         self.ms = gc_const.MOVEMENT_SPEED
         self.sim = rvo2.PyRVOSimulator(gc_const.ORCA_TIME_STEP, gc_const.ORCA_NEIGHBOR_DIST, \
 gc_const.ORCA_MAX_NEIGHBORS, gc_const.ORCA_TIME_HORIZON, gc_const.ORCA_TIME_HORIZON_OBST, \
@@ -57,6 +57,8 @@ gc_const.ORCA_RADIUS, self.ms)
         self.cells = cells
         self.x_step = x_step
         self.y_step = y_step
+	self.l_scale = l_scale
+	self.w_scale = w_scale
         self.amanager = {}
         self.agents = {}
         self.final_paths = {}
@@ -170,8 +172,8 @@ gc_const.ORCA_RADIUS, self.ms)
 # z: calculated point z-coordinate value
     def find_z(self, x, y):
         p = Point(x, y, 0)
-        j = (x + (const.MAP_HEIGHT / 2)) // self.x_step
-        i = ((const.MAP_WIDTH / 2) - y) // self.y_step
+        j = (x + (self.l_scale / 2)) // self.x_step
+        i = ((self.w_scale / 2) - y) // self.y_step
         cell_id = (str(int(i)), str(int(j)))
         if cell_id in self.cells.keys():
           n_cell = self.cells[cell_id]

@@ -39,8 +39,8 @@ class Heightmap:
 		self.x_step_size = self.length_scale / (image.shape[0] - 1)
 		self.y_step_size = self.width_scale / (image.shape[1] - 1)
 		self.grid_range = const.ROBOT_RADIUS // self.x_step_size + 1
-		print('x_step_size: ' + str(self.x_step_size))
-		print('y_step_size: ' + str(self.y_step_size))
+		print('x_step_size: ' + str(self.x_step_size) + 'm')
+		print('y_step_size: ' + str(self.y_step_size) + 'm')
 		max_z = 0
 		min_z = 10000
 		for i in range(image.shape[0]):  # traverses through height of the image

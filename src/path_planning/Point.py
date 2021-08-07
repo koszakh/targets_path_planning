@@ -152,10 +152,7 @@ class Point:
 # Output
 # direction_vector: vector value between points
     def get_dir_vector_between_points(self, point):
-        #det_x = float(point.x - self.x)
-        #det_y = float(point.y - self.y)
-        #print('self: ' + str(self) + ' | point: ' + str(point))
-        #print('det_x: ' + str(det_x) + ' | det_y: ' + str(det_y))
+        #print('self: ' + str(self) + ' | self.id: ' + str(self.id) + ' | point: ' + str(point) + ' | point.id: ' + str(point.id))
         direction_vector = Vector2d(float(point.x - self.x), float(point.y - self.y))
         return direction_vector
 
