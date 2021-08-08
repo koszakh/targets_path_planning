@@ -37,7 +37,7 @@
   </link>
   <link name="hardener">
     <inertial>
-      <mass value="2"/>
+      <mass value="4"/>
       <origin xyz="0 0 0"/>
       <inertia ixx="0.3338" ixy="0.0" ixz="0.0" iyy="0.4783" iyz="0.0" izz="0.3338"/>
     </inertial>

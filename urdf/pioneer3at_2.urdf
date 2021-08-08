@@ -11,8 +11,7 @@
                        * http://answers.gazebosim.org/question/4372/the-inertia-matrix-explained/
 		       * http://gazebosim.org/tutorials?tut=inertia&cat=build_robot, and 
                        * http://gazebosim.org/tutorials/?tut=ros_urdf
-                       * http://en.wikipedia.org/wiki/List_of_moment_of_inertia_tensors  
-                -->
+                       * http://en.wikipedia.org/wiki/List_of_moment_of_inertia_tensors  -->
     <inertial>
       <mass value="26.5"/>
       <!-- P3AT 18.6kg plus three batteries @ 2.4kg each  minus four wheels @ 1.4 kg ea and top plate @ 0.1 kg-->
@@ -37,7 +36,7 @@
   </link>
   <link name="hardener">
     <inertial>
-      <mass value="2"/>
+      <mass value="4"/>
       <origin xyz="0 0 0"/>
       <inertia ixx="0.3338" ixy="0.0" ixz="0.0" iyy="0.4783" iyz="0.0" izz="0.3338"/>
     </inertial>
