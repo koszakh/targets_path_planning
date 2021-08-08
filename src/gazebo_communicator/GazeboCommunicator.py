@@ -83,7 +83,7 @@ class Robot(thr.Thread):
 # goal: target point
 	def move_with_PID(self, goal):
 		#print(self.name + ' moving to the ' + str(goal) + ' point.')
-		self.turn_to_point(goal)
+		#self.turn_to_point(goal)
 		old_error = 0
 		error_sum = 0
 		real_error_sum = 0
@@ -105,7 +105,7 @@ class Robot(thr.Thread):
 			#print(self.name + ' error: ' + str(error) + ' | u: ' + str(u))
 			self.movement(const.MOVEMENT_SPEED, u)
 			rospy.sleep(self.pid_delay)
-		self.stop()
+		#self.stop()
 
 
 # Rotate the robot towards a point
@@ -169,7 +169,7 @@ class Robot(thr.Thread):
 				dist = state.get_distance_to(self.get_robot_position())
 				if dist > const.DISTANCE_ERROR * 2:
 					self.move_with_PID(state)
-			#self.stop()
+			self.stop()
 			print('The robot ' + str(self.name) + ' has finished!')
 		else:
 			print('Path is empty!')
