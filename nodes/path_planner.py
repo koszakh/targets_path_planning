@@ -16,30 +16,30 @@ from path_planning.ORCA import ORCAsolver
 def group_path_planning():
 	paths_pub = rospy.Publisher('all_paths_data', AllPaths, queue_size=10)
 	hm = Heightmap(const.HEIGHTMAP_PATH, const.HEIGHTMAP_SDF_PATH)
-	hmap, length, width, l_scale, w_scale, x_step, y_step, grid_step = hm.prepare_heightmap()
-	map_handler = pp.PathPlanner(hmap, length, width, l_scale, w_scale, grid_step, x_step, y_step)
-	map_handler.cell_maker()
+	hmap, l_scale, w_scale, x_step, y_step, grid_step, step_count = hm.prepare_heightmap(const.MIN_COL, const.MAX_COL, const.MIN_ROW, const.MAX_ROW)
+	map_handler = pp.PathPlanner(hmap, l_scale, w_scale, grid_step, x_step, y_step, step_count)
+	map_handler.cells_maker()
 	cells = map_handler.cells
 	map_handler.gridmap_preparing()
 	orca = ORCAsolver(map_handler.heightmap, cells, x_step, y_step, l_scale, w_scale)
 	smoothed_paths = {}
 	robot_names = []
-	
+	f = open('/root/catkin_ws/src/targets_path_planning/nodes/orca_data.py', 'w+')
+	f.write('from path_planning.Point import Point\n')
+	f.close()
 	for name in gc_const.ROBOT_NAMES:
-	
 		robot_names.append(name)
 		robot_pos, orient = map_handler.get_random_start_pos()
 		gc.spawn_target(name, robot_pos, orient)
 		robot_orient = gc.get_robot_orientation_vector(name)
 		start_id, goal_id = map_handler.get_start_and_goal_id(robot_pos, robot_orient)
-		
 		if goal_id:
 		
 			print('\nPath planning for ' + name + ' has begun!')
 			path, path_ids, path_cost = map_handler.find_path(start_id, goal_id, robot_orient)
 			
 			if path:
-			
+
 				orca.add_agent(name, path)
 				
 		print('Current agents count: ' + str(orca.sim.getNumAgents()))
