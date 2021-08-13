@@ -76,7 +76,7 @@ gc_const.ORCA_RADIUS, self.ms)
 		p = Point(x, y, 0)
 		cell_id = self.get_current_cell_id(p)
 		cell = self.cells[cell_id]
-		z = cell.find_z_on_planes(x, y)
+		z = cell.find_z_on_cell(x, y)
 		return z
 		
 	def get_current_cell_id(self, point):

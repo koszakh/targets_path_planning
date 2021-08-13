@@ -79,6 +79,7 @@ class Point:
 		self.id = None
 		self.edge_attach = None
 		self.init_point = None
+		self.name = None
 
 	def __str__(self):
 		return str(self.x) + " " + str(self.y) + " " + str(self.z)
@@ -261,7 +262,6 @@ class Point:
 		self.id = value
 
 	def set_neighbors_list(self, step_count):
-		#print('\nself.id: ' + str(self.id))
 		fl_col = float(self.id[0])
 		col = int(fl_col)
 		fl_row = float(self.id[1])
@@ -279,6 +279,10 @@ class Point:
 			min_col = str(col) + '.' + str(int(step_count - 2))
 			max_col = str(col + 1) + '.0'
 			
+		elif det_col == step_count:
+		
+			print('Error! ' + str(self.id))
+			
 		else:
 		
 			min_col = str(round(fl_col - 0.1, 2))#str(col) + '.' + str(int((det_col - 0.1) * 10))
@@ -294,12 +298,18 @@ class Point:
 			min_row = str(row) + '.' + str(int(step_count - 2))
 			max_row = str(row + 1) + '.0'
 			
+		elif det_row == step_count:
+		
+			print('Error! ' + str(self.id))
+			
 		else:
 		
 			min_row = str(round(fl_row - 0.1, 2))# + '.' + str(int((det_row - 0.1) * 10))
 			max_row = str(round(fl_row + 0.1, 2))# + '.' + str(int((det_row + 0.1) * 10))
 		
 
+		#print('det_col: ' + str(det_col))
+		#print('det_row: ' + str(det_row))
 		#print('min_col: ' + str(min_col))
 		#print('max_col: ' + str(max_col))
 		#print('min_row: ' + str(min_row))
@@ -316,7 +326,7 @@ class Point:
 			'8': (str(max_col), str(min_row))
 		}
 		
-
+		
 # Establishing the weight of an edge between a given vertex and another vertex
 # Input
 # vertice: vertex objcects
