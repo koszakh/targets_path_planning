@@ -200,16 +200,22 @@ class Point:
 	def find_z_coord(self, p, x, y):
 		k_x = float(p.x - self.x)
 		k_y = float(p.y - self.y)
+		k2_z = p.z - self.z
+		
 		if not k_x == 0:
+		
 			k_z = self.z * p.x - p.z * self.x
-			k2_z = p.z - self.z
 			z = float((k2_z * x + k_z) / k_x)
+		
 		elif not k_y == 0:
+		
 			k_z = self.z * p.y - p.z * self.y
-			k2_z = p.z - self.z
 			z = float((k2_z * y + k_z) / k_y)
+		
 		else:
+		
 			z = self.z
+		
 		return z
 
 # Setting the key of the predecessor vertex

@@ -15,14 +15,21 @@ class Heightmap:
 		self.png_path = self.get_png_path()
 		self.image = cv2.imread(self.png_path, 0)
 		self.length_scale, self.width_scale, self.height_scale = self.get_map_size()
+		self.get_map_pos()
 		
 
 	def get_map_size(self):
+		
 		with io.open(self.sdf_path, encoding='utf-8') as file:
+			
 			for word in const.MAP_SIZE_WORDS:
+				
 				for line in file:
+					
 					if word in line:
+					
 						break
+						
 		size = line[line.find('>') + 1:line.rfind('<')]
 		s = size.split(' ')
 		length_scale = float(s[0])
@@ -46,6 +53,25 @@ class Heightmap:
 		path = line[line.find('/') + 1:line.rfind('<')]
 		png_path = const.PNG_PATH_PREFIX + path		
 		return png_path
+		
+	def get_map_pos(self):
+	
+		with io.open(self.sdf_path, encoding='utf-8') as file:
+			
+			for word in const.MAP_POS_WORDS:
+				
+				for line in file:
+					
+					if word in line:
+					
+						break
+						
+		pos = line[line.find('>') + 1:line.rfind('<')]
+		s = pos.split(' ')
+		self.x = float(s[0])
+		self.y = float(s[1])
+		self.z = float(s[2])
+		print(pos)
 		
 	def calc_p_range(self):
 		max_p_value = 0
@@ -104,7 +130,7 @@ class Heightmap:
 				p_id = (str(float(i)), str(float(j)))
 				x = float(-self.length_scale / 2 + j * self.x_step_size) 
 				y = float(self.width_scale / 2 - i * self.y_step_size)
-				z = float(self.image[i][j] / self.height_scale)
+				z = float(self.image[i][j] / self.height_scale) + self.z
 				
 				if z > max_z:
 					

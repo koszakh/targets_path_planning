@@ -14,6 +14,7 @@ DIST_FROM_PATH = 0.5
 MAX_ITERATIONS_COUNT = 5
 MAP_SIZE_WORDS = ['<collision', '<heightmap', '<size']
 MAP_PATH_WORDS = ['<collision', '<heightmap', '<uri']
+MAP_POS_WORDS = ['<collision', '<heightmap', '<pos']
 ORIENT_BOUND = 47
 START_GRID_RANGE = 2
 MAX_ITER_COUNT = 30
