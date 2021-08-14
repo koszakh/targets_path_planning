@@ -39,10 +39,10 @@ class Cell:
 				
 				e1 = edge[0]
 				e2 = edge[1]
-				#print(e1.name, e2.name)
+				#print(e1.label, e2.label)
 				
-				name1 = [e1.name, e2.name]
-				name2 = [e2.name, e1.name]
+				name1 = [e1.label, e2.label]
+				name2 = [e2.label, e1.label]
 				
 				if not (name1 in names) and not (name2 in names):
 					#print(True)
@@ -75,18 +75,11 @@ class Cell:
 				dist1_3 = p1.get_distance_to(new_p)
 				dist2_3 = p2.get_distance_to(new_p)
 				dist_sum = round(dist1_2 - dist1_3 - dist2_3, 3)
-				#print('p1: ' + str(p1.name) + ' | p2: ' + str(p2.name) + ' | dist_sum: ' + str(dist_sum) + ' | z: ' + str(new_z))
+				#print('p1: ' + str(p1.label) + ' | p2: ' + str(p2.label) + ' | dist_sum: ' + str(dist_sum) + ' | z: ' + str(new_z))
 				if dist_sum == 0:
 					#print('>>> Success <<<')
 					z = new_z
 					break
-		
-		if not z:
-		
-			print('\np_id: ' + str(p_id))
-			new_p = Point(x, y, new_z)
-			gc.spawn_sdf_model(new_p, gc_const.VERTICE_PATH, 'p' + str(x) + str(y))
-			print('z: ' + str(z) + '\n')
 		
 		return z			
 
@@ -355,6 +348,10 @@ v1.get_distance_to(v2) #+ fabs(v1.riskiness - v2.riskiness)
 		self.min_y = min(y1, y2)
 		self.max_x = max(x1, x2)
 		self.max_y = max(y1, y2)
+		print('min_x: ' + str(self.min_x))
+		print('max_x: ' + str(self.max_x))
+		print('min_y: ' + str(self.min_y))
+		print('max_y: ' + str(self.max_y))
 
 # Calculation of the riskiness parameter for a specific vertex
 # Input
@@ -559,10 +556,10 @@ v1.get_distance_to(v2) #+ fabs(v1.riskiness - v2.riskiness)
 				p3 = self.heightmap[id3]
 				p4 = self.heightmap[id4]
 				
-				p1.name = 'p1'
-				p2.name = 'p2'
-				p3.name = 'p3'
-				p4.name = 'p4'
+				p1.label = 'p1'
+				p2.label = 'p2'
+				p3.label = 'p3'
+				p4.label = 'p4'
 
 				init_x = p1.x
 				init_y = p1.y
@@ -594,10 +591,10 @@ v1.get_distance_to(v2) #+ fabs(v1.riskiness - v2.riskiness)
 				p2_4_name = 'p2_4'
 				p3_4_name = 'p3_4'
 				
-				p1_2.name = p1_2_name
-				p1_3.name = p1_3_name
-				p2_4.name = p2_4_name
-				p3_4.name = p3_4_name
+				p1_2.label = p1_2_name
+				p1_3.label = p1_3_name
+				p2_4.label = p2_4_name
+				p3_4.label = p3_4_name
 				
 				if i % 2 == 0:
 					
@@ -605,7 +602,7 @@ v1.get_distance_to(v2) #+ fabs(v1.riskiness - v2.riskiness)
 					mid_z = find_z_on_plane(avg_x, avg_y, p3, p3_4, p1)
 					p_mid = Point(avg_x, avg_y, mid_z)
 					p_mid.set_id(p_mid_id)
-					p_mid.name = 'p_mid'
+					p_mid.label = 'p_mid'
 					self.heightmap[p_mid_id] = p_mid
 					
 					plane1 = Plane(id1, 1, [p3, p1, p_mid, p3_4])
@@ -626,7 +623,7 @@ v1.get_distance_to(v2) #+ fabs(v1.riskiness - v2.riskiness)
 					mid_z = find_z_on_plane(avg_x, avg_y, p1, p1_2, p3)
 					p_mid = Point(avg_x, avg_y, mid_z)
 					p_mid.set_id(p_mid_id)
-					p_mid.name = 'p_mid'
+					p_mid.label = 'p_mid'
 					self.heightmap[p_mid_id] = p_mid
 					
 					plane1 = Plane(id1, 1, [p1, p1_2, p_mid, p3])
@@ -646,6 +643,7 @@ v1.get_distance_to(v2) #+ fabs(v1.riskiness - v2.riskiness)
 						new_x = init_x + k * const.GRID_SIZE
 						new_y = init_y - l * const.GRID_SIZE
 						new_p_id = (str(i) + '.' + str(l), str(j) + '.' + str(k))
+						#print('new_p_id: ' + str(new_p_id))
 						
 						if new_p_id in self.heightmap.keys() or (l == 0 and k == 0):
 						
@@ -695,12 +693,12 @@ v1.get_distance_to(v2) #+ fabs(v1.riskiness - v2.riskiness)
 # Output
 # start_id: starting vertex key
 # goal_id: target vertex key
-	def get_start_and_goal_id(self, pos, orient):
+	def get_start_and_goal_id(self, pos, orient, x, y, offset):
 		start_id = self.get_start_vertice_id(pos, orient)
 		if start_id:
-			goal_id = self.get_random_goal_id(start_id, orient)
+			goal_id = self.get_reliable_goal_id(start_id, x, y, offset, orient)
 		else:
-			print('Path planning from the point ' + str(pos) + ' is impossible.')
+			#print('Path planning from the point ' + str(pos) + ' is impossible.')
 			return None, None
 		return start_id, goal_id
 
@@ -798,7 +796,9 @@ v1.get_distance_to(v2) #+ fabs(v1.riskiness - v2.riskiness)
 			print('Path from ' + str(start_id) + ' to ' + str(goal_id) + ' vertex cannot be found.')
 			return None, None, None
 
-	def get_random_start_pos(self):
+	def get_random_start_pos(self, x, y):
+	
+		
 
 		while True:
 
@@ -817,7 +817,7 @@ v1.get_distance_to(v2) #+ fabs(v1.riskiness - v2.riskiness)
 				quat = rot.as_quat()
 				break
 
-		gc.spawn_sdf_model(new_p, gc_const.BLUE_VERTICE_PATH,'v' + str(new_p_id))
+		#gc.spawn_sdf_model(new_p, gc_const.BLUE_VERTICE_PATH,'v' + str(new_p_id))
 
 		return new_p, quat
 
@@ -946,7 +946,10 @@ v1.get_distance_to(v2) #+ fabs(v1.riskiness - v2.riskiness)
 			for n_n_id in n.neighbors_list.values():
 				if not n_n_id in ids_range:
 					ids_range.append(n_n_id)
-		ids_range.remove(v_id)
+		if v_id in ids_range:
+		
+			ids_range.remove(v_id)
+
 		return ids_range
 
 # Finding the closest vertice of the heightmap to a given point
@@ -999,7 +1002,7 @@ v1.get_distance_to(v2) #+ fabs(v1.riskiness - v2.riskiness)
 			goal_v = self.heightmap[goal_id]
 			dist = goal_v.get_distance_to(start_v)
 
-			if not(start_v.obstacle or goal_v.obstacle or goal_id == start_id or dist > const.GOAL_VERTICE_DIST or goal_id in self.closed_goals):
+			if not(start_v.obstacle or goal_v.obstacle or goal_id == start_id or goal_id in self.closed_goals):
 
 				iter_count += 1
 				path, path_ids, path_cost = self.find_path(start_id, goal_id, start_orient)
@@ -1018,43 +1021,153 @@ v1.get_distance_to(v2) #+ fabs(v1.riskiness - v2.riskiness)
 		return goal_id
 
 
-	def get_goal_id(self, x, y, offset):
-		p = Point(x, y, 0)
-		p_id = self.get_nearest_vertice_id(p)
-		i = int(p_id[0])
-		j = int(p_id[1])
+	def get_reliable_goal_id(self, start_id, x, y, offset, start_orient):
+		
+		current_goals = []
+		
+		start_v = self.heightmap[start_id]
+		min_x = x - offset
+		
+		if min_x < self.min_x:
+		
+			min_x = self.min_x
+			
+		min_y = y - offset
+		
+		if min_y < self.min_y:
+		
+			min_y = self.min_y
+			
+		max_x = x + offset
+		
+		if max_x > self.max_x:
+		
+			max_x = self.max_x
+			
+		max_y = y + offset
+		
+		if max_y > self.max_y:
+		
+			max_y = self.max_y
+
+		iter_count = 0
 
 		while True:
 
-			l = random.randint(i - offset, i + offset + 1)
-			k = random.randint(j - offset, j + offset + 1)
-			goal_id = (str(l), str(k))
+			new_x = random.uniform(min_x, max_x)
+			new_y = random.uniform(min_y, max_y)
+			p = Point(new_x, new_y, 0)
+			goal_id = self.get_nearest_vertice_id(p)
 			goal_v = self.heightmap[goal_id]
 
-			if not (goal_v.obstacle or goal_id in self.closed_goals):
+			if not(start_v.obstacle or goal_v.obstacle or goal_id == start_id or goal_id in self.closed_goals or goal_id in current_goals):
 
+				iter_count += 1
+				path, path_ids, path_cost = self.find_path(start_id, goal_id, start_orient)
+				current_goals.append(goal_id)
+				if path:
+
+					self.closed_goals.append(goal_id)
+					break
+
+			if iter_count > const.MAX_ITER_COUNT:
+			
+				print(str(start_id) + ' vertice is isolated.')
+				goal_id = None
 				break
 
 		return goal_id
 
 	def get_start_id(self, x, y, offset):
-		p = Point(x, y, 0)
-		p_id = self.get_nearest_vertice_id(p)
-		i = int(p_id[0])
-		j = int(p_id[1])
+
+		min_x = x - offset
+		
+		if min_x < self.min_x:
+		
+			min_x = self.min_x
+			
+		min_y = y - offset
+		
+		if min_y < self.min_y:
+		
+			min_y = self.min_y
+			
+		max_x = x + offset
+		
+		if max_x > self.max_x:
+		
+			max_x = self.max_x
+			
+		max_y = y + offset
+		
+		if max_y > self.max_y:
+		
+			max_y = self.max_y
 
 		while True:
-
-			l = random.randint(i - offset, i + offset + 1)
-			k = random.randint(j - offset, j + offset + 1)
-			start_id = (str(l), str(k))
+				
+			new_x = random.uniform(min_x, max_x)
+			new_y = random.uniform(min_y, max_y)
+			p = Point(new_x, new_y, 0)
+			start_id = self.get_nearest_vertice_id(p)
 			start_v = self.heightmap[start_id]
 
-			if not (start_v.obstacle or start_id in self.closed_start_points):
-
+			if not start_v.obstacle and not start_id in self.closed_start_points:
+			
 				break
-
+				
 		return start_id
+		
+	def get_goal_id(self, x, y, offset):
+
+		min_x = x - offset
+		
+		if min_x < self.min_x:
+		
+			min_x = self.min_x
+			
+		min_y = y - offset
+		
+		if min_y < self.min_y:
+		
+			min_y = self.min_y
+			
+		max_x = x + offset
+		
+		if max_x > self.max_x:
+		
+			max_x = self.max_x
+			
+		max_y = y + offset
+		
+		if max_y > self.max_y:
+		
+			max_y = self.max_y
+
+		while True:
+				
+			new_x = random.uniform(min_x, max_x)
+			new_y = random.uniform(min_y, max_y)
+			p = Point(new_x, new_y, 0)
+			goal_id = self.get_nearest_vertice_id(p)
+			goal_v = self.heightmap[goal_id]
+
+			if not goal_v.obstacle and not goal_id in self.closed_goals:
+			
+				break
+				
+		return goal_id
+
+	def get_start_pos(self, x, y, offset):
+
+		start_id = self.get_start_id(x, y, offset)
+		start_v = self.heightmap[start_id]
+		self.closed_start_points.append(start_id)
+		roll, pitch = self.get_start_orientation(start_id)
+		rot = Rotation.from_euler('xyz', [roll, pitch, 0], degrees=True)
+		quat = rot.as_quat()
+		
+		return start_v, quat
 
 # Analysis of the heightmap, search for obstacles on it and outlining heightmap boundaries
 	def gridmap_preparing(self):
@@ -1066,6 +1179,7 @@ v1.get_distance_to(v2) #+ fabs(v1.riskiness - v2.riskiness)
 		finish_time = time.time()
 		
 		print('Cell generation run time: ' + str(finish_time - start_time))
+		print('Vertices count: ' + str(len(self.heightmap)))
 	
 		start_time = time.time()	
 		print('\n>>> Creating lists of neighboring vertices <<<\n')
@@ -1074,12 +1188,6 @@ v1.get_distance_to(v2) #+ fabs(v1.riskiness - v2.riskiness)
 		
 		print('Neighbors generation run time: ' + str(finish_time - start_time))
 		
-		if ('20.0', '20.0') in self.heightmap.keys():
-			print(True)
-			
-		else:
-		
-			print(False)
 		print('\n>>> Boundary cells marking <<<\n')
 		self.boundary_cells_marking()
 		

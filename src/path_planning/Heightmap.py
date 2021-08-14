@@ -14,6 +14,7 @@ class Heightmap:
 		self.sdf_path = sdf_path
 		self.png_path = self.get_png_path()
 		self.image = cv2.imread(self.png_path, 0)
+		print(self.image.shape[0], self.image.shape[1])
 		self.length_scale, self.width_scale, self.height_scale = self.get_map_size()
 		self.get_map_pos()
 		
@@ -111,29 +112,31 @@ class Heightmap:
 			
 		self.map_length = max_col - min_col#image.shape[0]
 		self.map_width = max_row - min_row#image.shape[1]
-		self.x_step_size = float(self.length_scale / (self.image.shape[0] - 1))
-		self.y_step_size = float(self.width_scale / (self.image.shape[1] - 1))
-		self.steps_count = int(self.x_step_size / const.GRID_SIZE)
-		print('x_step_size: ' + str(self.x_step_size) + 'm')
-		print('y_step_size: ' + str(self.y_step_size) + 'm')
+		self.x_grid_size = float(self.length_scale / (self.image.shape[0] - 1))
+		self.y_grid_size = float(self.width_scale / (self.image.shape[1] - 1))
+		self.steps_count = int(self.x_grid_size / const.GRID_SIZE)
+		print('x_grid_size: ' + str(self.x_grid_size) + 'm')
+		print('y_grid_size: ' + str(self.y_grid_size) + 'm')
 		print('steps_count: ' + str(self.steps_count))
-		self.grid_range = const.ROBOT_RADIUS // self.x_step_size + 1
+		self.grid_range = const.ROBOT_RADIUS // self.x_grid_size + 1
 		heightmap = {}
+		
 		
 		for i in range(min_col, max_col + 1):  # traverses through height of the image
 			
 			for j in range(min_row, max_row + 1):  # traverses through width of the image
 				
 				p_id = (str(float(i)), str(float(j)))
-				x = float(-self.length_scale / 2 + j * self.x_step_size) 
-				y = float(self.width_scale / 2 - i * self.y_step_size)
+				x = float(-self.length_scale / 2 + j * self.x_grid_size) 
+				y = float(self.width_scale / 2 - i * self.y_grid_size)
 				z = float(self.image[i][j] / self.height_scale) + self.z
-					
+				
 				p = Point(x, y, z)
 				
 				p.set_id(p_id)
 				heightmap[p_id] = p
-		
+				
+				
 		return heightmap
 
 # Converting heightmap vertex dictionary to list
@@ -170,7 +173,7 @@ class Heightmap:
 	def prepare_heightmap(self, min_col, max_col, min_row, max_row):
 		hmap = self.heightmap_builder(min_col, max_col, min_row, max_row)
 		#hmap = self.convert_to_dict(self.heightmap)
-		return hmap, self.length_scale, self.width_scale, self.x_step_size, self.y_step_size, self.grid_range, self.steps_count
+		return hmap, self.length_scale, self.width_scale, self.x_grid_size, self.y_grid_size, self.grid_range, self.steps_count
 
 # Finding a Key in a Dictionary by Value
 def get_key(d, value):

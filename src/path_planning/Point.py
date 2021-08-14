@@ -79,7 +79,7 @@ class Point:
 		self.id = None
 		self.edge_attach = None
 		self.init_point = None
-		self.name = None
+		self.label = None
 
 	def __str__(self):
 		return str(self.x) + " " + str(self.y) + " " + str(self.z)
@@ -268,13 +268,15 @@ class Point:
 		self.id = value
 
 	def set_neighbors_list(self, step_count):
+	
+		#print('self.id: ' + str(self.id))
 		fl_col = float(self.id[0])
 		col = int(fl_col)
 		fl_row = float(self.id[1])
 		row = int(fl_row)
-		det_col = round(fl_col - col, 2) * 10
-		det_row = round(fl_row - row, 2) * 10
-		
+		det_col = int(str(round(fl_col - col, 2))[2:])
+		det_row = int(str(round(fl_row - row, 2))[2:])
+        
 		if det_col == 0:
 			
 			min_col = str(col - 1) + '.' + str(step_count - 1)
@@ -285,14 +287,10 @@ class Point:
 			min_col = str(col) + '.' + str(int(step_count - 2))
 			max_col = str(col + 1) + '.0'
 			
-		elif det_col == step_count:
-		
-			print('Error! ' + str(self.id))
-			
 		else:
 		
-			min_col = str(round(fl_col - 0.1, 2))#str(col) + '.' + str(int((det_col - 0.1) * 10))
-			max_col = str(round(fl_col + 0.1, 2))# + '.' + str(int((det_col + 0.1) * 10))
+			min_col = str(col) + '.' + str(int(det_col) - 1)
+			max_col = str(col) + '.' + str(int(det_col) + 1)
 			
 		if det_row == 0:
 			
@@ -310,8 +308,8 @@ class Point:
 			
 		else:
 		
-			min_row = str(round(fl_row - 0.1, 2))# + '.' + str(int((det_row - 0.1) * 10))
-			max_row = str(round(fl_row + 0.1, 2))# + '.' + str(int((det_row + 0.1) * 10))
+			min_row = str(row) + '.' + str(int(det_row) - 1)
+			max_row = str(row) + '.' + str(int(det_row) + 1)
 		
 
 		#print('det_col: ' + str(det_col))
@@ -331,6 +329,10 @@ class Point:
 			'7' : (str(max_col), str(fl_row)),
 			'8': (str(max_col), str(min_row))
 		}
+		
+		#for value in self.neighbors_list.values():
+		
+			#print(value)
 		
 		
 # Establishing the weight of an edge between a given vertex and another vertex
