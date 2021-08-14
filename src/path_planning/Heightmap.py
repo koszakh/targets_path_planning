@@ -118,10 +118,7 @@ class Heightmap:
 		print('y_step_size: ' + str(self.y_step_size) + 'm')
 		print('steps_count: ' + str(self.steps_count))
 		self.grid_range = const.ROBOT_RADIUS // self.x_step_size + 1
-		max_z = 0
-		min_z = float('inf')
 		heightmap = {}
-		
 		
 		for i in range(min_col, max_col + 1):  # traverses through height of the image
 			
@@ -131,22 +128,11 @@ class Heightmap:
 				x = float(-self.length_scale / 2 + j * self.x_step_size) 
 				y = float(self.width_scale / 2 - i * self.y_step_size)
 				z = float(self.image[i][j] / self.height_scale) + self.z
-				
-				if z > max_z:
-					
-					max_z = z
-				
-				if z < min_z:
-					
-					min_z = z
 					
 				p = Point(x, y, z)
 				
 				p.set_id(p_id)
 				heightmap[p_id] = p
-				
-				
-		print('min_z: ' + str(min_z) + '\nmax_z: ' + str(max_z))
 		
 		return heightmap
 
