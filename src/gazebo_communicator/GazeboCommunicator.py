@@ -43,6 +43,7 @@ class Robot(thr.Thread):
 		self.vel_publisher.publish(msg)
 		rospy.sleep(self.pid_delay)
 		self.name = robot_name
+		self.ms = const.MOVEMENT_SPEED
 		self.dir_point = robot_name + const.DIR_POINT_SUFFIX
 		self.path = []
 
@@ -103,7 +104,7 @@ class Robot(thr.Thread):
 			old_error = error
 			u = up + ui + ud
 			#print(self.name + ' error: ' + str(error) + ' | u: ' + str(u))
-			self.movement(const.MOVEMENT_SPEED, u)
+			self.movement(self.ms, u)
 			rospy.sleep(self.pid_delay)
 		#self.stop()
 
