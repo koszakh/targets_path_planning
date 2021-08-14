@@ -17,25 +17,44 @@ import random
 def group_path_planning():
 	paths_pub = rospy.Publisher('all_paths_data', AllPaths, queue_size=10)
 	hm = Heightmap(const.HEIGHTMAP_SDF_PATH)
+
 	hmap, l_scale, w_scale, x_step, y_step, grid_step, step_count = \
 		hm.prepare_heightmap(const.MIN_COL, const.MAX_COL, const.MIN_ROW, const.MAX_ROW)
 		
 	map_handler = pp.PathPlanner(hmap, l_scale, w_scale, grid_step, x_step, y_step, step_count)
 
+	min_x = map_handler.min_x
+	max_x = map_handler.max_x
+	min_y = map_handler.min_y
+	max_y = map_handler.max_y
+	
+	new_x = random.uniform(min_x, max_x)
+	new_y = random.uniform(min_y, max_y)
+	new_x1 = random.uniform(min_x, max_x)
+	new_y1 = random.uniform(min_y, max_y)
+	
+	offset = const.DIST_OFFSET
+
+	start = (new_x, new_y)
+	goal = (new_x1, new_y1)
+	
 	map_handler.gridmap_preparing()
 	cells = map_handler.cells
-	print('Vertices count: ' + str(len(map_handler.heightmap)))
-
+	
+	#cell_id = random.choice(list(map_handler.cells.keys()))#(str(float(map_handler.min_col)), str(float(map_handler.min_row)))
+		
 	orca = ORCAsolver(map_handler.heightmap, cells, x_step, y_step, l_scale, w_scale)
+	smoothed_paths = {}
 	robot_names = []
-
+	
 	for name in gc_const.ROBOT_NAMES:
-
+	
 		robot_names.append(name)
-		robot_pos, orient = map_handler.get_random_start_pos()
+		robot_pos, orient = map_handler.get_start_pos(start[0], start[1], offset)
 		gc.spawn_target(name, robot_pos, orient)
 		robot_orient = gc.get_robot_orientation_vector(name)
-		start_id, goal_id = map_handler.get_start_and_goal_id(robot_pos, robot_orient)
+		start_id, goal_id = map_handler.get_start_and_goal_id(robot_pos, robot_orient, goal[0], goal[1], offset)
+		
 		if goal_id:
 		
 			print('\nPath planning for ' + name + ' has begun!')
