@@ -150,10 +150,10 @@ class PathPlanner:
 	def __init__(self, heightmap, l_scale, w_scale, grid_range, x_step, y_step, step_count):
 		self.heightmap = heightmap
 		self.obstacles = []
-		self.min_col = const.MIN_COL
-		self.max_col = const.MAX_COL
-		self.min_row = const.MIN_ROW
-		self.max_row = const.MAX_ROW
+		self.min_col = const.COL_RANGE[0]
+		self.max_col = const.COL_RANGE[1]
+		self.min_row = const.ROW_RANGE[0]
+		self.max_row = const.ROW_RANGE[1]
 		self.l_scale = l_scale
 		self.w_scale = w_scale
 		self.grid_range = int(grid_range)
@@ -167,6 +167,13 @@ class PathPlanner:
 		self.closed_start_points = []
 		self.calc_xy_bounds()
 		print('grid_range: ' + str(self.grid_range))
+
+	def visualise_obstacles(self):
+		
+		for key in self.obstacles:
+		
+			v = self.heightmap[key]
+			gc.spawn_sdf_model(v, gc_const.RED_VERTICE_PATH, 'obst_' + str(key))
 
 # Deleting vertices lying outside the boundaries of the height map and clearing them from lists of neighboring vertices
 	def false_neighbors_deleting(self):
@@ -189,20 +196,29 @@ class PathPlanner:
 						v.neighbors_list.pop(n_key)
 
 # Marking the vertices lying on the border of the height map as obstacles
-	def boundary_cells_marking(self):
+	def boundary_vertices_marking(self):
 
-		for i in range(self.min_col, self.max_col + 1):
+		for i in range(self.min_col, self.max_col):
 		
-			for j in range(self.min_row, self.max_row + 1):
+			for j in range(self.min_row, self.max_row):
+			
+				for l in range(self.step_count):
+				
+					for k in range(self.step_count):	
+					
+						id_1 = (str(i) + '.' + str(l), str(float(self.min_row)))
+						id_2 = (str(i) + '.' + str(l), str(float(self.max_row)))
+						id_3 = (str(float(self.min_col)), str(j) + '.' + str(k))
+						id_4 = (str(float(self.max_col)), str(j) + '.' + str(k))
+						self.mark_as_obstacle(id_1)
+						self.mark_as_obstacle(id_2)
+						self.mark_as_obstacle(id_3)
+						self.mark_as_obstacle(id_4)
 
-				id_1 = (str(float(i)), str(float(self.min_row)))
-				id_2 = (str(float(i)), str(float(self.max_row - 1)))
-				id_3 = (str(float(self.min_col)), str(float(j)))
-				id_4 = (str(float(self.max_col - 1)), str(float(j)))
-				self.mark_as_obstacle(id_1)
-				self.mark_as_obstacle(id_2)
-				self.mark_as_obstacle(id_3)
-				self.mark_as_obstacle(id_4)
+		last_p_id = (str(float(self.max_col)), str(float(self.max_row)))
+		self.mark_as_obstacle(last_p_id)
+						
+		#self.visualise_obstacles()
 
 # Analysis of the height map and search for impassable areas on it
 	def detect_obstacles(self):
@@ -240,6 +256,7 @@ class PathPlanner:
 # key: key of the vertice
 	def mark_as_obstacle(self, key):
 		vertice = self.heightmap[key]
+		#print('obstacle_id: ' + str(key))
 		vertice.obstacle = True
 
 		if not key in self.obstacles:
@@ -545,7 +562,7 @@ v1.get_distance_to(v2) #+ fabs(v1.riskiness - v2.riskiness)
 				
 				id1 = (str(col), str(row))
 				
-				#print('id: ' + str(id1))
+				#print('cell_id: ' + str(id1))
 				
 				id2 = (str(col), str(row + 1))
 				id3 = (str(col + 1), str(row))
@@ -636,9 +653,9 @@ v1.get_distance_to(v2) #+ fabs(v1.riskiness - v2.riskiness)
 					
 					self.cells[id1] = cell
 					
-				for l in range(0, self.step_count):
+				for l in range(self.step_count):
 						
-					for k in range(0, self.step_count):
+					for k in range(self.step_count):
 						
 						new_x = init_x + k * const.GRID_SIZE
 						new_y = init_y - l * const.GRID_SIZE
@@ -659,8 +676,63 @@ v1.get_distance_to(v2) #+ fabs(v1.riskiness - v2.riskiness)
 						new_p.set_id(new_p_id)
 						new_p.set_z(new_z)
 						self.heightmap[new_p_id] = new_p
+						time.sleep(0.01)
+						#print(new_p_id in self.heightmap.keys())
+		
+		print('Cells count: ' + str(len(self.cells)))				
+		self.right_bottom_interpolate()
 						
 
+	def right_bottom_interpolate(self):
+	
+		i = self.max_col
+		
+		for j in range(self.min_row, self.max_row):
+		
+			v1_id = (str(float(i)), str(float(j)))
+			v2_id = (str(float(i)), str(float(j + 1)))
+			v1 = self.heightmap[v1_id]
+			v2 = self.heightmap[v2_id]
+		
+			
+			for k in range(self.step_count):
+			
+				new_p_id = (str(float(i)), str(j) + '.' + str(k))
+				#print('new_p_id: ' + str(new_p_id))
+				new_x = v1.x + k * const.GRID_SIZE
+				new_y = v1.y
+				z = v1.find_z_coord(v2, new_x, new_y)
+				new_p = Point(new_x, new_y, z)
+				new_p.set_id(new_p_id)
+	
+				if not new_p_id in self.heightmap.keys():
+	
+					self.heightmap[new_p_id] = new_p
+				
+		j = self.max_row
+		
+		for i in range(self.min_col, self.max_col):
+		
+			v1_id = (str(float(i)), str(float(j)))
+			v2_id = (str(float(i + 1)), str(float(j)))
+			v1 = self.heightmap[v1_id]
+			v2 = self.heightmap[v2_id]
+		
+			for l in range(self.step_count):
+			
+				new_p_id = (str(i) + '.' + str(l), str(float(j)))
+				#print('new_p_id: ' + str(new_p_id))
+				new_x = v1.x
+				new_y = v1.y - l * const.GRID_SIZE
+				z = v1.find_z_coord(v2, new_x, new_y)
+				new_p = Point(new_x, new_y, z)
+				new_p.set_id(new_p_id)
+				
+				if not new_p_id in self.heightmap.keys():
+				
+					self.heightmap[new_p_id] = new_p
+				
+		
 	def make_heightmap_neighbors(self):
 		
 		for key in self.heightmap.keys():
@@ -696,7 +768,7 @@ v1.get_distance_to(v2) #+ fabs(v1.riskiness - v2.riskiness)
 	def get_start_and_goal_id(self, pos, orient, x, y, offset):
 		start_id = self.get_start_vertice_id(pos, orient)
 		if start_id:
-			goal_id = self.get_reliable_goal_id(start_id, x, y, offset, orient)
+			goal_id = self.get_random_goal_id(start_id, orient)#self.get_reliable_goal_id(start_id, x, y, offset, orient)
 		else:
 			#print('Path planning from the point ' + str(pos) + ' is impossible.')
 			return None, None
@@ -714,6 +786,7 @@ v1.get_distance_to(v2) #+ fabs(v1.riskiness - v2.riskiness)
 	def find_path(self, start_id, goal_id, start_orient):
 		start_v = self.heightmap[start_id]
 		goal_v = self.heightmap[goal_id]
+		#gc.spawn_sdf_model(goal_v, gc_const.RED_VERTICE_PATH, 'goal_v_' + str(start_id) + '_' + str(goal_id))
 		current_v = start_v
 		current_v.path_cost = 0
 		current_neighbors = current_v.neighbors_list.values()
@@ -732,6 +805,7 @@ v1.get_distance_to(v2) #+ fabs(v1.riskiness - v2.riskiness)
 				angle_difference = fabs(current_v.dir_vect.get_angle_between_vectors(vect))
 
 				if not v.obstacle and angle_difference < const.ORIENT_BOUND:
+					
 					v.dir_vect = vect
 
 					if not v_id in self.open and not v_id in self.closed:
@@ -757,6 +831,7 @@ v1.get_distance_to(v2) #+ fabs(v1.riskiness - v2.riskiness)
 				break
 
 			current_v = self.heightmap[current_v_id]
+			#gc.spawn_sdf_model(current_v, gc_const.VERTICE_PATH, 'v_' + str(current_v_id) + '_' + str(start_id) + '_' + str(goal_id))
 			current_neighbors = copy.copy(current_v.neighbors_list.values())
 			self.closed.append(current_v_id)
 
@@ -811,15 +886,24 @@ v1.get_distance_to(v2) #+ fabs(v1.riskiness - v2.riskiness)
 
 			if not new_p.obstacle and not new_p_id in self.closed_start_points:
 
-				self.closed_start_points.append(new_p_id)
+				self.add_closed_start_id(new_p_id)
 				roll, pitch = self.get_start_orientation(new_p_id)
 				rot = Rotation.from_euler('xyz', [roll, pitch, 0], degrees=True)
 				quat = rot.as_quat()
 				break
 
-		#gc.spawn_sdf_model(new_p, gc_const.BLUE_VERTICE_PATH,'v' + str(new_p_id))
-
 		return new_p, quat
+
+	def add_closed_start_id(self, v_id):
+	
+		v = self.heightmap[v_id]
+		self.closed_start_points.append(v_id)
+		
+		for n_id in v.neighbors_list.values():
+		
+			if not n_id in self.closed_start_points:
+
+				self.closed_start_points.append(n_id)
 
 	def get_spawn_height(self, p_id):
 		p = self.heightmap[p_id]
@@ -962,7 +1046,6 @@ v1.get_distance_to(v2) #+ fabs(v1.riskiness - v2.riskiness)
 		p_id = self.get_nearest_vertice_id(point)
 		p = self.heightmap[p_id]
 		min_angle = 360
-		points = []
 		ids = self.calc_start_ids_range(p_id)
 		current_id = None
 		for v_id in ids:
@@ -976,8 +1059,6 @@ v1.get_distance_to(v2) #+ fabs(v1.riskiness - v2.riskiness)
 					#print(' >>> Start_id was found!')
 					min_angle = angle_difference
 					current_id = v_id
-
-			points.append(v)
 
 		#print('Start vertice angle difference: ' + str(min_angle))
 		return current_id
@@ -1059,10 +1140,10 @@ v1.get_distance_to(v2) #+ fabs(v1.riskiness - v2.riskiness)
 			p = Point(new_x, new_y, 0)
 			goal_id = self.get_nearest_vertice_id(p)
 			goal_v = self.heightmap[goal_id]
+			iter_count += 1
 
 			if not(start_v.obstacle or goal_v.obstacle or goal_id == start_id or goal_id in self.closed_goals or goal_id in current_goals):
 
-				iter_count += 1
 				path, path_ids, path_cost = self.find_path(start_id, goal_id, start_orient)
 				current_goals.append(goal_id)
 				if path:
@@ -1114,6 +1195,7 @@ v1.get_distance_to(v2) #+ fabs(v1.riskiness - v2.riskiness)
 
 			if not start_v.obstacle and not start_id in self.closed_start_points:
 			
+				self.add_closed_start_id(start_id)
 				break
 				
 		return start_id
@@ -1177,9 +1259,14 @@ v1.get_distance_to(v2) #+ fabs(v1.riskiness - v2.riskiness)
 		print('\n>>> Gridmap preparing <<<\n')
 		self.cells_maker()
 		finish_time = time.time()
+		run_time = finish_time - start_time
 		
-		print('Cell generation run time: ' + str(finish_time - start_time))
+		print('Cells count: ' + str(len(self.cells)))
+		print('Vertices per cell count: ' + str(self.step_count * self.step_count))
+		print('Cell generation run time: ' + str(run_time))
 		print('Vertices count: ' + str(len(self.heightmap)))
+		print('Average time per cell: ' + str(run_time / len(self.cells)))
+		print('Average time per vertice: ' + str(run_time / len(self.heightmap)))
 	
 		start_time = time.time()	
 		print('\n>>> Creating lists of neighboring vertices <<<\n')
@@ -1189,7 +1276,7 @@ v1.get_distance_to(v2) #+ fabs(v1.riskiness - v2.riskiness)
 		print('Neighbors generation run time: ' + str(finish_time - start_time))
 		
 		print('\n>>> Boundary cells marking <<<\n')
-		self.boundary_cells_marking()
+		self.boundary_vertices_marking()
 		
 		print('\n>>> False neighbors deleting <<<\n')
 		self.false_neighbors_deleting()

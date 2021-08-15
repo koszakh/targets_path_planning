@@ -1,8 +1,7 @@
-HEIGHTMAP_PATH = "/root/.gazebo/models/heightmap_test/materials/textures/hmap4.png"
-PNG_PATH_PREFIX = "/root/.gazebo/models"
-HEIGHTMAP_SDF_PATH = "/root/.gazebo/models/heightmap_test/model.sdf"
-HIGH_BOUND_HEIGHT_DIFF = 0.50#1
-MAX_ROUGHNESS = 50#55
+ROOT_PREFIX = "/root/.gazebo/models"
+HEIGHTMAP_SDF_PATH = ROOT_PREFIX + "/heightmap/model.sdf"
+HIGH_BOUND_HEIGHT_DIFF = 0.70#1
+MAX_ROUGHNESS = 70#55
 ROUGHNESS_COEF = 0.5
 HD_COEF = 0.5
 ROBOT_RADIUS = 0.5#1.93
@@ -17,14 +16,15 @@ MAP_PATH_WORDS = ['<collision', '<heightmap', '<uri']
 MAP_POS_WORDS = ['<collision', '<heightmap', '<pos']
 ORIENT_BOUND = 47
 START_GRID_RANGE = 2
-MAX_ITER_COUNT = 100
+MAX_ITER_COUNT = 500
 GOAL_VERTICE_DIST = 10
 GRID_SIZE = 1# in meters
-DIST_OFFSET = 5
+DIST_OFFSET = 10
+EXPLOSION_RADIUS = 20
+HIGH_PROB_VALUE = 0.9
 
 # HEIGHTMAP BOUNDARY INDICES
 
-MIN_COL = 223
-MAX_COL = 253
-MIN_ROW = 267
-MAX_ROW = 297
+COL_RANGE = [253, 254]
+ROW_RANGE = [268, 269]
+

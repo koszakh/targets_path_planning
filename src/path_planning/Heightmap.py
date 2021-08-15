@@ -52,7 +52,7 @@ class Heightmap:
 						break
 			
 		path = line[line.find('/') + 1:line.rfind('<')]
-		png_path = const.PNG_PATH_PREFIX + path		
+		png_path = const.ROOT_PREFIX + path		
 		return png_path
 		
 	def get_map_pos(self):
