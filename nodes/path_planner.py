@@ -18,8 +18,13 @@ def group_path_planning():
 	paths_pub = rospy.Publisher('all_paths_data', AllPaths, queue_size=10)
 	hm = Heightmap(const.HEIGHTMAP_SDF_PATH)
 
+	min_col = const.COL_RANGE[0]
+	max_col = const.COL_RANGE[1]
+	min_row = const.ROW_RANGE[0]
+	max_row = const.ROW_RANGE[1]
+
 	hmap, l_scale, w_scale, x_step, y_step, grid_step, step_count = \
-		hm.prepare_heightmap(const.MIN_COL, const.MAX_COL, const.MIN_ROW, const.MAX_ROW)
+		hm.prepare_heightmap(min_col, max_col, min_row, max_row)
 		
 	map_handler = pp.PathPlanner(hmap, l_scale, w_scale, grid_step, x_step, y_step, step_count)
 
@@ -39,6 +44,7 @@ def group_path_planning():
 	goal = (new_x1, new_y1)
 	
 	map_handler.gridmap_preparing()
+	#map_handler.visualise_obstacles()
 	cells = map_handler.cells
 	
 	#cell_id = random.choice(list(map_handler.cells.keys()))#(str(float(map_handler.min_col)), str(float(map_handler.min_row)))
