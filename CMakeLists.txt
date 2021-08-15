@@ -52,11 +52,8 @@ find_package(
 add_message_files(
   FILES
   Path.msg
-  RobotPos.msg
   AllPaths.msg
-  AllRobotsPos.msg
   Vector2d.msg
-  RobotFinished.msg
 )
 
 ## Generate services in the 'srv' folder
