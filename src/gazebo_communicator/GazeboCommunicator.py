@@ -12,7 +12,7 @@ from math import sqrt, fabs, sin, asin, pi, cos, acos
 from gazebo_msgs.msg import ModelState, ODEPhysics
 from geometry_msgs.msg import Pose, Twist, Quaternion, Point, Vector3
 from std_msgs.msg import Float64, Time, Duration
-from gazebo_msgs.srv import SetModelState, GetModelState, ApplyJointEffort, GetModelProperties, SpawnModel, GetWorldProperties, GetLinkState, SetPhysicsProperties
+from gazebo_msgs.srv import SetModelState, GetModelState, GetModelProperties, SpawnModel, GetWorldProperties, GetLinkState, DeleteModel
 import vector3d
 import threading as thr
 from scipy.spatial.transform import Rotation
@@ -164,7 +164,7 @@ class Robot(thr.Thread):
 # The movement of the robot along a given final route
 # Start of thread
 	def run(self):
-		print(self.name + ' path length: ' + str(len(self.path)))
+		print(self.name + ' path length: ' + str(get_path_length(self.path)))
 		if len(self.path) > 0:
 			for state in self.path:
 				dist = state.get_distance_to(self.get_robot_position())
@@ -227,28 +227,6 @@ def get_world_properties():
 	except:
 		print "Service call failed: %s" % e
 		return None
-
-def set_physics_properties(x, y, z):
-	set_gravity = rospy.ServiceProxy('/gazebo/set_physics_properties', SetPhysicsProperties)
-
-	time_step = Float64(0.001)
-	max_update_rate = Float64(1000.0)
-	gravity = Vector3()
-	gravity.x = x
-	gravity.y = y
-	gravity.z = z
-	ode_config = ODEPhysics()
-	ode_config.auto_disable_bodies = False
-	ode_config.sor_pgs_precon_iters = 0
-	ode_config.sor_pgs_iters = 50
-	ode_config.sor_pgs_w = 1.3
-	ode_config.sor_pgs_rms_error_tol = 0.0
-	ode_config.contact_surface_layer = 0.001
-	ode_config.contact_max_correcting_vel = 0.0
-	ode_config.cfm = 0.0
-	ode_config.erp = 0.2
-	ode_config.max_contacts = 20
-	set_gravity(time_step.data, max_update_rate.data, gravity, ode_config)
 
 
 # Getting data about a property of the world in the Gazebo environment
@@ -342,6 +320,20 @@ def get_model_state(model_name):
 	except rospy.ServiceException, e:
 		print "Service call failed: %s" % e
 		return None
+		
+def delete_model(model_name):
+	rospy.wait_for_service('/gazebo/delete_model')
+	
+	try:
+	
+		del_model = rospy.ServiceProxy('/gazebo/delete_model', GetModelState)
+		resp = del_model(model_name, 'world')
+		#return model_coordinates
+	
+	except rospy.ServiceException, e:
+		
+		print "Service call failed: %s" % e
+		#return None
 
 # Generation of the object described in the .sdf file in Gazebo the environment
 # Input
@@ -511,3 +503,21 @@ def convert_to_path(msg):
 		p = PointGeom.Point(x, y, z)
 		path.append(p)
 	return path
+	
+# Calculating path length
+# Input
+# path: path vertex array
+
+# Output
+# path_len: path length
+def get_path_length(path):
+	path_len = 0
+
+	for i in range(0, len(path) - 1):
+
+		current_v = path[i]
+		next_v = path[i + 1]
+		dist = current_v.get_distance_to(next_v)
+		path_len += dist
+
+	return path_len
