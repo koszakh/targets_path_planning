@@ -281,37 +281,33 @@ class Point:
 		
 		if det_col == 0:
 			
-			min_col = str(col - 1) + '.' + str(step_count - 1)
-			max_col = str(col) + '.' + str(1)
+			min_col = str(col_ind - 1) + '.' + str(step_count - 1)
+			max_col = str(col_ind) + '.' + str(1)
 		
 		elif det_col == step_count - 1:
 			
-			min_col = str(col) + '.' + str(int(step_count - 2))
-			max_col = str(col + 1) + '.0'
+			min_col = str(col_ind) + '.' + str(int(step_count - 2))
+			max_col = str(col_ind + 1) + '.0'
 			
 		else:
 		
-			min_col = str(col) + '.' + str(int(det_col) - 1)
-			max_col = str(col) + '.' + str(int(det_col) + 1)
+			min_col = str(col_ind) + '.' + str(int(det_col) - 1)
+			max_col = str(col_ind) + '.' + str(int(det_col) + 1)
 			
 		if det_row == 0:
 			
-			min_row = str(row - 1) + '.' + str(step_count - 1)
-			max_row = str(row) + '.' + str(1)
+			min_row = str(row_ind - 1) + '.' + str(step_count - 1)
+			max_row = str(row_ind) + '.' + str(1)
 		
 		elif det_row == step_count - 1:
 			
-			min_row = str(row) + '.' + str(int(step_count - 2))
-			max_row = str(row + 1) + '.0'
-			
-		elif det_row == step_count:
+			min_row = str(row_ind) + '.' + str(int(step_count - 2))
+			max_row = str(row_ind + 1) + '.0'
 		
-			print('Error! ' + str(self.id))
-			
 		else:
 		
-			min_row = str(row) + '.' + str(int(det_row) - 1)
-			max_row = str(row) + '.' + str(int(det_row) + 1)
+			min_row = str(row_ind) + '.' + str(int(det_row) - 1)
+			max_row = str(row_ind) + '.' + str(int(det_row) + 1)
 		
 		self.neighbors_list = {
 			'1' : (str(col), str(min_row)),
