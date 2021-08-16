@@ -4,7 +4,7 @@
 import path_planning.PathPlanner as pp
 import rospy
 import copy
-from targets_path_planning.msg import AllPaths, Path, AllRobotsPos
+from targets_path_planning.msg import AllPaths, Path
 from geometry_msgs.msg import Point
 from path_planning.Point import Point as PointGeom, Vector2d
 from path_planning.Heightmap import Heightmap
