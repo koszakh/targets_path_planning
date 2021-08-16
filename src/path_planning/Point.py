@@ -269,14 +269,16 @@ class Point:
 
 	def set_neighbors_list(self, step_count):
 	
-		#print('self.id: ' + str(self.id))
-		fl_col = float(self.id[0])
-		col = int(fl_col)
-		fl_row = float(self.id[1])
-		row = int(fl_row)
-		det_col = int(str(round(fl_col - col, 2))[2:])
-		det_row = int(str(round(fl_row - row, 2))[2:])
-        
+		col = self.id[0]
+		s_col = col.split('.')
+		col_ind = int(s_col[0])
+		det_col = int(s_col[1])
+		
+		row = self.id[1]
+		s_row = row.split('.')
+		row_ind = int(s_row[0])
+		det_row = int(s_row[1])
+		
 		if det_col == 0:
 			
 			min_col = str(col - 1) + '.' + str(step_count - 1)
@@ -311,22 +313,14 @@ class Point:
 			min_row = str(row) + '.' + str(int(det_row) - 1)
 			max_row = str(row) + '.' + str(int(det_row) + 1)
 		
-
-		#print('det_col: ' + str(det_col))
-		#print('det_row: ' + str(det_row))
-		#print('min_col: ' + str(min_col))
-		#print('max_col: ' + str(max_col))
-		#print('min_row: ' + str(min_row))
-		#print('max_row: ' + str(max_row))
-		
 		self.neighbors_list = {
-			'1' : (str(fl_col), str(min_row)),
+			'1' : (str(col), str(min_row)),
 			'2' : (str(min_col), str(min_row)),
-			'3' : (str(min_col), str(fl_row)),
+			'3' : (str(min_col), str(row)),
 			'4' : (str(min_col), str(max_row)),
-			'5' : (str(fl_col), str(max_row)),
+			'5' : (str(col), str(max_row)),
 			'6' : (str(max_col), str(max_row)),
-			'7' : (str(max_col), str(fl_row)),
+			'7' : (str(max_col), str(row)),
 			'8': (str(max_col), str(min_row))
 		}
 		
