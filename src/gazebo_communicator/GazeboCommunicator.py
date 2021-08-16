@@ -367,7 +367,7 @@ def spawn_urdf_model(model_name, model_directory, state, orient):
 	try:
 		spawn_model_client = rospy.ServiceProxy('/gazebo/spawn_urdf_model', SpawnModel)
 		spawn_model_client(model_name, open(model_directory, 'r').read(),
-					"/rover", Pose(position=Point(state.x, state.y, state.z), orientation=Quaternion(x, y, z, w)), "world")
+					"/sim_" + model_name, Pose(position=Point(state.x, state.y, state.z), orientation=Quaternion(x, y, z, w)), "world")
 	except rospy.ServiceException, e:
 		print "Service call failed: %s" % e
 
