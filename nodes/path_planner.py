@@ -4,6 +4,7 @@
 import path_planning.PathPlanner as pp
 import rospy
 import copy
+import numpy
 from targets_path_planning.msg import AllPaths, Path
 from geometry_msgs.msg import Point
 from path_planning.Point import Point as PointGeom, Vector2d
@@ -15,6 +16,7 @@ from path_planning.ORCA import ORCAsolver
 import random
 
 def group_path_planning():
+
 	paths_pub = rospy.Publisher('all_paths_data', AllPaths, queue_size=10)
 	hm = Heightmap(const.HEIGHTMAP_SDF_PATH)
 
@@ -33,10 +35,13 @@ def group_path_planning():
 	min_y = map_handler.min_y
 	max_y = map_handler.max_y
 	
-	new_x = random.uniform(min_x, max_x)
-	new_y = random.uniform(min_y, max_y)
-	new_x1 = random.uniform(min_x, max_x)
-	new_y1 = random.uniform(min_y, max_y)
+	avg_x = numpy.mean([min_x, max_x])
+	avg_y = numpy.mean([min_y, max_y])
+	
+	new_x = numpy.mean([min_x, avg_x])#random.uniform(min_x, avg_x)
+	new_y = numpy.mean([min_y, avg_y])#random.uniform(min_y, max_y)
+	new_x1 = numpy.mean([avg_x, max_x])
+	new_y1 = numpy.mean([avg_y, max_y])
 	
 	offset = const.DIST_OFFSET
 
@@ -44,33 +49,41 @@ def group_path_planning():
 	goal = (new_x1, new_y1)
 	
 	map_handler.gridmap_preparing()
-	#map_handler.visualise_obstacles()
 	cells = map_handler.cells
-	
-	#cell_id = random.choice(list(map_handler.cells.keys()))#(str(float(map_handler.min_col)), str(float(map_handler.min_row)))
+
+	f = open(gc_const.MAP_COORDS_PATH, 'w+')
+	f.write('Longitude / Latitude\n')
+	f.close()
 		
 	orca = ORCAsolver(map_handler.heightmap, cells, x_step, y_step, l_scale, w_scale)
 	smoothed_paths = {}
-	robot_names = []
+	robot_names = ['p3at' + str(i) for i in range(1, gc_const.ROBOTS_COUNT + 1)]
+		
+	for name in (robot_names):
 	
-	for name in gc_const.ROBOT_NAMES:
-	
-		robot_names.append(name)
 		robot_pos, orient = map_handler.get_start_pos(start[0], start[1], offset)
-		gc.spawn_target(name, robot_pos, orient)
-		robot_orient = gc.get_robot_orientation_vector(name)
-		start_id, goal_id = map_handler.get_start_and_goal_id(robot_pos, robot_orient, goal[0], goal[1], offset)
 		
-		if goal_id:
+		if robot_pos:
 		
-			print('\nPath planning for ' + name + ' has begun!')
-			path, path_ids, path_cost = map_handler.find_path(start_id, goal_id, robot_orient)
+			gc.spawn_target(name, robot_pos, orient)
 			
-			if path:
-
-				orca.add_agent(name, path)
+			robot_orient = gc.get_robot_orientation_vector(name)
+			start_id, goal_id = map_handler.get_start_and_goal_id(robot_pos, robot_orient, goal[0], goal[1], offset)
+			
+			if goal_id:
+			
+				print('\nPath planning for ' + name + ' has begun!')
+				path, path_ids, path_cost = map_handler.find_path(start_id, goal_id, robot_orient)
 				
-		print('Current agents count: ' + str(orca.sim.getNumAgents()))
+				if path:
+
+					orca.add_agent(name, path)
+					
+				else:
+				
+					orca.add_agent(name, [])
+					
+			print('Current agents count: ' + str(orca.sim.getNumAgents()))
 	
 	paths = orca.run_orca()
 	msg = prepare_paths_msg(paths.keys(), paths)
