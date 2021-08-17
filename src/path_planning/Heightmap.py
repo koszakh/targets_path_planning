@@ -10,7 +10,9 @@ import io
 # Heightmap class used for generating cell matrix
 # heightmap: heightmap vertex list
 class Heightmap:
+
 	def __init__(self, sdf_path):
+	
 		self.sdf_path = sdf_path
 		self.png_path = self.get_png_path()
 		self.image = cv2.imread(self.png_path, 0)
@@ -41,6 +43,7 @@ class Heightmap:
 		return length_scale, width_scale, height_scale
 		
 	def get_png_path(self):
+	
 		with io.open(self.sdf_path, encoding='utf-8') as file:
 		
 			for word in const.MAP_PATH_WORDS:
@@ -52,7 +55,7 @@ class Heightmap:
 						break
 			
 		path = line[line.find('/') + 1:line.rfind('<')]
-		png_path = const.ROOT_PREFIX + path		
+		png_path = const.ROOT_PATH + path		
 		return png_path
 		
 	def get_map_pos(self):
@@ -75,6 +78,7 @@ class Heightmap:
 		print(pos)
 		
 	def calc_p_range(self):
+	
 		max_p_value = 0
 		
 		for i in range(self.image.shape[0]):
@@ -136,6 +140,11 @@ class Heightmap:
 				p.set_id(p_id)
 				heightmap[p_id] = p
 				
+				if i == min_col or j == min_row or i == max_col or j == max_row:
+				
+					pass
+					#gc.spawn_sdf_model(p, gc_const.BIG_RED_VERTICE_PATH, 'v' + str(p_id))
+				
 				
 		return heightmap
 
@@ -146,13 +155,19 @@ class Heightmap:
 # Output
 # h_map: heightmap vertex list
 	def convert_to_list(self, dict_hmap):
+	
 		h_map = []
+		
 		for i in range(self.map_height):
+		
 			h_map.append([])
+		
 			for j in range (self.map_width):
+		
 				key = (str(i), str(j))
 				v = dict_hmap[key]
 				h_map[i].append(v)
+		
 		return h_map
 
 # Converting heightmap vertex list to dictionary

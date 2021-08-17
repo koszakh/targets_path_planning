@@ -11,7 +11,7 @@ import gazebo_communicator.GazeboCommunicator as gc
 import gazebo_communicator.GazeboConstants as gc_const
 import cv2
 from scipy.spatial.transform import Rotation
-from numpy import array
+from numpy import array, mean
 from matplotlib.path import Path
 
 # A class describing the heightmap cells formed by its vertices.
@@ -24,11 +24,13 @@ from matplotlib.path import Path
 class Cell:
 	
 	def __init__(self, cell_id, planes):
+
 		self.id = cell_id
 		self.planes = planes
 		self.make_edges()
 		
 	def make_edges(self):
+
 		self.edges = []
 		names = []
 		
@@ -39,17 +41,14 @@ class Cell:
 				
 				e1 = edge[0]
 				e2 = edge[1]
-				#print(e1.label, e2.label)
 				
 				name1 = [e1.label, e2.label]
 				name2 = [e2.label, e1.label]
 				
 				if not (name1 in names) and not (name2 in names):
-					#print(True)
+					
 					self.edges.append(edge)
 					names.append(name1)
-					
-		#print(str(self.id) + ' cell edges count: ' + str(len(self.edges)))
 		
 		
 	def find_z_on_cell(self, x, y):
@@ -59,7 +58,7 @@ class Cell:
 		for plane in self.planes:
 			
 			if plane.poly.contains_point((x, y)):
-				#print('Plane ' + str(plane.id) + ' contains point (' + str(x) + ', ' + str(y) + ')')
+			
 				z = plane.find_z(x, y)
 				break
 					
@@ -75,16 +74,18 @@ class Cell:
 				dist1_3 = p1.get_distance_to(new_p)
 				dist2_3 = p2.get_distance_to(new_p)
 				dist_sum = round(dist1_2 - dist1_3 - dist2_3, 3)
-				#print('p1: ' + str(p1.label) + ' | p2: ' + str(p2.label) + ' | dist_sum: ' + str(dist_sum) + ' | z: ' + str(new_z))
+				
 				if dist_sum == 0:
-					#print('>>> Success <<<')
+				
 					z = new_z
 					break
 		
 		return z			
 
 class Plane:
+
 	def __init__(self, v_id, num, points):
+	
 		self.id = str(v_id[0]) + '-' + str(v_id[1]) + '-' + str(num)
 		self.v_id = v_id
 		self.points = points
@@ -92,11 +93,15 @@ class Plane:
 		self.edges = self.make_edges()
 		sum_x = 0
 		sum_y = 0
+		
 		for p in self.points:
+			
 			sum_x += p.x
 			sum_y += p.y
-		avg_x = sum_x / len(self.points)
-		avg_y = sum_y / len(self.points)
+		
+		avg_x = mean([item.x for item in self.points])
+		avg_y = mean([item.y for item in self.points])
+
 		self.a, self.b, self.c, self.d = points[0].get_plane_equation_coeffs(points[1].x, points[1].y, points[1].z, points[2].x, points[2].y, points[2].z)
 		z = self.find_z(avg_x, avg_y)
 		self.center = Point(avg_x, avg_y, z)
@@ -110,10 +115,14 @@ class Plane:
 		gc.visualise_path(self.points, gc_const.RED_VERTICE_PATH, 'poly_p_' + self.id)
 		
 	def make_poly(self):
+		
 		poly_points = []
+		
 		for p in self.points:
+		
 			poly_p = (p.x, p.y)
 			poly_points.append(poly_p)
+		
 		return Path(array(poly_points))		
 
 	def make_edges(self):
@@ -148,6 +157,7 @@ class Plane:
 
 class PathPlanner:
 	def __init__(self, heightmap, l_scale, w_scale, grid_range, x_step, y_step, step_count):
+		
 		self.heightmap = heightmap
 		self.obstacles = []
 		self.min_col = const.COL_RANGE[0]
@@ -222,13 +232,13 @@ class PathPlanner:
 
 # Analysis of the height map and search for impassable areas on it
 	def detect_obstacles(self):
+	
 		tmp_map = copy.copy(self.heightmap)
 
 		for key in tmp_map.keys():
 
 			if self.heightmap.get(key):
 				
-				#print('key:' + str(key))
 				vertice = self.heightmap[key]
 
 				if not vertice.obstacle:
@@ -246,10 +256,6 @@ class PathPlanner:
 						vertice.set_local_roughness(local_roughness)
 
 		print('Obstacle-vertices count: ' + str(len(self.obstacles)))
-
-		#for vertice_id in self.obstacles:
-
-			#self.calc_local_riskiness(vertice_id)
 
 # Marking a vertex as an obstacle
 # Input
@@ -430,12 +436,9 @@ v1.get_distance_to(v2) #+ fabs(v1.riskiness - v2.riskiness)
 		vertice = self.heightmap[vertice_id]
 		ln_count = len(vertice.neighbors_list)
 		sum_angles = 0
-		#print('\nvertice_id: ' + str(vertice_id))
-		#print(vertice.neighbors_list.values())
 		for v_id in vertice.neighbors_list.values():
 
 			v = self.heightmap[v_id]
-			#print(v_id)
 			surf_angle = self.calc_heightmap_surf_angle(vertice_id, v_id)
 			sum_angles += fabs(surf_angle)
 
@@ -460,8 +463,15 @@ v1.get_distance_to(v2) #+ fabs(v1.riskiness - v2.riskiness)
 		z2 = v2.z
 		cathet = z1 - z2
 		hypotenuse = v1.get_distance_to(v2)
-		sin_a = cathet / hypotenuse
-		surf_angle = asin(sin_a) * 180 / pi
+		
+		if not hypotenuse:
+		
+			surf_angle = 0
+		else:
+					
+			sin_a = cathet / hypotenuse
+			surf_angle = asin(sin_a) * 180 / pi
+			
 		return surf_angle
 
 # Calculation of the largest height difference between a vertex and one of its neighboring vertices
@@ -480,6 +490,7 @@ v1.get_distance_to(v2) #+ fabs(v1.riskiness - v2.riskiness)
 			#print(v_id)
 			v = self.heightmap[v_id]
 			z1 = v.z
+			
 			height_diff = fabs(z1 - z)
 
 			if height_diff > max_height_diff:
@@ -549,6 +560,25 @@ v1.get_distance_to(v2) #+ fabs(v1.riskiness - v2.riskiness)
 
 		return closest_id
 
+	def get_cell_points(self, col, row):
+		
+		id1 = (str(col), str(row))
+		id2 = (str(col), str(row + 1))
+		id3 = (str(col + 1), str(row))
+		id4 = (str(col + 1), str(row + 1))
+
+		p1 = self.heightmap[id1]
+		p2 = self.heightmap[id2]
+		p3 = self.heightmap[id3]
+		p4 = self.heightmap[id4]
+		
+		p1.label = 'p1'
+		p2.label = 'p2'
+		p3.label = 'p3'
+		p4.label = 'p4'
+		
+		return p1, p2, p3, p4
+
 # Creating Plane class objects and marking impassable cells
 	def cells_maker(self):
 		self.cells = {}
@@ -560,56 +590,32 @@ v1.get_distance_to(v2) #+ fabs(v1.riskiness - v2.riskiness)
 				col = float(i)
 				row = float(j)
 				
-				id1 = (str(col), str(row))
-				
-				#print('cell_id: ' + str(id1))
-				
-				id2 = (str(col), str(row + 1))
-				id3 = (str(col + 1), str(row))
-				id4 = (str(col + 1), str(row + 1))
-
-				p1 = self.heightmap[id1]
-				p2 = self.heightmap[id2]
-				p3 = self.heightmap[id3]
-				p4 = self.heightmap[id4]
-				
-				p1.label = 'p1'
-				p2.label = 'p2'
-				p3.label = 'p3'
-				p4.label = 'p4'
+				p1, p2, p3, p4 = self.get_cell_points(col, row)
 
 				init_x = p1.x
 				init_y = p1.y
 				end_x = p4.x
 				end_y = p4.y
 				
-				avg_x = (p1.x + p2.x + p3.x + p4.x) / 4
-				avg_y = (p1.y + p2.y + p3.y + p4.y) / 4
+				avg_x = mean([p1.x, p2.x, p3.x, p4.x])
+				avg_y = mean([p1.y, p2.y, p3.y, p4.y])
 				
 				
 				dist1_2 = p1.get_distance_to(p2)
-				dist1_3 = p1.get_distance_to(p3)
 				dist2_4 = p2.get_distance_to(p4)
 				dist3_4 = p3.get_distance_to(p4)
 				
-				mid_col = str(i) + '.' + str(self.step_count / 2)
-				mid_row = str(j) + '.' + str(self.step_count / 2)
-				p_mid_id = (mid_col, mid_row)
-				
 				
 				p1_2 = p1.get_point_at_distance_and_angle(p2, dist1_2 / 2)
-				p1_3 = p1.get_point_at_distance_and_angle(p3, dist1_3 / 2)
 				p2_4 = p2.get_point_at_distance_and_angle(p4, dist2_4 / 2)
 				p3_4 = p3.get_point_at_distance_and_angle(p4, dist3_4 / 2)
 				
 				
 				p1_2_name = 'p1_2'
-				p1_3_name = 'p1_3'
 				p2_4_name = 'p2_4'
 				p3_4_name = 'p3_4'
 				
 				p1_2.label = p1_2_name
-				p1_3.label = p1_3_name
 				p2_4.label = p2_4_name
 				p3_4.label = p3_4_name
 				
@@ -618,20 +624,18 @@ v1.get_distance_to(v2) #+ fabs(v1.riskiness - v2.riskiness)
 					#print('>>> i % 2 == 0 <<<')
 					mid_z = find_z_on_plane(avg_x, avg_y, p3, p3_4, p1)
 					p_mid = Point(avg_x, avg_y, mid_z)
-					p_mid.set_id(p_mid_id)
 					p_mid.label = 'p_mid'
-					self.heightmap[p_mid_id] = p_mid
 					
-					plane1 = Plane(id1, 1, [p3, p1, p_mid, p3_4])
-					plane2 = Plane(id1, 2, [p2, p2_4, p_mid, p1])
-					plane3 = Plane(id1, 3, [p_mid, p2_4, p3_4])
-					plane4 = Plane(id1, 4, [p4, p3_4, p2_4])
+					plane1 = Plane(p1.id, 1, [p3, p1, p_mid, p3_4])
+					plane2 = Plane(p1.id, 2, [p2, p2_4, p_mid, p1])
+					plane3 = Plane(p1.id, 3, [p_mid, p2_4, p3_4])
+					plane4 = Plane(p1.id, 4, [p4, p3_4, p2_4])
 					
 					planes = [plane1, plane2, plane3, plane4]
 					
-					cell = Cell(id1, planes)
+					cell = Cell(p1.id, planes)
 					
-					self.cells[id1] = cell
+					self.cells[p1.id] = cell
 				
 				else:
 				
@@ -639,49 +643,54 @@ v1.get_distance_to(v2) #+ fabs(v1.riskiness - v2.riskiness)
 					
 					mid_z = find_z_on_plane(avg_x, avg_y, p1, p1_2, p3)
 					p_mid = Point(avg_x, avg_y, mid_z)
-					p_mid.set_id(p_mid_id)
 					p_mid.label = 'p_mid'
-					self.heightmap[p_mid_id] = p_mid
 					
-					plane1 = Plane(id1, 1, [p1, p1_2, p_mid, p3])
-					plane2 = Plane(id1, 2, [p4, p3, p_mid, p2_4])
-					plane3 = Plane(id1, 3, [p_mid, p1_2, p2_4])
-					plane4 = Plane(id1, 4, [p2, p2_4, p1_2])
+					plane1 = Plane(p1.id, 1, [p1, p1_2, p_mid, p3])
+					plane2 = Plane(p1.id, 2, [p4, p3, p_mid, p2_4])
+					plane3 = Plane(p1.id, 3, [p_mid, p1_2, p2_4])
+					plane4 = Plane(p1.id, 4, [p2, p2_4, p1_2])
 					planes = [plane1, plane2, plane3, plane4]
 					
-					cell = Cell(id1, planes)
+					cell = Cell(p1.id, planes)
 					
-					self.cells[id1] = cell
+					self.cells[p1.id] = cell
 					
-				for l in range(self.step_count):
-						
-					for k in range(self.step_count):
-						
-						new_x = init_x + k * const.GRID_SIZE
-						new_y = init_y - l * const.GRID_SIZE
-						new_p_id = (str(i) + '.' + str(l), str(j) + '.' + str(k))
-						#print('new_p_id: ' + str(new_p_id))
-						
-						if new_p_id in self.heightmap.keys() or (l == 0 and k == 0):
-						
-							continue
-						
-						else:
-						
-							new_z = cell.find_z_on_cell(new_x, new_y)
-							
-
-						new_p = Point(new_x, new_y, new_z)
-						
-						new_p.set_id(new_p_id)
-						new_p.set_z(new_z)
-						self.heightmap[new_p_id] = new_p
-						time.sleep(0.01)
-						#print(new_p_id in self.heightmap.keys())
+				self.calc_intermediate_points(p1.id, init_x, init_y)
+					
+				
 		
 		print('Cells count: ' + str(len(self.cells)))				
 		self.right_bottom_interpolate()
 						
+	def calc_intermediate_points(self, cell_id, init_x, init_y):
+	
+		cell = self.cells[cell_id]
+		i = int(float(cell_id[0]))
+		j = int(float(cell_id[1]))
+		
+		for l in range(self.step_count):
+						
+			for k in range(self.step_count):
+				
+				new_p_id = (str(i) + '.' + str(l), str(j) + '.' + str(k))
+				#print('new_p_id: ' + str(new_p_id))
+				
+				if self.heightmap.get(new_p_id) or (l == 0 and k == 0):
+				
+					continue
+				
+				else:
+				
+					new_x = init_x + k * const.GRID_SIZE
+					new_y = init_y - l * const.GRID_SIZE
+					new_z = cell.find_z_on_cell(new_x, new_y)
+					
+					new_p = Point(new_x, new_y, new_z)
+					
+					new_p.set_id(new_p_id)
+					self.heightmap[new_p_id] = new_p
+					
+				#gc.spawn_sdf_model(new_p, gc_const.GREEN_VERTICE_PATH, 'v' + str(new_p_id))
 
 	def right_bottom_interpolate(self):
 	
@@ -873,8 +882,6 @@ v1.get_distance_to(v2) #+ fabs(v1.riskiness - v2.riskiness)
 
 	def get_random_start_pos(self, x, y):
 	
-		
-
 		while True:
 
 			x = random.uniform(self.min_x, self.max_x)
@@ -1008,8 +1015,29 @@ v1.get_distance_to(v2) #+ fabs(v1.riskiness - v2.riskiness)
 		i_mod = ((self.w_scale / 2) - y) % self.y_step
 		l = i_mod // const.GRID_SIZE
 		k = j_mod // const.GRID_SIZE
+		det_l = i_mod % const.GRID_SIZE
+		det_k = j_mod % const.GRID_SIZE
+		
+		if det_l > (const.GRID_SIZE / 2):
+		
+			l += 1
+			
+			if l >= self.step_count:
+			
+				l = 0
+				i += 1
+				
+		if det_k > (const.GRID_SIZE / 2):
+		
+			k += 1
+			
+			if k >= self.step_count:
+			
+				k = 0
+				j += 1
 		
 		p_id = (str(i) + '.' + str(int(l)), str(j) + '.' + str(int(k)))
+		p = self.heightmap[p_id]
 		return p_id
 		
 	def get_current_cell_id(self, point):
@@ -1059,6 +1087,9 @@ v1.get_distance_to(v2) #+ fabs(v1.riskiness - v2.riskiness)
 					#print(' >>> Start_id was found!')
 					min_angle = angle_difference
 					current_id = v_id
+		if not current_id:
+		
+			print('Start position cannot be found.')
 
 		#print('Start vertice angle difference: ' + str(min_angle))
 		return current_id
@@ -1185,8 +1216,11 @@ v1.get_distance_to(v2) #+ fabs(v1.riskiness - v2.riskiness)
 		
 			max_y = self.max_y
 
+		iter_count = 0
+
 		while True:
 				
+			iter_count += 1
 			new_x = random.uniform(min_x, max_x)
 			new_y = random.uniform(min_y, max_y)
 			p = Point(new_x, new_y, 0)
@@ -1197,6 +1231,10 @@ v1.get_distance_to(v2) #+ fabs(v1.riskiness - v2.riskiness)
 			
 				self.add_closed_start_id(start_id)
 				break
+				
+			elif iter_count == const.MAX_ITER_COUNT:
+			
+				return None
 				
 		return start_id
 		
@@ -1236,20 +1274,41 @@ v1.get_distance_to(v2) #+ fabs(v1.riskiness - v2.riskiness)
 
 			if not goal_v.obstacle and not goal_id in self.closed_goals:
 			
+				self.add_closed_goal_points(goal_id)
 				break
 				
 		return goal_id
 
+	def add_closed_goal_id(self, v_id):
+	
+		v = self.heightmap[v_id]
+		self.closed_goals.append(v_id)
+		
+		for n_id in v.neighbors_list.values():
+		
+			if not n_id in self.closed_goals:
+
+				self.closed_goals.append(n_id)
+
 	def get_start_pos(self, x, y, offset):
 
 		start_id = self.get_start_id(x, y, offset)
-		start_v = self.heightmap[start_id]
-		self.closed_start_points.append(start_id)
-		roll, pitch = self.get_start_orientation(start_id)
-		rot = Rotation.from_euler('xyz', [roll, pitch, 0], degrees=True)
-		quat = rot.as_quat()
 		
-		return start_v, quat
+		if not start_id:
+
+			print('Start pos in this region can not be found.')
+			return None, None
+
+		else:
+		
+			start_v = self.heightmap[start_id]
+			self.closed_start_points.append(start_id)
+			roll, pitch = self.get_start_orientation(start_id)
+			rot = Rotation.from_euler('xyz', [roll, pitch, 0], degrees=True)
+			quat = rot.as_quat()
+			gc.spawn_sdf_model(start_v, gc_const.GREEN_VERTICE_PATH, 'v' + str(start_id))
+			
+			return start_v, quat
 
 # Analysis of the heightmap, search for obstacles on it and outlining heightmap boundaries
 	def gridmap_preparing(self):
@@ -1266,14 +1325,9 @@ v1.get_distance_to(v2) #+ fabs(v1.riskiness - v2.riskiness)
 		print('Cell generation run time: ' + str(run_time))
 		print('Vertices count: ' + str(len(self.heightmap)))
 		print('Average time per cell: ' + str(run_time / len(self.cells)))
-		print('Average time per vertice: ' + str(run_time / len(self.heightmap)))
-	
-		start_time = time.time()	
+		
 		print('\n>>> Creating lists of neighboring vertices <<<\n')
 		self.make_heightmap_neighbors()
-		finish_time = time.time()
-		
-		print('Neighbors generation run time: ' + str(finish_time - start_time))
 		
 		print('\n>>> Boundary cells marking <<<\n')
 		self.boundary_vertices_marking()
@@ -1361,3 +1415,4 @@ def get_path_curvature(path):
 def find_z_on_plane(x, y, p1, p2, p3):
 	z = p1.get_height_on_3d_plane(p2.x, p2.y, p2.z, p3.x, p3.y, p3.z, x, y)
 	return z
+

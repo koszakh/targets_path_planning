@@ -11,7 +11,9 @@ from time import sleep
 from math import fabs
 
 class AgentManager:
+
 	def __init__(self, agent_name):
+	
 		self.name = agent_name
 		self.last_point = None
 		self.last_goal = None
@@ -20,10 +22,12 @@ class AgentManager:
 		self.finished_planning = False
 
 	def get_agent_position(self):
+	
 		agent_pos = gc.get_model_position(self.name)
 		return agent_pos
 
 	def get_agent_orientation(self):
+	
 		agent_orient = gc.get_robot_orientation_vector(self.name)
 		return agent_orient
 
@@ -31,6 +35,7 @@ class AgentManager:
 # Input
 # path: list of path points
 	def set_init_path(self, path):
+	
 		self.init_path = path
 		self.goal_point = path[len(path) - 1]
 
@@ -64,6 +69,7 @@ gc_const.ORCA_RADIUS, self.ms)
 		self.final_paths = {}
 		self.init_paths = {}
 		self.path_subs = {}
+		
 # Finding the height value of an adjacent point on a height map
 # Input
 # x: point x-coordinate value 
@@ -73,6 +79,7 @@ gc_const.ORCA_RADIUS, self.ms)
 # z: calculated point z-coordinate value
 
 	def find_z(self, x, y):
+	
 		p = Point(x, y, 0)
 		cell_id = self.get_current_cell_id(p)
 		cell = self.cells[cell_id]
@@ -80,11 +87,11 @@ gc_const.ORCA_RADIUS, self.ms)
 		return z
 		
 	def get_current_cell_id(self, point):
+	
 		x = point.x
 		y = point.y
 		j = int((x + (self.l_scale / 2)) // self.x_step)
 		i = int(((self.w_scale / 2) - y) // self.y_step)
-		
 		cell_id = (str(float(i)), str(float(j)))
 		return cell_id
 
@@ -92,13 +99,23 @@ gc_const.ORCA_RADIUS, self.ms)
 # Input
 # robot_name: target object name used in Gazebo
 # path: list of points of the original path of the target
+
 	def add_agent(self, robot_name, path):
+	
 		self.amanager[robot_name] = AgentManager(robot_name)
 		robot_pos = self.amanager[robot_name].get_agent_position()
 		self.amanager[robot_name].last_point = robot_pos
-		init_dist = robot_pos.get_distance_to(path[0])
-		self.amanager[robot_name].set_init_path(path)
-		print('Robot ' + robot_name + ' initial path length: ' + str(len(path)))
+		
+		if len(path) == 0:
+		
+			self.amanager[robot_name].finished_planning = True
+		
+		else:
+		
+			self.amanager[robot_name].set_init_path(path)
+			gc.spawn_sdf_model(self.amanager[robot_name].goal_point, gc_const.GREEN_VERTICE_PATH, robot_name + '_goal_v')
+			print('Robot ' + robot_name + ' initial path length: ' + str(len(path)))
+		
 		self.amanager[robot_name].current_goal = path[0]
 		self.init_paths[robot_name] = copy.copy(path)
 		self.amanager[robot_name].last_goal = robot_pos
@@ -233,6 +250,10 @@ gc_const.ORCA_RADIUS, self.ms)
 					self.final_paths[key].append(robot_pos)
 					self.goal_achievement_check(key, robot_pos)
 					self.amanager[key].last_point = robot_pos
+					
+				else:
+				
+					self.amanager.pop(key)
 					
 		print('ORCA3D for ' + str(len(self.agents)) + ' agents is completed!')
 		return self.final_paths

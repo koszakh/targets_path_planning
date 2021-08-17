@@ -259,12 +259,14 @@ class Point:
 		self.max_height_diff = value
 
 	def set_riskiness(self, value):
+	
 		self.riskiness = value
 
 # Setting unique point id and filling the list of neighbors
 # Input
 # value: unique point id value
 	def set_id(self, value):
+	
 		self.id = value
 
 	def set_neighbors_list(self, step_count):
@@ -303,7 +305,7 @@ class Point:
 			
 			min_row = str(row_ind) + '.' + str(int(step_count - 2))
 			max_row = str(row_ind + 1) + '.0'
-		
+			
 		else:
 		
 			min_row = str(row_ind) + '.' + str(int(det_row) - 1)
