@@ -5,7 +5,7 @@
 import rospy
 import rospkg
 import path_planning.Point as PointGeom
-from targets_path_planning.msg import Path
+from targets_path_planning.msg import Path, TargetDamage
 import GazeboConstants as const
 import time
 from math import sqrt, fabs, sin, asin, pi, cos, acos
@@ -17,6 +17,7 @@ import vector3d
 import threading as thr
 from scipy.spatial.transform import Rotation
 from sensor_msgs.msg import NavSatFix
+import copy
 
 # The class of the control object of the ground target in the Gazebo simulation environment
 
@@ -34,24 +35,56 @@ class Robot(thr.Thread):
 	def __init__(self, robot_name):
 	
 		thr.Thread.__init__(self)
-		print('\n!!! ' + robot_name + ' initialised !!!\n')
-		subtopic_name = '/sim_' + robot_name
+		self.name = robot_name
+		#print('\n!!! ' + self.name + ' initialised !!!\n')
+		self.init_topics()
+		self.pid_delay = rospy.Duration(0, const.PID_NSEC_DELAY)
+		msg = Twist()
+		self.vel_publisher.publish(msg)
+		rospy.sleep(self.pid_delay)
+		self.ms = const.MOVEMENT_SPEED
+		self.dir_point = robot_name + const.DIR_POINT_SUFFIX
+		self.path = []
+		self.latitude = None
+		self.longitude = None
+		self.total_damage = 0
+		
+	def init_topics(self):
+		
+		subtopic_name = '/sim_' + self.name
 		self.vel_publisher = rospy.Publisher(subtopic_name + '/cmd_vel', Twist, queue_size=10)
 		self.waypoint_pub = rospy.Publisher(subtopic_name + '/waypoint', Point, queue_size=10)
 		self.waypoint_sub = rospy.Subscriber(subtopic_name + '/waypoint', Point, self.waypoint_callback)
 		self.waypoints_pub = rospy.Publisher(subtopic_name + '/waypoints_array', Path, queue_size=10)
 		self.waypoints_sub = rospy.Subscriber(subtopic_name + '/waypoints_array', Path, self.set_path)
 		self.gps_listener = rospy.Subscriber(subtopic_name + '/fix', NavSatFix, self.gps_callback)
-		self.pid_delay = rospy.Duration(0, const.PID_NSEC_DELAY)
-		msg = Twist()
-		self.vel_publisher.publish(msg)
-		rospy.sleep(self.pid_delay)
-		self.name = robot_name
-		self.ms = const.MOVEMENT_SPEED
-		self.dir_point = robot_name + const.DIR_POINT_SUFFIX
-		self.path = []
-		self.latitude = None
-		self.longitude = None
+		self.def_prob_sub = rospy.Subscriber(subtopic_name + '/damage', TargetDamage, self.def_prob_callback)
+		
+	def def_prob_callback(self, msg_data):
+	
+		damage = msg_data.damage
+		self.total_damage += damage
+		
+		if self.total_damage >= const.HIGH_PROB_VALUE:
+		
+			print(self.name + ' was exploded!')
+			self.stop()
+			pos = self.get_robot_position()
+			set_model_state(self.name, Point(pos.x + 100000, pos.y + 100000, pos.z + 10000), (0, 180, 0, 0))
+			self.unregister_subs()
+			del self
+			
+		else:
+		
+			print(self.name + ' current def prob value: ' + str(self.total_damage))
+		
+	def unregister_subs(self):
+	
+		self.waypoint_sub.unregister()
+		self.waypoints_sub.unregister()
+		self.gps_listener.unregister()
+		self.def_prob_sub.unregister()
+		
 		
 	def gps_callback(self, msg_data):
 	
@@ -89,6 +122,7 @@ class Robot(thr.Thread):
 # Output
 # angle_difference: angle between vectors in degrees
 	def get_angle_difference(self, goal_pos):
+	
 		rv = self.get_robot_orientation_vector()
 		robot_pos = self.get_robot_position()
 		goal_vect = get_orientation_vector(robot_pos, goal_pos)
@@ -100,8 +134,6 @@ class Robot(thr.Thread):
 # goal: target point
 	def move_with_PID(self, goal):
 	
-		#print(self.name + ' moving to the ' + str(goal) + ' point.')
-		#self.turn_to_point(goal)
 		old_error = 0
 		error_sum = 0
 		real_error_sum = 0
@@ -122,11 +154,8 @@ class Robot(thr.Thread):
 			ud = const.KD * (error - old_error)
 			old_error = error
 			u = up + ui + ud
-			#print(self.name + ' error: ' + str(error) + ' | u: ' + str(u))
 			self.movement(self.ms, u)
 			rospy.sleep(self.pid_delay)
-		
-		#self.stop()
 
 
 # Rotate the robot towards a point
@@ -191,21 +220,21 @@ class Robot(thr.Thread):
 	
 		path = convert_to_path(msg_data.path)
 		self.path = path
-		print(self.name + ' path vertices count: ' + str(len(path)))
-		print(self.name + ' path curvature: ' + str(get_path_curvature(path)))
 
 # The movement of the robot along a given final route
 # Start of thread
 	def run(self):
-		
+	
 		start_coords = self.get_gps_coords()
-		f = open(const.MAP_COORDS_PATH, 'a+')
-		f.write('Target ' + self.name[4:] + ' start coords: ' + str(start_coords) + '\n')
-		f.close()
-		#print(self.name + ' start GPS coordinates: ' + self.get_gps_coords())
-		print(self.name + ' path length: ' + str(get_path_length(self.path)))
+		#f = open(const.MAP_COORDS_PATH, 'a+')
+		#f.write('Target ' + self.name[4:] + ' start coords: ' + str(start_coords) + '\n\n')
+		#f.close()
 		
 		if len(self.path) > 0:
+		
+			print(self.name + ' path curvature: ' + str(get_path_curvature(self.path)))
+			#print(self.name + ' path vertices count: ' + str(len(self.path)))
+			#print(self.name + ' path length: ' + str(get_path_length(self.path)))
 		
 			for state in self.path:
 		
@@ -218,16 +247,22 @@ class Robot(thr.Thread):
 			self.stop()
 			
 			end_coords = self.get_gps_coords()
-			f = open(const.MAP_COORDS_PATH, 'a+')
-			f.write('Target ' + self.name[4:] + ' end coords: ' + str(end_coords) + '\n')
-			f.close()
+			
+			#f = open(const.MAP_COORDS_PATH, 'a+')
+			#f.write('Target ' + self.name[4:] + ' start coords: ' + str(start_coords) + '\n')
+			#f.write('Target ' + self.name[4:] + ' end coords: ' + str(end_coords) + '\n\n')
+			#f.close()
 			
 			print(self.name + ' end GPS coordinates: ' + self.get_gps_coords())
 			print('The robot ' + str(self.name) + ' has finished!')
+			
 		
 		else:
+		
 			print('Path is empty!')
-
+			
+		del self
+		
 # Creating Pose type ROS message
 # Input
 # state: position of an object in 3D space
@@ -326,7 +361,7 @@ def get_model_properties(model_name):
 		print "Service call failed: %s" % e
 		return None
 
-# Getting the position of an object in the Gazebo environment
+# Getting position of an object in the Gazebo environment
 # Input
 # model_name: model name in Gazebo environment
 
@@ -345,6 +380,25 @@ def get_model_position(model_name):
 	
 	else:
 		return None
+		
+# Getting orientation of an object in the Gazebo environment
+# Input
+# model_name: model name in Gazebo environment
+
+# Output
+# pose: position of an object in 3D space
+def get_model_orientation(model_name):
+	object_state = get_model_state(model_name)
+	
+	if object_state:
+	
+		roll = object_state.pose.orientation.x
+		pitch = object_state.pose.orientation.y
+		yaw = object_state.pose.orientation.z
+		return roll, pitch, yaw
+	
+	else:
+		return None, None, None
 
 # Getting the position of a link in the Gazebo environment
 # Input
@@ -406,19 +460,20 @@ def get_model_state(model_name):
 		return None
 		
 def delete_model(model_name):
+
 	rospy.wait_for_service('/gazebo/delete_model')
 	
 	try:
 	
-		del_model = rospy.ServiceProxy('/gazebo/delete_model', GetModelState)
-		resp = del_model(model_name, 'world')
-		#return model_coordinates
-	
+		del_model = rospy.ServiceProxy('/gazebo/delete_model', DeleteModel)
+		ret = del_model(str(model_name))
+		print(model_name + ' model was deleted.')
+		print(ret)
+		
 	except rospy.ServiceException, e:
 		
 		print "Service call failed: %s" % e
-		#return None
-
+		
 # Generation of the object described in the .sdf file in Gazebo the environment
 # Input
 # model_name: the name of the object in the Gazebo environment
@@ -469,15 +524,8 @@ def spawn_urdf_model(model_name, model_directory, state, orient):
 # orient: orientation of an object in 3D space
 def set_model_state(model_name, pose, orient):
 	
-	state_msg = ModelState()
-	state_msg.model_name = model_name
-	state_msg.pose.position.x = pose.x
-	state_msg.pose.position.y = pose.y
-	state_msg.pose.position.z = pose.z
-	state_msg.pose.orientation.x = orient[0]
-	state_msg.pose.orientation.y = orient[1]
-	state_msg.pose.orientation.z = orient[2]
-	state_msg.pose.orientation.w = orient[3]
+	state_msg = prepare_model_state_msg(model_name, pose, orient)
+	
 	rospy.wait_for_service('/gazebo/set_model_state')
 	
 	try:
@@ -487,7 +535,50 @@ def set_model_state(model_name, pose, orient):
 	
 	except:
 	
-		print "Service call failed: %s" % e
+		print "Service call failed: %s" % e	
+
+def calc_twist(model_name, pose, orient):
+
+	prev_pos = get_model_position(model_name)
+	roll, pitch, yaw = get_model_orientation(model_name)
+	
+	lin_x = pose.x - prev_pos.x
+	lin_y = pose.y - prev_pos.y
+	lin_z = pose.z - prev_pos.z
+	
+	ang_x = orient[0] - roll
+	ang_y = orient[1] - pitch
+	ang_z = orient[2] - yaw
+	
+	return (lin_x, lin_y, lin_z), (ang_x, ang_y, ang_z)
+	
+
+def prepare_model_state_msg(model_name, pose, orient):
+
+	state_msg = ModelState()
+	
+	state_msg.model_name = model_name
+	
+	#state_msg.pose.position.x = pose.x
+	#state_msg.pose.position.y = pose.y
+	#state_msg.pose.position.z = pose.z
+	
+	state_msg.pose.orientation.x = orient[0]
+	state_msg.pose.orientation.y = orient[1]
+	state_msg.pose.orientation.z = orient[2]
+	state_msg.pose.orientation.w = orient[3]
+	
+	lin, ang = calc_twist(model_name, pose, orient)
+	
+	state_msg.twist.linear.x = lin[0]
+	state_msg.twist.linear.y = lin[1]
+	state_msg.twist.linear.z = lin[2]
+	
+	state_msg.twist.angular.x = ang[0]
+	state_msg.twist.angular.y = ang[1]
+	state_msg.twist.angular.z = ang[2]
+	
+	return state_msg
 
 # Getting a three-dimensional vector directed from point p1 to point p2
 # Input
@@ -577,11 +668,13 @@ def get_path_curvature(path):
 		p3 = path[i + 2]
 		v1 = p1.get_dir_vector_between_points(p2)
 		v2 = p2.get_dir_vector_between_points(p3)
-		angle_difference = fabs(v1.get_angle_between_vectors(v2))
-	
-		if angle_difference > max_curvature:
-	
-			max_curvature = angle_difference
+		if not((v1.x == 0 and v1.y == 0) or (v2.x == 0 and v2.y == 0)):
+		
+			angle_difference = fabs(v1.get_angle_between_vectors(v2))
+		
+			if angle_difference > max_curvature:
+		
+				max_curvature = angle_difference
 	
 	return max_curvature
 
@@ -640,3 +733,66 @@ def get_path_length(path):
 		path_len += dist
 
 	return path_len
+	
+def delete_doubled_vertices(path):
+	new_path = copy.copy(path)
+	i = 1
+	goal = path[len(path) - 1]
+	
+	while True:
+		
+		p1 = path[i - 1]
+		p2 = path[i]
+		dist = p1.get_2d_distance(p2)
+		
+		if round(dist, 2) == 0:
+		
+			new_path.remove(p2)
+			i += 2
+		
+		else:
+		
+			i += 1
+		
+		if p2.get_2d_distance(goal):
+		
+			break
+		
+		if i >= len(path):
+		
+			i = len(path) - 1
+	
+	return new_path
+
+def path_loops_deleting(path):
+	new_path = copy.copy(path)
+	i = len(path) - 1
+	goal = path[0]
+	
+	while True:
+	
+		p1 = path[i - 2]
+		p2 = path[i - 1]
+		p3 = path[i]
+		dist1 = p1.get_2d_distance(p3)
+		dist2 = p2.get_2d_distance(p3)
+	
+		if dist1 < dist2:
+	
+			new_path.remove(p2)
+			i -= 2
+	
+		else:
+	
+			i -= 1
+	
+		if round(p1.get_2d_distance(goal), 2) == 0:
+	
+			break
+	
+		if i < 2:
+	
+			i = 2
+	
+	return new_path
+	
