@@ -25,20 +25,6 @@ def convert_to_path(msg):
 
 	return path
 
-def deleting_intermediate_points(path, cut_step):
-
-	path_copy = copy.copy(path)
-
-	for i in range(len(path) - 1):
-
-		if (i % cut_step > 0):
-
-			if path[i] in path_copy:
-
-				path_copy.remove(path[i])
-
-	return path_copy
-
 def paths_callback(msg_data):
 	
 	print('Paths are received')
@@ -50,8 +36,6 @@ def paths_callback(msg_data):
 		name = path_msg.robot_name
 		robot = gc.Robot(path_msg.robot_name)
 		robot.waypoints_publisher(final_path)
-		path = deleting_intermediate_points(final_path, 30)
-		gc.visualise_path(path, const.VERTICE_PATH, name + '_v_')
 		robots.append(robot)	
 	
 	sleep(1)

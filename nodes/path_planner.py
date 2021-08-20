@@ -28,52 +28,59 @@ def group_path_planning():
 	hmap, l_scale, w_scale, x_step, y_step, grid_step, step_count = \
 		hm.prepare_heightmap(min_col, max_col, min_row, max_row)
 		
-	map_handler = pp.PathPlanner(hmap, l_scale, w_scale, grid_step, x_step, y_step, step_count)
+	mh = pp.PathPlanner(hmap, l_scale, w_scale, grid_step, x_step, y_step, step_count)
 
-	min_x = map_handler.min_x
-	max_x = map_handler.max_x
-	min_y = map_handler.min_y
-	max_y = map_handler.max_y
+	min_x = mh.min_x
+	max_x = mh.max_x
+	min_y = mh.min_y
+	max_y = mh.max_y
 	
 	avg_x = numpy.mean([min_x, max_x])
 	avg_y = numpy.mean([min_y, max_y])
 	
-	new_x = numpy.mean([min_x, avg_x])#random.uniform(min_x, avg_x)
-	new_y = numpy.mean([min_y, avg_y])#random.uniform(min_y, max_y)
-	new_x1 = numpy.mean([avg_x, max_x])
-	new_y1 = numpy.mean([avg_y, max_y])
+# (5676, -6901)
+	
+	new_x = numpy.mean([min_x, avg_x]) + 5#numpy.mean([min_x, avg_x])#random.uniform(min_x, avg_x)
+	new_y = numpy.mean([min_y, avg_y]) - 5#random.uniform(min_y, max_y)
+	new_x1 = numpy.mean([avg_x, max_x]) - 5
+	new_y1 = numpy.mean([avg_y, max_y]) + 5
 	
 	offset = const.DIST_OFFSET
 
 	start = (new_x, new_y)
 	goal = (new_x1, new_y1)
+
+	print('start: ' + str(start))
+	print('goal: ' + str(goal))
 	
-	map_handler.gridmap_preparing()
-	cells = map_handler.cells
+	mh.gridmap_preparing()
+	cells = mh.cells
 
 	f = open(gc_const.MAP_COORDS_PATH, 'w+')
-	f.write('Longitude / Latitude\n')
+	f.write('Longitude / Latitude\n\n')
 	f.close()
 		
-	orca = ORCAsolver(map_handler.heightmap, cells, x_step, y_step, l_scale, w_scale)
+	orca = ORCAsolver(mh.heightmap, cells, x_step, y_step, l_scale, w_scale)
 	smoothed_paths = {}
-	robot_names = ['p3at' + str(i) for i in range(1, gc_const.ROBOTS_COUNT + 1)]
+	robot_names = ['p3at' + str(i) for i in range(1, const.ROBOTS_COUNT + 1)]
 		
 	for name in (robot_names):
 	
-		robot_pos, orient = map_handler.get_start_pos(start[0], start[1], offset)
+		robot_pos, orient = mh.get_start_pos(start[0], start[1], offset)
 		
 		if robot_pos:
 		
 			gc.spawn_target(name, robot_pos, orient)
 			
-			robot_orient = gc.get_robot_orientation_vector(name)
-			start_id, goal_id = map_handler.get_start_and_goal_id(robot_pos, robot_orient, goal[0], goal[1], offset)
+			#robot_orient = gc.get_robot_orientation_vector(name)
+			#start_id, goal_id = mh.get_start_and_goal_id(robot_pos, robot_orient, goal[0], goal[1], offset)
+			goal_id = True
 			
 			if goal_id:
 			
-				print('\nPath planning for ' + name + ' has begun!')
-				path, path_ids, path_cost = map_handler.find_path(start_id, goal_id, robot_orient)
+				#print('\nPath planning for ' + name + ' has begun!')
+				#path, path_ids, path_cost = mh.find_path(start_id, goal_id, robot_orient)
+				path = [robot_pos]
 				
 				if path:
 
