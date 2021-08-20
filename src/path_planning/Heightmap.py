@@ -140,11 +140,10 @@ class Heightmap:
 				p.set_id(p_id)
 				heightmap[p_id] = p
 				
-				if i == min_col or j == min_row or i == max_col or j == max_row:
+				if (i == min_col and j == min_row) or (i == max_col and j == max_row) or (i == min_col and j == max_row) or (i == max_col and j == min_row):
 				
 					pass
 					#gc.spawn_sdf_model(p, gc_const.BIG_RED_VERTICE_PATH, 'v' + str(p_id))
-				
 				
 		return heightmap
 

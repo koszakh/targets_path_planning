@@ -777,7 +777,7 @@ v1.get_distance_to(v2) #+ fabs(v1.riskiness - v2.riskiness)
 	def get_start_and_goal_id(self, pos, orient, x, y, offset):
 		start_id = self.get_start_vertice_id(pos, orient)
 		if start_id:
-			goal_id = self.get_random_goal_id(start_id, orient)#self.get_reliable_goal_id(start_id, x, y, offset, orient)
+			goal_id = self.get_reliable_goal_id(start_id, x, y, offset, orient)
 		else:
 			#print('Path planning from the point ' + str(pos) + ' is impossible.')
 			return None, None
@@ -795,7 +795,6 @@ v1.get_distance_to(v2) #+ fabs(v1.riskiness - v2.riskiness)
 	def find_path(self, start_id, goal_id, start_orient):
 		start_v = self.heightmap[start_id]
 		goal_v = self.heightmap[goal_id]
-		#gc.spawn_sdf_model(goal_v, gc_const.RED_VERTICE_PATH, 'goal_v_' + str(start_id) + '_' + str(goal_id))
 		current_v = start_v
 		current_v.path_cost = 0
 		current_neighbors = current_v.neighbors_list.values()
@@ -1136,50 +1135,23 @@ v1.get_distance_to(v2) #+ fabs(v1.riskiness - v2.riskiness)
 	def get_reliable_goal_id(self, start_id, x, y, offset, start_orient):
 		
 		current_goals = []
-		
-		start_v = self.heightmap[start_id]
-		min_x = x - offset
-		
-		if min_x < self.min_x:
-		
-			min_x = self.min_x
-			
-		min_y = y - offset
-		
-		if min_y < self.min_y:
-		
-			min_y = self.min_y
-			
-		max_x = x + offset
-		
-		if max_x > self.max_x:
-		
-			max_x = self.max_x
-			
-		max_y = y + offset
-		
-		if max_y > self.max_y:
-		
-			max_y = self.max_y
 
 		iter_count = 0
 
 		while True:
 
-			new_x = random.uniform(min_x, max_x)
-			new_y = random.uniform(min_y, max_y)
-			p = Point(new_x, new_y, 0)
-			goal_id = self.get_nearest_vertice_id(p)
+			goal_id = self.get_goal_id(x, y, offset)
 			goal_v = self.heightmap[goal_id]
 			iter_count += 1
 
-			if not(start_v.obstacle or goal_v.obstacle or goal_id == start_id or goal_id in self.closed_goals or goal_id in current_goals):
+			if not(goal_id == start_id or goal_id in current_goals):
 
 				path, path_ids, path_cost = self.find_path(start_id, goal_id, start_orient)
 				current_goals.append(goal_id)
+				
 				if path:
 
-					self.closed_goals.append(goal_id)
+					self.add_closed_goal_id(goal_id)
 					break
 
 			if iter_count > const.MAX_ITER_COUNT:
@@ -1274,7 +1246,6 @@ v1.get_distance_to(v2) #+ fabs(v1.riskiness - v2.riskiness)
 
 			if not goal_v.obstacle and not goal_id in self.closed_goals:
 			
-				self.add_closed_goal_points(goal_id)
 				break
 				
 		return goal_id
@@ -1306,7 +1277,7 @@ v1.get_distance_to(v2) #+ fabs(v1.riskiness - v2.riskiness)
 			roll, pitch = self.get_start_orientation(start_id)
 			rot = Rotation.from_euler('xyz', [roll, pitch, 0], degrees=True)
 			quat = rot.as_quat()
-			gc.spawn_sdf_model(start_v, gc_const.GREEN_VERTICE_PATH, 'v' + str(start_id))
+			#gc.spawn_sdf_model(start_v, gc_const.GREEN_VERTICE_PATH, 'v' + str(start_id))
 			
 			return start_v, quat
 
@@ -1361,7 +1332,7 @@ v1.get_distance_to(v2) #+ fabs(v1.riskiness - v2.riskiness)
 			p3 = self.heightmap[path_ids[i + 2]]
 			v1 = p1.get_dir_vector_between_points(p2)
 			v2 = p2.get_dir_vector_between_points(p3)
-			angle_difference = fabs(v1.get_angle_between_vectors(v2))
+			angle_difference = fabs(v2.get_angle_between_vectors(v1))
 			curvature_sum += angle_difference
 
 			if angle_difference > max_curvature:
