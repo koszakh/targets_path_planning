@@ -1,5 +1,6 @@
 # Module for planning the path of targets on a height map
 
+import rospy
 import Constants as const
 from Point import Point, Vector2d
 from PIL import Image
@@ -156,7 +157,8 @@ class Plane:
 # closed_goals: list of keys of occupied goal vertices
 
 class PathPlanner:
-	def __init__(self, heightmap, l_scale, w_scale, grid_range, x_step, y_step, step_count):
+
+	def __init__(self, heightmap, l_scale, w_scale, x_step, y_step, step_count):
 		
 		self.heightmap = heightmap
 		self.obstacles = []
@@ -164,9 +166,12 @@ class PathPlanner:
 		self.max_col = rospy.get_param('max_col')
 		self.min_row = rospy.get_param('min_row')
 		self.max_row = rospy.get_param('max_row')
+		print('min_col: ' + str(self.min_col))
+		print('max_col: ' + str(self.max_col))
+		print('min_row: ' + str(self.min_row))
+		print('max_row: ' + str(self.max_row))		
 		self.l_scale = l_scale
 		self.w_scale = w_scale
-		self.grid_range = int(grid_range)
 		self.x_step = x_step
 		self.y_step = y_step
 		self.step_count = step_count
@@ -176,7 +181,6 @@ class PathPlanner:
 		self.closed_goals = []
 		self.closed_start_points = []
 		self.calc_xy_bounds()
-		print('grid_range: ' + str(self.grid_range))
 
 	def visualise_obstacles(self):
 		
@@ -187,6 +191,7 @@ class PathPlanner:
 
 # Deleting vertices lying outside the boundaries of the height map and clearing them from lists of neighboring vertices
 	def false_neighbors_deleting(self):
+	
 		tmp_map = copy.copy(self.heightmap)
 
 		for key in tmp_map.keys():
@@ -363,6 +368,7 @@ v1.get_distance_to(v2) #+ fabs(v1.riskiness - v2.riskiness)
 		return ids
 
 	def calc_xy_bounds(self):
+	
 		x1 = float(-self.l_scale / 2 + self.min_row * self.x_step) 
 		y1 = float(self.w_scale / 2 - self.min_col * self.y_step)
 		x2 = float(-self.l_scale / 2 + self.max_row * self.x_step) 
@@ -371,48 +377,11 @@ v1.get_distance_to(v2) #+ fabs(v1.riskiness - v2.riskiness)
 		self.min_y = min(y1, y2)
 		self.max_x = max(x1, x2)
 		self.max_y = max(y1, y2)
-		print('min_x: ' + str(self.min_x))
-		print('max_x: ' + str(self.max_x))
-		print('min_y: ' + str(self.min_y))
-		print('max_y: ' + str(self.max_y))
+		#print('min_x: ' + str(self.min_x))
+		#print('max_x: ' + str(self.max_x))
+		#print('min_y: ' + str(self.min_y))
+		#print('max_y: ' + str(self.max_y))
 
-# Calculation of the riskiness parameter for a specific vertex
-# Input
-# vertice_id: id of this vertex
-
-# Output
-# riskiness: riskiness parameter value
-	def calc_riskiness(self, vertice_id):
-		d_lethal, c_max = self.calc_dist_to_obstacle(vertice_id)
-		riskiness = c_max * (cos((d_lethal - const.INNER_RADIUS) * pi / (const.OUTER_RADIUS - const.INNER_RADIUS)) + 1)
-		return riskiness
-
-# Calculating the distance to the nearest obstacle for a specific vertex
-# Input
-# vertice_id: id of this vertex
-
-# Output
-# min_dist: distance to nearest obstacle
-# obst_cost: weight of this obstacle
-	def calc_dist_to_obstacle(self, vertice_id):
-		min_dist = float('inf')
-		ids = self.calc_grid_range(vertice_id, self.grid_range)
-		vertice = self.heightmap[vertice_id]
-
-		for v_id in ids:
-
-			v = self.heightmap[v_id]
-
-			if v.obstacle:
-
-				dist = vertice.get_distance_to(v)
-	
-				if dist < min_dist:
-
-					min_dist = dist
-					obst_cost = self.calc_obst_cost(v_id)
-
-		return min_dist, obst_cost
 
 # Calculating the weight of an obstacle
 # Input
