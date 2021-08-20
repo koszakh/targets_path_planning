@@ -3,10 +3,10 @@ Before starting it is necessary to:
 2. Download this package - https://github.com/MobileRobots/amr-ros-config
 3. Install hector_gazebo_plugins:
 
-    **apt-get install ros-melodic-hector-gazebo-plugins**
+      **apt-get install ros-melodic-hector-gazebo-plugins**
   
 4. Copy models from the models/ folder to the directory where the Gazebo models are stored (usually - /root/.gazebo/models)
 
 To start, you need to run the following command in the ubuntu terminal:
 
-    **roslaunch targets_path_planning hm_launch.launch**
+      **roslaunch targets_path_planning hm_launch.launch**
