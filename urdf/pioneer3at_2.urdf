@@ -556,7 +556,7 @@
   <link name="dir_point">
     <inertial>
       <mass value="0.1"/>
-      <origin xyz="0.1 0 0" rpy="0 0 0"/>
+      <origin xyz="0.1 0 0.15" rpy="0 0 0"/>
       <inertia ixx="0.3338" ixy="0.0" ixz="0.0" iyy="0.4783" iyz="0.0" izz="0.3338"/>
     </inertial>
     <visual>
@@ -572,7 +572,7 @@
   <joint name="dir_point_joint" type="prismatic">
     <axis xyz="1 0 0"/>
     <limit effort="0" velocity="0" lower="0" upper="0"/>
-    <origin rpy="0 0 0" xyz="0.1 0 0"/>
+    <origin rpy="0 0 0" xyz="0.1 0 0.278"/>
     <parent link="base_link"/>
     <child link="dir_point"/>
   </joint>
