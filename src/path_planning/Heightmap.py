@@ -114,6 +114,11 @@ class Heightmap:
 		
 			max_row = self.image.shape[1]
 			
+		rospy.set_param('min_col', min_col)
+		rospy.set_param('max_col', max_col)
+		rospy.set_param('min_row', min_row)
+		rospy.set_param('max_row', max_row)
+			
 		self.map_length = max_col - min_col#image.shape[0]
 		self.map_width = max_row - min_row#image.shape[1]
 		self.x_grid_size = float(self.length_scale / (self.image.shape[0] - 1))
