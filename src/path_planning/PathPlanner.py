@@ -160,10 +160,10 @@ class PathPlanner:
 		
 		self.heightmap = heightmap
 		self.obstacles = []
-		self.min_col = const.COL_RANGE[0]
-		self.max_col = const.COL_RANGE[1]
-		self.min_row = const.ROW_RANGE[0]
-		self.max_row = const.ROW_RANGE[1]
+		self.min_col = rospy.get_param('min_col')
+		self.max_col = rospy.get_param('max_col')
+		self.min_row = rospy.get_param('min_row')
+		self.max_row = rospy.get_param('max_row')
 		self.l_scale = l_scale
 		self.w_scale = w_scale
 		self.grid_range = int(grid_range)
