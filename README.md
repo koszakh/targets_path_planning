@@ -9,4 +9,4 @@ Before starting it is necessary to:
 
 To start, you need to run the following command in the ubuntu terminal:
 
-      **roslaunch targets_path_planning hm_launch.launch**
+      roslaunch targets_path_planning hm_launch.launch
