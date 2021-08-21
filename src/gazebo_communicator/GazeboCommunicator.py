@@ -48,6 +48,7 @@ class Robot(thr.Thread):
 		self.latitude = None
 		self.longitude = None
 		self.total_damage = 0
+		self.path_p_count = 0
 		
 	def init_topics(self):
 		
@@ -58,14 +59,21 @@ class Robot(thr.Thread):
 		self.waypoints_pub = rospy.Publisher(subtopic_name + '/waypoints_array', Path, queue_size=10)
 		self.waypoints_sub = rospy.Subscriber(subtopic_name + '/waypoints_array', Path, self.set_path)
 		self.gps_listener = rospy.Subscriber(subtopic_name + '/fix', NavSatFix, self.gps_callback)
-		self.def_prob_sub = rospy.Subscriber(subtopic_name + '/damage', TargetDamage, self.def_prob_callback)
+		self.def_prob_sub = rospy.Subscriber(subtopic_name + '/damage', TargetDamage, self.damage_callback)
 		
-	def def_prob_callback(self, msg_data):
+	def unregister_subs(self):
+	
+		self.waypoint_sub.unregister()
+		self.waypoints_sub.unregister()
+		self.gps_listener.unregister()
+		self.def_prob_sub.unregister()
+		
+	def damage_callback(self, msg_data):
 	
 		damage = msg_data.damage
 		self.total_damage += damage
 		
-		if self.total_damage >= const.HIGH_PROB_VALUE:
+		if self.total_damage >= const.UPPER_DAMAGE_LIMIT:
 		
 			print(self.name + ' was exploded!')
 			self.stop()
@@ -78,22 +86,6 @@ class Robot(thr.Thread):
 		
 			print(self.name + ' current def prob value: ' + str(self.total_damage))
 		
-	def unregister_subs(self):
-	
-		self.waypoint_sub.unregister()
-		self.waypoints_sub.unregister()
-		self.gps_listener.unregister()
-		self.def_prob_sub.unregister()
-		
-		
-	def gps_callback(self, msg_data):
-	
-		self.latitude = msg_data.latitude
-		self.longitude = msg_data.longitude
-
-	def get_gps_coords(self):
-	
-		return '(' + str(self.longitude) + ', ' + str(self.latitude) + ')'
 
 # Getting the position of the robot in 3D space in the Gazebo environment
 
@@ -155,7 +147,16 @@ class Robot(thr.Thread):
 			old_error = error
 			u = up + ui + ud
 			self.movement(self.ms, u)
+			self.add_path_gps('a+')
 			rospy.sleep(self.pid_delay)
+			
+	def add_path_gps(self, open_mode):
+	
+		self.path_p_count += 1
+		gps_coords = self.get_gps_coords()
+		f = open(const.PATH_COORDS_PATH + self.name + '.txt', open_mode)
+		f.write(str(self.path_p_count) + ': ' + gps_coords + '\n')
+		f.close()
 
 
 # Rotate the robot towards a point
@@ -226,9 +227,8 @@ class Robot(thr.Thread):
 	def run(self):
 	
 		start_coords = self.get_gps_coords()
-		#f = open(const.MAP_COORDS_PATH, 'a+')
-		#f.write('Target ' + self.name[4:] + ' start coords: ' + str(start_coords) + '\n\n')
-		#f.close()
+		#self.write_start_coords(start_coords)
+		self.add_path_gps('w+')
 		
 		if len(self.path) > 0:
 		
@@ -240,28 +240,45 @@ class Robot(thr.Thread):
 		
 				dist = state.get_distance_to(self.get_robot_position())
 		
-				if dist > const.DISTANCE_ERROR * 2:
+				if dist > const.DISTANCE_ERROR:
 		
 					self.move_with_PID(state)
 		
 			self.stop()
 			
 			end_coords = self.get_gps_coords()
-			
-			#f = open(const.MAP_COORDS_PATH, 'a+')
-			#f.write('Target ' + self.name[4:] + ' start coords: ' + str(start_coords) + '\n')
-			#f.write('Target ' + self.name[4:] + ' end coords: ' + str(end_coords) + '\n\n')
-			#f.close()
+			self.write_coords(start_coords, end_coords)
 			
 			print(self.name + ' end GPS coordinates: ' + self.get_gps_coords())
 			print('The robot ' + str(self.name) + ' has finished!')
 			
-		
 		else:
 		
 			print('Path is empty!')
 			
 		del self
+		
+	def gps_callback(self, msg_data):
+	
+		self.latitude = msg_data.latitude
+		self.longitude = msg_data.longitude
+
+	def get_gps_coords(self):
+	
+		return '(' + str(self.longitude) + ', ' + str(self.latitude) + ')'
+		
+	def write_start_coords(self, coords):
+		
+		f = open(const.MAP_STATIC_COORDS_PATH, 'a+')
+		f.write('Target ' + self.name[4:] + ' coords: ' + str(coords) + '\n\n')
+		f.close()
+	
+	def write_coords(self, start_coords, end_coords):
+		
+		f = open(const.MAP_DYNAMIC_COORDS_PATH, 'a+')
+		f.write('Target ' + self.name[4:] + ' start coords: ' + str(start_coords) + '\n')
+		f.write('Target ' + self.name[4:] + ' end coords: ' + str(end_coords) + '\n\n')
+		f.close()
 		
 # Creating Pose type ROS message
 # Input
