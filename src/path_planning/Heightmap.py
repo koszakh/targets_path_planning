@@ -133,7 +133,8 @@ class Heightmap:
 
 	def get_all_heightmap_points(self):
 	
-		hmap = {(str(float(i)), str(float(j))): self.get_heightmap_point(i, j) for i in range(self.min_col, self.max_col + 1) for j in range(self.min_row, self.max_row + 1)}
+		hmap = {(str(float(i)), str(float(j))): self.get_heightmap_point(i, j) for i in \
+		 range(self.min_col, self.max_col + 1) for j in range(self.min_row, self.max_row + 1)}
 		return hmap
 
 	def get_heightmap_point(self, col, row):
@@ -145,10 +146,17 @@ class Heightmap:
 		
 		p = Point(x, y, z)
 		p.set_id(p_id)
+		
+		if (col == self.min_col and row == self.min_row) or (col == self.max_col and row == self.min_row) or (col == self.min_col and row == self.max_row) or (col == self.max_col and row == self.max_row):
+		
+			#pass
+			gc.spawn_sdf_model(p, gc_const.BIG_RED_VERTICE_PATH, 'v' + str(p_id))
+		
 		return p
 
 # Preparing a heightmap for further path planning (generation + converting to dictionary)
 	def prepare_heightmap(self, min_col, max_col, min_row, max_row):
 	
 		self.calc_heightmap_bounds()
-		hmap = self.get_all_heightmap_points()return hmap, self.length_scale, self.width_scale, self.x_grid_size, self.y_grid_size, self.steps_count
+		hmap = self.get_all_heightmap_points()
+		return hmap, self.length_scale, self.width_scale, self.x_grid_size, self.y_grid_size, self.steps_count

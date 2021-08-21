@@ -54,7 +54,9 @@ class AgentManager:
 # final_paths: dictionary of final routes of robots
 # init_paths: dictionary of initial routes of robots
 class ORCAsolver:
+
 	def __init__(self, heightmap, cells, x_step, y_step, l_scale, w_scale):
+	
 		self.ms = gc_const.MOVEMENT_SPEED
 		self.sim = rvo2.PyRVOSimulator(const.ORCA_TIME_STEP, const.ORCA_NEIGHBOR_DIST, \
 const.ORCA_MAX_NEIGHBORS, const.ORCA_TIME_HORIZON, const.ORCA_TIME_HORIZON_OBST, \
@@ -181,7 +183,7 @@ const.ORCA_RADIUS, self.ms)
 		
 			am.min_n_dist = min_neighbor_dist
 		
-		if min_neighbor_dist > const.ORCA_NEIGHBOR_DIST + const.ORCA_RADIUS:
+		if min_neighbor_dist > (const.ORCA_NEIGHBOR_DIST + const.ORCA_RADIUS + gc_const.DISTANCE_ERROR):
 			
 			vect = self.calc_new_vel_direction(last_p, last_vect, current_goal)
 		
@@ -192,19 +194,27 @@ const.ORCA_RADIUS, self.ms)
 		   	det_angle = fabs(last_vect.get_angle_between_vectors(vect_to_goal))
 			n_last_vect = closest_am.last_vect
 			n_last_point = closest_am.last_point
+			vect_to_neighbor = robot_pos.get_dir_vector_between_points(n_last_point)
+			angle_to_neighbor = last_vect.get_angle_between_vectors(vect_to_neighbor)
 			
 			next_n_p = n_last_point.get_point_in_direction(n_last_vect, self.ms * const.ORCA_TIME_STEP)
 			
 			dist = last_p.get_distance_to(n_last_point)
 			next_dist = robot_pos.get_distance_to(n_last_point)
 			
+			n_vel = self.sim.getAgentPrefVelocity(self.agents[closest_neighbor_id])
+			
 			if det_angle > const.ORCA_MAX_ANGLE or next_dist > dist:
 			
 				vect = self.calc_new_vel_direction(last_p, last_vect, current_goal)
 				
+			elif angle_to_neighbor < 0 and n_vel == (0, 0):
+			
+				vect = last_vect.get_rotated_vector(gc_const.ANGLE_ERROR / 2)
+				
 			else:
 			
-				vect = last_vect.get_rotated_vector(-gc_const.ANGLE_ERROR)
+				vect = last_vect.get_rotated_vector(-gc_const.ANGLE_ERROR / 2)
 			
 		goal_dist = current_goal.get_distance_to(robot_pos)
 		goal_dist_2d = current_goal.get_2d_distance(robot_pos)
@@ -219,11 +229,11 @@ const.ORCA_RADIUS, self.ms)
 		
 		if angle_difference > gc_const.ANGLE_ERROR:
 		
-			vect = last_vect.get_rotated_vector(gc_const.ANGLE_ERROR)
+			vect = last_vect.get_rotated_vector(gc_const.ANGLE_ERROR / 2)
 		
 		elif angle_difference < -gc_const.ANGLE_ERROR:
 		
-			vect = last_vect.get_rotated_vector(-gc_const.ANGLE_ERROR)
+			vect = last_vect.get_rotated_vector(-gc_const.ANGLE_ERROR / 2)
 		
 		else:
 		
@@ -236,11 +246,14 @@ const.ORCA_RADIUS, self.ms)
 # robot_name: target object name used in Gazebo
 # robot_pos: current calculated position of the robot
 	def goal_achievement_check(self, robot_name, robot_pos):
+	
 		am = self.amanager[robot_name]
 		current_goal = am.current_goal
 		dist_2d = robot_pos.get_2d_distance(current_goal)
+		pref_vect = robot_pos.get_dir_vector_between_points(current_goal)
+		angle = fabs(am.last_vect.get_angle_between_vectors(pref_vect))
 		
-		if dist_2d < gc_const.DISTANCE_ERROR * 3:
+		if dist_2d < gc_const.DISTANCE_ERROR * 3 or (dist_2d < const.ROBOT_RADIUS and angle > const.ORCA_MAX_ANGLE):
 		
 			if len(self.init_paths[robot_name]) > 1:
 			
@@ -256,6 +269,7 @@ const.ORCA_RADIUS, self.ms)
 				path = copy.copy(self.final_paths[robot_name])
 				path = path_loops_deleting(path)
 				self.final_paths[robot_name] = copy.copy(path)
+				self.final_paths[robot_name].append(am.goal_point)
 				self.sim.setAgentPrefVelocity(self.agents[robot_name], (0, 0))
 				self.sim.setAgentVelocity(self.agents[robot_name], (0, 0))
 				am.finished_planning = True
@@ -293,7 +307,7 @@ const.ORCA_RADIUS, self.ms)
 		for key in self.final_paths.keys():
 	
 			path = self.final_paths[key]
-			short_path = delete_intermediate_points(path, 120)
+			short_path = delete_intermediate_points(path, 100)
 			#gc.visualise_path(short_path, random.choice(list(gc_const.PATH_COLORS)), str(key) + '_p_')
 			
 		print('ORCA3D for ' + str(len(self.agents)) + ' agents is completed!')
@@ -343,11 +357,8 @@ def path_loops_deleting(path):
 			p3 = path[i]
 			dist1 = p1.get_2d_distance(p3)
 			dist2 = p2.get_2d_distance(p3)
-			#v1 = p1.get_dir_vector_between_points(p2)
-			#v2 = p2.get_dir_vector_between_points(p3)
-			#angle = fabs(v1.get_angle_between_vectors(v1))
 		
-			if dist1 < dist2:# or angle > gc_const.ANGLE_ERROR:
+			if dist1 < dist2:
 		
 				new_path.remove(p2)
 				i -= 2
@@ -364,11 +375,32 @@ def path_loops_deleting(path):
 		
 				i = 2
 		
+		path_curv = get_path_curvature(new_path)
+		print('New path curvature: ' + str(path_curv))
+		
 		return new_path
 		
 	else:
 	
 		return path
+	
+def get_path_curvature(path):
+	max_curvature = 0
+
+	for i in range(0, len(path) - 2):
+
+		p1 = path[i]
+		p2 = path[i + 1]
+		p3 = path[i + 2]
+		v1 = p1.get_dir_vector_between_points(p2)
+		v2 = p2.get_dir_vector_between_points(p3)
+		angle_difference = fabs(v1.get_angle_between_vectors(v2))
+
+		if angle_difference > max_curvature:
+
+			max_curvature = angle_difference
+
+	return max_curvature
 	
 def delete_intermediate_points(path, cut_step):
 
