@@ -1134,28 +1134,34 @@ v1.get_distance_to(v2) #+ fabs(v1.riskiness - v2.riskiness)
 	def get_start_id(self, x, y, offset):
 
 		min_x = x - offset
-		
-		if min_x < self.min_x:
-		
-			min_x = self.min_x
-			
 		min_y = y - offset
-		
-		if min_y < self.min_y:
-		
-			min_y = self.min_y
-			
 		max_x = x + offset
-		
-		if max_x > self.max_x:
-		
-			max_x = self.max_x
-			
 		max_y = y + offset
 		
-		if max_y > self.max_y:
+		if min_x < self.min_x or max_x < self.min_x:
+		
+			min_x = self.min_x
+			max_x = min_x + offset * 2
+			
+		
+		
+		if min_y < self.min_y or max_y < self.min_y:
+		
+			min_y = self.min_y
+			max_y = min_y + offset * 2
+		
+		
+		if max_x > self.max_x or min_x > self.max_x:
+		
+			max_x = self.max_x
+			min_x = max_x - offset * 2
+			
+		
+		
+		if max_y > self.max_y or min_y > self.max_y:
 		
 			max_y = self.max_y
+			min_y = max_y - offset * 2
 
 		iter_count = 0
 
@@ -1182,28 +1188,29 @@ v1.get_distance_to(v2) #+ fabs(v1.riskiness - v2.riskiness)
 	def get_goal_id(self, x, y, offset):
 
 		min_x = x - offset
-		
-		if min_x < self.min_x:
-		
-			min_x = self.min_x
-			
 		min_y = y - offset
-		
-		if min_y < self.min_y:
-		
-			min_y = self.min_y
-			
 		max_x = x + offset
-		
-		if max_x > self.max_x:
-		
-			max_x = self.max_x
-			
 		max_y = y + offset
 		
-		if max_y > self.max_y:
+		if min_x < self.min_x or max_x < self.min_x:
+		
+			min_x = self.min_x
+			max_x = min_x + offset * 2
+		
+		if min_y < self.min_y or max_y < self.min_y:
+		
+			min_y = self.min_y
+
+		
+		if max_x > self.max_x or min_x > self.max_x:
+		
+			max_x = self.max_x
+			min_x = max_x - offset * 2
+		
+		if max_y > self.max_y or min_y > self.max_y:
 		
 			max_y = self.max_y
+			min_y = max_y - offset * 2
 
 		while True:
 				

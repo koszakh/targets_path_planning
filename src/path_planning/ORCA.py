@@ -375,8 +375,8 @@ def path_loops_deleting(path):
 		
 				i = 2
 		
-		path_curv = get_path_curvature(new_path)
-		print('New path curvature: ' + str(path_curv))
+		#path_curv = get_path_curvature(new_path)
+		#print('New path curvature: ' + str(path_curv))
 		
 		return new_path
 		
