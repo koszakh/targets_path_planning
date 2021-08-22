@@ -27,7 +27,7 @@ def convert_to_path(msg):
 
 def paths_callback(msg_data):
 	
-	print('Paths are received')
+	print('Paths received.')
 	paths_list = msg_data.path_list
 	robots = []
 	for path_msg in paths_list:

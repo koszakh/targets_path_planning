@@ -25,10 +25,10 @@ def group_path_planning():
 	min_row = const.ROW_RANGE[0]
 	max_row = const.ROW_RANGE[1]
 
-	hmap, l_scale, w_scale, x_step, y_step, grid_step, step_count = \
+	hmap, l_scale, w_scale, x_step, y_step, step_count = \
 		hm.prepare_heightmap(min_col, max_col, min_row, max_row)
 		
-	mh = pp.PathPlanner(hmap, l_scale, w_scale, grid_step, x_step, y_step, step_count)
+	mh = pp.PathPlanner(hmap, l_scale, w_scale, x_step, y_step, step_count)
 
 	min_x = mh.min_x
 	max_x = mh.max_x
@@ -38,12 +38,10 @@ def group_path_planning():
 	avg_x = numpy.mean([min_x, max_x])
 	avg_y = numpy.mean([min_y, max_y])
 	
-# (5676, -6901)
-	
-	new_x = numpy.mean([min_x, avg_x]) + 5#numpy.mean([min_x, avg_x])#random.uniform(min_x, avg_x)
-	new_y = numpy.mean([min_y, avg_y]) - 5#random.uniform(min_y, max_y)
-	new_x1 = numpy.mean([avg_x, max_x]) - 5
-	new_y1 = numpy.mean([avg_y, max_y]) + 5
+	new_x = numpy.mean([min_x, avg_x])# + 7
+	new_y = numpy.mean([min_y, avg_y])# + 4
+	new_x1 = numpy.mean([avg_x, max_x]) - 10
+	new_y1 = numpy.mean([avg_y, max_y]) - 10
 	
 	offset = const.DIST_OFFSET
 
@@ -56,9 +54,13 @@ def group_path_planning():
 	mh.gridmap_preparing()
 	cells = mh.cells
 
-	f = open(gc_const.MAP_COORDS_PATH, 'w+')
-	f.write('Longitude / Latitude\n\n')
-	f.close()
+	dynamic = True
+
+	if dynamic:
+
+		f = open(gc_const.MAP_DYNAMIC_COORDS_PATH, 'w+')
+		f.write('Longitude / Latitude\n\n')
+		f.close()
 		
 	orca = ORCAsolver(mh.heightmap, cells, x_step, y_step, l_scale, w_scale)
 	smoothed_paths = {}
@@ -72,15 +74,16 @@ def group_path_planning():
 		
 			gc.spawn_target(name, robot_pos, orient)
 			
-			#robot_orient = gc.get_robot_orientation_vector(name)
-			#start_id, goal_id = mh.get_start_and_goal_id(robot_pos, robot_orient, goal[0], goal[1], offset)
-			goal_id = True
+			robot_orient = gc.get_robot_orientation_vector(name)
+			start_id, goal_id = mh.get_start_and_goal_id(robot_pos, robot_orient, goal[0], goal[1], offset)
+			#goal_id = True
 			
 			if goal_id:
 			
-				#print('\nPath planning for ' + name + ' has begun!')
-				#path, path_ids, path_cost = mh.find_path(start_id, goal_id, robot_orient)
-				path = [robot_pos]
+				print('\nPath planning for ' + name + ' has begun!')
+				path, path_ids, path_cost = mh.find_path(start_id, goal_id, robot_orient)
+				
+				#path = [robot_pos]
 				
 				if path:
 
