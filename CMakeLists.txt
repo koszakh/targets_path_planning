@@ -54,6 +54,7 @@ add_message_files(
   Path.msg
   AllPaths.msg
   Vector2d.msg
+  TargetDamage.msg
 )
 
 ## Generate services in the 'srv' folder
