@@ -1,7 +1,7 @@
 from math import sqrt
 
 ROOT_PATH = '/root'
-ROBOT_MODEL_PATH = ROOT_PATH + '/catkin_ws/src/targets_path_planning/urdf/pioneer3at_'
+ROBOT_MODEL_PATH = ROOT_PATH + '/catkin_ws/src/targets_path_planning/urdf/hmap1/pioneer3at.urdf'
 DIR_POINT_SUFFIX = '::dir_point'
 VERTICE_PATH = ROOT_PATH + '/.gazebo/models/vertice/model.sdf'
 RED_VERTICE_PATH = ROOT_PATH + '/.gazebo/models/red_vertice/model.sdf'
@@ -29,6 +29,6 @@ UPPER_DAMAGE_LIMIT = 0.9
 
 #------------------------------------------
 
-MAP_DYNAMIC_COORDS_PATH = '/root/catkin_ws/src/targets_path_planning/map_logs/hmap_2/dynamic/map_2_dyn_scen_3.txt'
-MAP_STATIC_COORDS_PATH = '/root/catkin_ws/src/targets_path_planning/map_logs/hmap_2/static/map_2_stat_scen_3.txt'
-PATH_COORDS_PATH = '/root/catkin_ws/src/targets_path_planning/map_logs/hmap_2/paths/paths2/'
+MAP_DYNAMIC_COORDS_PATH = '/root/catkin_ws/src/targets_path_planning/map_logs/hmap_2/dynamic/map_2_dyn_scen_5.txt'
+MAP_STATIC_COORDS_PATH = '/root/catkin_ws/src/targets_path_planning/map_logs/hmap_2/static/map_2_stat_scen_5.txt'
+PATHS_DIR_PATH = '/root/catkin_ws/src/targets_path_planning/map_logs/hmap_2/paths/paths3/'

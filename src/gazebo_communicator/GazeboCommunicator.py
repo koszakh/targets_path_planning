@@ -52,7 +52,7 @@ class Robot(thr.Thread):
 		
 	def init_topics(self):
 		
-		subtopic_name = '/sim_' + self.name
+		subtopic_name = '/' + self.name
 		self.vel_publisher = rospy.Publisher(subtopic_name + '/cmd_vel', Twist, queue_size=10)
 		self.waypoint_pub = rospy.Publisher(subtopic_name + '/waypoint', Point, queue_size=10)
 		self.waypoint_sub = rospy.Subscriber(subtopic_name + '/waypoint', Point, self.waypoint_callback)
@@ -149,14 +149,6 @@ class Robot(thr.Thread):
 			self.movement(self.ms, u)
 			self.add_path_gps('a+')
 			rospy.sleep(self.pid_delay)
-			
-	def add_path_gps(self, open_mode):
-	
-		self.path_p_count += 1
-		gps_coords = self.get_gps_coords()
-		f = open(const.PATH_COORDS_PATH + self.name + '.txt', open_mode)
-		f.write(str(self.path_p_count) + ': ' + gps_coords + '\n')
-		f.close()
 
 
 # Rotate the robot towards a point
@@ -278,6 +270,14 @@ class Robot(thr.Thread):
 		f = open(const.MAP_DYNAMIC_COORDS_PATH, 'a+')
 		f.write('Target ' + self.name[4:] + ' start coords: ' + str(start_coords) + '\n')
 		f.write('Target ' + self.name[4:] + ' end coords: ' + str(end_coords) + '\n\n')
+		f.close()
+		
+	def add_path_gps(self, open_mode):
+	
+		self.path_p_count += 1
+		gps_coords = self.get_gps_coords()
+		f = open(const.PATHS_DIR_PATH + self.name + '.txt', open_mode)
+		f.write(str(self.path_p_count) + ': ' + gps_coords + '\n')
 		f.close()
 		
 # Creating Pose type ROS message
@@ -514,7 +514,7 @@ def spawn_sdf_model(state, model_directory, model_name):
 
 def spawn_target(model_name, state, orient):
 	target_id = model_name[4:]
-	model_directory = const.ROBOT_MODEL_PATH + target_id + '.urdf'
+	model_directory = const.ROBOT_MODEL_PATH# + target_id + '.urdf'
 	state.set_z(float(state.z + const.SPAWN_HEIGHT_OFFSET))
 	spawn_urdf_model(model_name, model_directory, state, orient)
 	
@@ -529,7 +529,7 @@ def spawn_urdf_model(model_name, model_directory, state, orient):
 	
 		spawn_model_client = rospy.ServiceProxy('/gazebo/spawn_urdf_model', SpawnModel)
 		spawn_model_client(model_name, open(model_directory, 'r').read(),
-					"/sim_" + model_name, Pose(position=Point(state.x, state.y, state.z), orientation=Quaternion(x, y, z, w)), "world")
+					"/" + model_name, Pose(position=Point(state.x, state.y, state.z), orientation=Quaternion(x, y, z, w)), "world")
 	
 	except rospy.ServiceException, e:
 	
