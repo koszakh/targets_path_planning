@@ -118,7 +118,7 @@ const.ORCA_RADIUS, self.ms)
 			am.set_init_path(path)
 			goal_p = am.goal_point
 			am.current_goal = path[0]
-			gc.spawn_sdf_model(goal_p, gc_const.RED_VERTICE_PATH, robot_name + '_goal')
+			gc.spawn_sdf_model(goal_p, gc_const.RED_VERTICE_PATH, 'goal_' + robot_name[8:])
 			self.init_paths[robot_name] = copy.copy(path)
 			print('Robot ' + robot_name + ' initial path length: ' + str(len(path)))
 		
