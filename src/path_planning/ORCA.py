@@ -183,7 +183,7 @@ const.ORCA_RADIUS, self.ms)
 		
 			am.min_n_dist = min_neighbor_dist
 		
-		if min_neighbor_dist > (const.ORCA_NEIGHBOR_DIST + const.ORCA_RADIUS):
+		if min_neighbor_dist > (const.ORCA_NEIGHBOR_DIST + const.ORCA_RADIUS + gc_const.DISTANCE_ERROR):
 			
 			vect = self.calc_new_vel_direction(last_p, last_vect, current_goal)
 		
@@ -353,7 +353,7 @@ def path_loops_deleting(path):
 	i = len(path) - 1
 	goal = path[0]
 	
-	if len(path) > 1:
+	if len(path) > 2:
 
 		while True:
 		

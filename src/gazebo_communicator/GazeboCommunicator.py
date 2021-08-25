@@ -240,6 +240,7 @@ class Robot(thr.Thread):
 		#self.write_start_coords(start_coords)
 		#self.add_path_gps('w+')
 		f = open(self.local_path_dir, 'w+')
+		
 		f.close()
 		if len(self.path) > 0:
 		
