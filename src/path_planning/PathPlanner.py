@@ -1211,8 +1211,6 @@ v1.get_distance_to(v2) #+ fabs(v1.riskiness - v2.riskiness)
 			if max_x > self.max_x:
 			
 				max_x = self.max_x
-			
-		
 		
 		if min_y < self.min_y or max_y < self.min_y:
 		
@@ -1223,7 +1221,6 @@ v1.get_distance_to(v2) #+ fabs(v1.riskiness - v2.riskiness)
 			
 				max_y = self.max_y
 		
-		
 		if max_x > self.max_x or min_x > self.max_x:
 		
 			max_x = self.max_x
@@ -1232,8 +1229,6 @@ v1.get_distance_to(v2) #+ fabs(v1.riskiness - v2.riskiness)
 			if min_x < self.min_x:
 			
 				min_x = self.min_x
-			
-		
 		
 		if max_y > self.max_y or min_y > self.max_y:
 		

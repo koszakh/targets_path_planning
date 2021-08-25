@@ -49,7 +49,9 @@ class Robot(thr.Thread):
 		self.longitude = None
 		self.total_damage = 0
 		self.path_p_count = 0
-		self.local_path_dir = const.PATHS_DIR + const.LOCAL_PATH_DIRS[3] + self.name + '.txt'
+		self.local_path_dir = const.PATHS_DIR + const.LOCAL_PATH_DIRS[4] + self.name + '.txt'
+		#f = open(self.local_path_dir, 'w+')
+		#f.close()
 		
 	def init_topics(self):
 		
@@ -165,7 +167,7 @@ class Robot(thr.Thread):
 			u = up + ui + ud
 			self.movement(self.ms, u)
 			#self.add_path_gps('a+')
-			self.add_path_local_coords()
+			#self.add_path_local_coords()
 			rospy.sleep(self.pid_delay)
 
 
@@ -239,9 +241,6 @@ class Robot(thr.Thread):
 		start_coords = self.get_gps_coords()
 		#self.write_start_coords(start_coords)
 		#self.add_path_gps('w+')
-		f = open(self.local_path_dir, 'w+')
-		
-		f.close()
 		if len(self.path) > 0:
 		
 			print(self.name + ' path curvature: ' + str(get_path_curvature(self.path)))

@@ -15,6 +15,7 @@ from math import sqrt, asin, fabs, pi
 from time import sleep
 from time import time
 import random
+from scipy.spatial.transform import Rotation
 
 def delete_intermediate_points(path, cut_step):
 
@@ -57,22 +58,20 @@ def make_pose_msg(state, orient):
 
 rospy.init_node('ros_node')
 sleep(1)
-flag = False
+flag = True
 
 if flag:
 
-	p1 = Point(1, 1, 0)
-	p2 = Point(0, 0, 0)
-	name1 = 'sim_p3at1'
-	name2 = 'sim_p3at2'
-	gc.spawn_target(name1, p1, (0,0,0,0))
-	gc.spawn_target(name2, p2, (0,0,0,0))
-	robot1 = gc.Robot(name1)
-	robot2 = gc.Robot(name2)
-	sleep(1)
-	robot1.movement(0.4, 0)
-	robot2.movement(0.2, 0)
-
+	p1 = Point(0, 0, 0)
+	p2 = Point(4, 1, 0)
+	gc.visualise_path([p1, p2], gc_const.GREEN_VERTICE_PATH, 'v')
+	name = 'sim_p3at1'
+	angle = p1.get_dir_vector_between_points(p2).vector_to_angle()
+	rot = Rotation.from_euler('xyz', [0, 0, angle], degrees=True)
+	quat = rot.as_quat()
+	gc.spawn_target(name, p1, quat)
+	robot = gc.Robot(name)
+	
 else:
 
 	p = Point(30, 0, 0.2)

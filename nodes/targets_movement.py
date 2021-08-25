@@ -16,33 +16,50 @@ from path_planning.ORCA import ORCAsolver
 import random
 import pathlib
 import io
+from scipy.spatial.transform import Rotation
 
 def group_movement():
 
 	robot_names = ['sim_p3at' + str(i) for i in range(1, const.ROBOTS_COUNT + 1)]
-	init_dir = gc_const.PATHS_DIR
+	root_path = gc_const.PATHS_DIR
+	rootDir = pathlib.Path(root_path)
+	local_dirs = [rootItem.stem + '/' for rootItem in rootDir.iterdir()]
+	print(len(local_dirs))
+	print(const.ROBOTS_COUNT / len(local_dirs))
 	start_index = 10
+	robots = {}
 	
-	for path_dir in gc_const.LOCAL_PATH_DIRS:
+	for folder in local_dirs:
 	
-		current_dir = init_dir + path_dir
-		currentDirectory = pathlib.Path(path)
+		current_dir = root_path + folder
+		currentDirectory = pathlib.Path(current_dir)
+		#print('Current dir: ' + str(current_dir))
 		dir_items = [currentFile.stem for currentFile in currentDirectory.iterdir()]
 		
-		for i in range(const.ROBOTS_COUNT / len(gc_const.LOCAL_PATH_DIRS)):
+		
+		for i in range(const.ROBOTS_COUNT / len(local_dirs)):
 		
 			name = random.choice(robot_names)
 			robot_names.remove(name)
 			rnd_path = random.choice(dir_items)
 			dir_items.remove(rnd_path)
-			file_path = current_dir + rnd_path + '.txt'
-			path = txt_path_parser(file_path)
+			file_path = current_dir + rnd_path + ".txt"
+			path = txt_path_parser(file_path)[start_index:]
 			start_p = path[0]
 			next_p = path[1]
 			angle = start_p.get_dir_vector_between_points(next_p).vector_to_angle()
-			gc.spawn_target(name, start_p, (0, 0, angle, 0))
+			rot = Rotation.from_euler('xyz', [0, 0, angle], degrees=True)
+			quat = rot.as_quat()
+			gc.spawn_target(name, start_p, quat)
+			robot = gc.Robot(name)
+			robot.waypoints_publisher(path)
+			robots[name] = robot
 			#print(path)
-				
+			
+	for key in robots.keys():
+	
+		robot = robots[key]
+		robot.start()
 		
 
 def prepare_paths_msg(names, paths):
@@ -90,6 +107,8 @@ def convert_to_point(msg_data):
 	
 def txt_path_parser(file_path):
 
+	#print('File path: ' + str(file_path))
+	#print('Type: ' + str(type(file_path)))
 	path = []
 	
 	with io.open(file_path, encoding='utf-8') as file:
@@ -107,9 +126,5 @@ def txt_path_parser(file_path):
 	return path
 
 rospy.init_node('path_planner')
-file_path = '/root/catkin_ws/src/targets_path_planning/test_path.txt'
-
-path = txt_path_parser(file_path)
-gc.spawn_target('sim_p3at1', path[0], (0, 0, 0, 0))
-gc.visualise_path(path, gc_const.GREEN_VERTICE_PATH, 'v')
+group_movement()
 rospy.spin()
