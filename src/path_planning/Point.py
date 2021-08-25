@@ -9,8 +9,16 @@ from math import sqrt, acos, fabs, pi, cos, sin
 class Vector2d:
 	def __init__(self, x, y):
 		vector_mod = sqrt(x ** 2 + y ** 2)
-		self.x = x / vector_mod
-		self.y = y / vector_mod
+
+		if vector_mod == 0:
+
+			self.x = 0
+			self.y = 0
+
+		else:
+		
+			self.x = x / vector_mod
+			self.y = y / vector_mod
 
 # Convert vector to angle
 
@@ -33,11 +41,13 @@ class Vector2d:
 	def get_angle_between_vectors(self, v):
 		v_angle = v.vector_to_angle()
 		self_angle = self.vector_to_angle()
+		#print('v2_angle: ' + str(v_angle) + ' | v1_angle: ' + str(self_angle))
 		angle = v_angle - self_angle
 		if angle > 180:
 			angle = -(360 - angle)
 		elif angle < -180:
 			angle = 360 + angle
+		#print('angle: ' + str(angle))
 		return angle
 	
 	def __str__(self):
@@ -441,6 +451,13 @@ class Point:
 		k2_x = p.x - self.x
 		x = (k2_x * y + k_x) / k1
 		return x
+
+	def get_point_in_direction(self, vect, distance):
+
+		v_x = vect.x * distance
+		v_y = vect.y * distance
+		new_p = Point(self.x + v_x, self.y + v_y, self.z)
+		return new_p
 
 # Calculating the position of a point lying on a straight line between points at a certain distance
 # Input

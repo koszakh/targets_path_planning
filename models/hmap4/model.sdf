@@ -1,0 +1,66 @@
+<?xml version="1.0" ?>
+<sdf version="1.6">
+  <model name="hmap4">
+    <static>true</static>
+    <link name="map_link">
+      <collision name="collision_hmap4">
+        <geometry>
+          <heightmap>
+            <uri>model://hmap4/materials/textures/test_n4.png</uri>
+            <size>50000 50000 469</size>
+		<!--3425</size>-->
+            <pos>0 0 0</pos>
+          </heightmap>
+        </geometry>
+        <surface>
+          <friction>
+            <torsional>
+              <coefficient>1</coefficient>
+              <ode>
+                <slip>0.2</slip>
+              </ode>
+            </torsional>
+            <ode>
+              <mu>100</mu>
+              <mu2>50</mu2>
+            </ode>
+          </friction>
+        </surface>
+      </collision>
+
+      <visual name="visual_hmap4">
+        <geometry>
+          <heightmap>
+            <texture>
+              <diffuse>file://media/materials/textures/dirt_diffusespecular.png</diffuse>
+              <normal>file://media/materials/textures/flat_normal.png</normal>
+              <size>10</size>
+            </texture>
+            <texture>
+              <diffuse>file://media/materials/textures/grass_diffusespecular.png</diffuse>
+              <normal>file://media/materials/textures/flat_normal.png</normal>
+              <size>10</size>
+            </texture>
+            <texture>
+              <diffuse>file://media/materials/textures/fungus_diffusespecular.png</diffuse>
+              <normal>file://media/materials/textures/flat_normal.png</normal>
+              <size>10</size>
+            </texture>
+            <blend>
+              <min_height>0.5</min_height>
+              <fade_dist>10</fade_dist>
+            </blend>
+            <blend>
+              <min_height>10</min_height>
+              <fade_dist>5</fade_dist>
+            </blend>
+            <uri>model://hmap4/materials/textures/test_n4.png</uri>
+            <size>50000 50000 469</size>
+		<!--3425</size>-->
+            <pos>0 0 0</pos>
+          </heightmap>
+        </geometry>
+      </visual>
+    </link>
+  </model>
+</sdf>

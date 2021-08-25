@@ -1,5 +1,6 @@
 # Module that converts the height map into a view convenient for path planning
 
+import rospy
 import Constants as const
 from Point import Point
 import gazebo_communicator.GazeboCommunicator as gc
@@ -94,104 +95,83 @@ class Heightmap:
 		p_value_range = max_p_value - 0
 		
 		return p_value_range
-
-# Converting a grayscale image to a heightmap vertex list
-	def heightmap_builder(self, min_col, max_col, min_row, max_row):
-
-		if min_col < 0:
 		
-			min_col = 0
-			
-		elif max_col > self.image.shape[0]:
+	def calc_heightmap_bounds(self):
+	
+		self.min_col = const.COL_RANGE[0]
+		self.max_col = const.COL_RANGE[1]
+		self.min_row = const.ROW_RANGE[0]
+		self.max_row = const.ROW_RANGE[1]
 		
-			max_col = self.image.shape[0]
-			
-		if min_row < 0:
+		if self.min_col < 0:
 		
-			min_row = 0
+			self.min_col = 0
 			
-		elif max_row > self.image.shape[1]:
+		elif self.max_col > self.image.shape[0]:
 		
-			max_row = self.image.shape[1]
+			self.max_col = self.image.shape[0]
 			
-		self.map_length = max_col - min_col#image.shape[0]
-		self.map_width = max_row - min_row#image.shape[1]
+		if self.min_row < 0:
+		
+			self.min_row = 0
+			
+		elif self.max_row > self.image.shape[1]:
+		
+			self.max_row = self.image.shape[1]
+			
+		rospy.set_param('min_col', self.min_col)
+		rospy.set_param('max_col', self.max_col)
+		rospy.set_param('min_row', self.min_row)
+		rospy.set_param('max_row', self.max_row)
+		
 		self.x_grid_size = float(self.length_scale / (self.image.shape[0] - 1))
 		self.y_grid_size = float(self.width_scale / (self.image.shape[1] - 1))
 		self.steps_count = int(self.x_grid_size / const.GRID_SIZE)
 		print('x_grid_size: ' + str(self.x_grid_size) + 'm')
 		print('y_grid_size: ' + str(self.y_grid_size) + 'm')
 		print('steps_count: ' + str(self.steps_count))
-		self.grid_range = const.ROBOT_RADIUS // self.x_grid_size + 1
-		heightmap = {}
-		
-		
-		for i in range(min_col, max_col + 1):  # traverses through height of the image
-			
-			for j in range(min_row, max_row + 1):  # traverses through width of the image
-				
-				p_id = (str(float(i)), str(float(j)))
-				x = float(-self.length_scale / 2 + j * self.x_grid_size) 
-				y = float(self.width_scale / 2 - i * self.y_grid_size)
-				z = float(self.image[i][j] / self.height_scale) + self.z
-				
-				p = Point(x, y, z)
-				
-				p.set_id(p_id)
-				heightmap[p_id] = p
-				
-				if i == min_col or j == min_row or i == max_col or j == max_row:
-				
-					pass
-					#gc.spawn_sdf_model(p, gc_const.BIG_RED_VERTICE_PATH, 'v' + str(p_id))
-				
-				
-		return heightmap
 
-# Converting heightmap vertex dictionary to list
-# Input
-# dict_hmap: heightmap vertex dictionary
-
-# Output
-# h_map: heightmap vertex list
-	def convert_to_list(self, dict_hmap):
+	def get_all_heightmap_points(self):
 	
-		h_map = []
-		
-		for i in range(self.map_height):
-		
-			h_map.append([])
-		
-			for j in range (self.map_width):
-		
-				key = (str(i), str(j))
-				v = dict_hmap[key]
-				h_map[i].append(v)
-		
-		return h_map
+		self.max_z = 0
+		self.min_z = float('inf')
+		hmap = {(str(float(i)), str(float(j))): self.get_heightmap_point(i, j) for i in \
+		 range(self.min_col, self.max_col + 1) for j in range(self.min_row, self.max_row + 1)}
+		print('max_z: ' + str(self.max_z))
+		print('min_z: ' + str(self.min_z))
+		return hmap
 
-# Converting heightmap vertex list to dictionary
-# Input
-# list_hmap: heightmap vertex list
+	def get_heightmap_point(self, col, row):
+	
+		p_id = (str(float(col)), str(float(row)))
+		x = float(-self.length_scale / 2 + row * self.x_grid_size) + self.x
+		y = float(self.width_scale / 2 - col * self.y_grid_size) + self.y
+		z = float(self.image[col][row] / self.height_scale) + self.z
+		if z > self.max_z:
+		
+			self.max_z = z
+			
+		if z < self.min_z:
+		
+			self.min_z = z
+			
+		p = Point(x, y, z)
+		p.set_id(p_id)
 
-# Output
-# h_map: heightmap vertex dictionary
-	def convert_to_dict(self, list_hmap):
-		h_map = {}
-		for i in range(len(list_hmap)):
-			for j in range(len(list_hmap[i])):
-				key = (str(i), str(j))
-				h_map[key] = list_hmap[i][j]
-		return h_map
+		#if z < 700:
+		
+			#gc.spawn_sdf_model(p, gc_const.GREEN_VERTICE_PATH, 'p' + str(p_id))
+				
+		if (col == self.min_col and row == self.min_row) or (col == self.max_col and row == self.min_row) or (col == self.min_col and row == self.max_row) or (col == self.max_col and row == self.max_row):
+		
+			pass
+			gc.spawn_sdf_model(p, gc_const.BIG_RED_VERTICE_PATH, 'v' + str(p_id))
+		
+		return p
 
 # Preparing a heightmap for further path planning (generation + converting to dictionary)
 	def prepare_heightmap(self, min_col, max_col, min_row, max_row):
-		hmap = self.heightmap_builder(min_col, max_col, min_row, max_row)
-		#hmap = self.convert_to_dict(self.heightmap)
-		return hmap, self.length_scale, self.width_scale, self.x_grid_size, self.y_grid_size, self.grid_range, self.steps_count
-
-# Finding a Key in a Dictionary by Value
-def get_key(d, value):
-	for k, v in d.items():
-		if v == value:
-			return k
+	
+		self.calc_heightmap_bounds()
+		hmap = self.get_all_heightmap_points()
+		return hmap, self.length_scale, self.width_scale, self.x_grid_size, self.y_grid_size, self.steps_count

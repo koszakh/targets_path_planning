@@ -1,0 +1,16 @@
+Longitude / Latitude
+
+Target 1 start coords: (45.2529820968, 42.6160445205)
+Target 2 start coords: (45.2526549125, 42.6159355785)
+Target 3 start coords: (45.253024601, 42.6163263966)
+Target 5 start coords: (45.2527280193, 42.615937072)
+Target 7 start coords: (45.2530734806, 42.6159512706)
+Target 4 start coords: (45.2531093475, 42.6159711407)
+Target 6 start coords: (45.2526124397, 42.6161569549)
+Target 1 end coords: (45.2528584481, 42.6163069879)
+Target 3 end coords: (45.252984572, 42.6167064204)
+Target 4 end coords: (45.2533597689, 42.616377596)
+Target 6 end coords: (45.2527892501, 42.6166507532)
+Target 5 end coords: (45.2531141713, 42.6163997146)
+Target 2 end coords: (45.2532798993, 42.6163052482)
+Target 7 end coords: (45.253274745, 42.6165975643)

@@ -16,6 +16,19 @@ from time import sleep
 from time import time
 import random
 
+def delete_intermediate_points(path, cut_step):
+
+	path_copy = copy.copy(path)
+
+	for i in range(len(path) - 1):
+
+		if (i % cut_step > 0):
+
+			if path[i] in path_copy:
+
+				path_copy.remove(path[i])
+
+	return path_copy
      
 def convert_to_path(msg):
     path = []
@@ -44,17 +57,80 @@ def make_pose_msg(state, orient):
 
 rospy.init_node('ros_node')
 sleep(1)
-hm = Heightmap()
-hmap, height, width, x_step, y_step, grid_step = hm.prepare_heightmap()
-map_handler = pp.PathPlanner(hmap, height, width, grid_step, x_step, y_step)
-name = 'p3at1'
-model_directory = gc_const.ROBOT_MODEL_PATH + name[len(name) - 1] + ".urdf"
-robot_pos = map_handler.get_random_start_pos()
-gc.spawn_urdf_model(name, model_directory, robot_pos)
-p = Point(0, 0, 0)
-robot = gc.Robot(name)
-robot.waypoint_publisher(p)
-robot.start()
+flag = False
+
+if flag:
+
+	p1 = Point(1, 1, 0)
+	p2 = Point(0, 0, 0)
+	name1 = 'sim_p3at1'
+	name2 = 'sim_p3at2'
+	gc.spawn_target(name1, p1, (0,0,0,0))
+	gc.spawn_target(name2, p2, (0,0,0,0))
+	robot1 = gc.Robot(name1)
+	robot2 = gc.Robot(name2)
+	sleep(1)
+	robot1.movement(0.4, 0)
+	robot2.movement(0.2, 0)
+
+else:
+
+	p = Point(30, 0, 0.2)
+	g = Point(-30, 0, 0)
+	g_1 = p.get_point_in_direction(p.get_dir_vector_between_points(g), 6)
+	g_1.set_z(0)
+	#gc.spawn_sdf_model(g, gc_const.BLUE_VERTICE_PATH, 'g')
+	#gc.spawn_sdf_model(g_1, gc_const.BLUE_VERTICE_PATH, 'g_1')
+	name = 'p3at1'
+	vect = p.get_angle_between_points(g)
+	rot = pp.Rotation.from_euler('xyz', [0, 0, vect], degrees=True)
+	quat = rot.as_quat()
+	#gc.spawn_target(name, p, quat)
+	p1 = Point(-3, -1.5, 0.2)
+	g1 = Point(1, 1.5, 0)
+	g1_1 = p1.get_point_in_direction(p1.get_dir_vector_between_points(g1), 6)
+	g1_1.set_z(0)
+	vect1 = p1.get_angle_between_points(g1)
+	#gc.spawn_sdf_model(g1, gc_const.GREEN_VERTICE_PATH, 'g1')
+	#gc.spawn_sdf_model(g1_1, gc_const.GREEN_VERTICE_PATH, 'g1_1')
+	name1 = 'p3at2'
+	rot1 = pp.Rotation.from_euler('xyz', [0, 0, vect1], degrees=True)
+	quat1 = rot1.as_quat()
+	gc.spawn_target(name1, p1, quat1)
+	p2 = Point(-3, 1.5, 0)
+	g2 = Point(1, -1.5, 0)
+	g2_1 = p2.get_point_in_direction(p2.get_dir_vector_between_points(g2), 6)
+	g2_1.set_z(0)
+	#gc.spawn_sdf_model(g2, gc_const.RED_VERTICE_PATH, 'g2')
+	#gc.spawn_sdf_model(g2_1, gc_const.RED_VERTICE_PATH, 'g2_1')
+	name2 = 'p3at3'
+	vect2 = p2.get_angle_between_points(g2)
+	rot2 = pp.Rotation.from_euler('xyz', [0, 0, vect2], degrees=True)
+	quat2 = rot2.as_quat()
+	gc.spawn_target(name2, p2, quat2)
+	robot = gc.Robot(name)
+	robot1 = gc.Robot(name1)
+	robot2 = gc.Robot(name2)
+	orca = ORCAsolver(None, None, None, None, None, None)
+	#orca.add_agent(robot.name, [robot.get_robot_position(), g])
+	orca.add_agent(robot1.name, [robot1.get_robot_position(), g1])
+	orca.add_agent(robot2.name, [robot2.get_robot_position(), g2])
+	paths = orca.run_orca()
+	#robot.path = paths[robot.name]
+	robot1.path = paths[robot1.name]
+	robot2.path = paths[robot2.name]
+
+	for key in paths.keys():
+
+		path = paths[key]
+		path = delete_intermediate_points(path, 3)
+		
+		gc.visualise_path(path, random.choice(gc_const.PATH_COLORS), str(key) + '_')
+	
+	robot.start()
+	robot1.start()
+	robot2.start()
+	
 print('Finish!')
 rospy.spin()
 
