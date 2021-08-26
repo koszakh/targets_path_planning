@@ -133,12 +133,16 @@ class Heightmap:
 
 	def get_all_heightmap_points(self):
 	
+		self.min_x = float('inf')
+		self.max_x = -float('inf')
+		self.min_y = float('inf')
+		self.max_y = -float('inf')
 		self.max_z = 0
-		self.min_z = float('inf')
 		hmap = {(str(float(i)), str(float(j))): self.get_heightmap_point(i, j) for i in \
 		 range(self.min_col, self.max_col + 1) for j in range(self.min_row, self.max_row + 1)}
 		print('max_z: ' + str(self.max_z))
-		print('min_z: ' + str(self.min_z))
+		print('\np_min = (' + str(self.min_x) + ', ' + str(self.min_y) + ')')
+		print('p_max = (' + str(self.max_x) + ', ' + str(self.max_y) + ')\n')
 		return hmap
 
 	def get_heightmap_point(self, col, row):
@@ -151,12 +155,24 @@ class Heightmap:
 		
 			self.max_z = z
 			
-		if z < self.min_z:
-		
-			self.min_z = z
-			
 		p = Point(x, y, z)
 		p.set_id(p_id)
+		
+		if x < self.min_x:
+		
+			self.min_x = x
+			
+		if x > self.max_x:
+		
+			self.max_x = x
+			
+		if y < self.min_y:
+		
+			self.min_y = y
+			
+		if y > self.max_y:
+		
+			self.max_y = y
 
 		#if z < 700:
 		

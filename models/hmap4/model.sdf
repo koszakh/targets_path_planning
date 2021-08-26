@@ -9,7 +9,7 @@
             <uri>model://hmap4/materials/textures/test_n4.png</uri>
             <size>50000 50000 469</size>
 		<!--3425</size>-->
-            <pos>0 0 0</pos>
+            <pos>0 0 100</pos>
           </heightmap>
         </geometry>
         <surface>
@@ -57,7 +57,7 @@
             <uri>model://hmap4/materials/textures/test_n4.png</uri>
             <size>50000 50000 469</size>
 		<!--3425</size>-->
-            <pos>0 0 0</pos>
+            <pos>0 0 100</pos>
           </heightmap>
         </geometry>
       </visual>

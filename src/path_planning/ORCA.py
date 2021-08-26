@@ -303,10 +303,11 @@ const.ORCA_RADIUS, self.ms)
 					self.amanager[key].last_point = robot_pos
 			
 		print('ORCA3D for ' + str(len(self.agents)) + ' agents is completed!')		
+		
 		#for key in self.final_paths.keys():
 	
 			#path = self.final_paths[key]
-			#short_path = delete_intermediate_points(path, 6)
+			#short_path = delete_intermediate_points(path, 10)
 			#gc.visualise_path(short_path, random.choice(list(gc_const.PATH_COLORS)), str(key) + '_p_')
 			
 		return self.final_paths

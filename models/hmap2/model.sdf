@@ -9,7 +9,7 @@
             <uri>model://hmap2/materials/textures/test_n2.png</uri>
             <size>30000 30000 1981</size>
 		<!--3425</size>-->
-            <pos>0 0 -747</pos>
+            <pos>0 0 747</pos>
           </heightmap>
         </geometry>
         <surface>
@@ -57,7 +57,7 @@
             <uri>model://hmap2/materials/textures/test_n2.png</uri>
             <size>30000 30000 1981</size>
 		<!--3425</size>-->
-            <pos>0 0 -747</pos>
+            <pos>0 0 747</pos>
           </heightmap>
         </geometry>
       </visual>
