@@ -58,7 +58,7 @@ def make_pose_msg(state, orient):
 
 rospy.init_node('ros_node')
 sleep(1)
-flag = True
+flag = False
 
 if flag:
 
@@ -85,8 +85,8 @@ else:
 	rot = pp.Rotation.from_euler('xyz', [0, 0, vect], degrees=True)
 	quat = rot.as_quat()
 	#gc.spawn_target(name, p, quat)
-	p1 = Point(-3, 0, 0.2)
-	g1 = Point(3, 0, 0)
+	p1 = Point(-4, 1.5, 0.2)
+	g1 = Point(1, -1.5, 0)
 	g1_1 = p1.get_point_in_direction(p1.get_dir_vector_between_points(g1), 6)
 	g1_1.set_z(0)
 	vect1 = p1.get_angle_between_points(g1)
@@ -96,8 +96,8 @@ else:
 	rot1 = pp.Rotation.from_euler('xyz', [0, 0, vect1], degrees=True)
 	quat1 = rot1.as_quat()
 	gc.spawn_target(name1, p1, quat1)
-	p2 = Point(0, 0, 0)
-	g2 = Point(0, -0.5, 0)
+	p2 = Point(-4, -1.5, 0)
+	g2 = Point(1, 1.5, 0)
 	g2_1 = p2.get_point_in_direction(p2.get_dir_vector_between_points(g2), 6)
 	g2_1.set_z(0)
 	#gc.spawn_sdf_model(g2, gc_const.RED_VERTICE_PATH, 'g2')

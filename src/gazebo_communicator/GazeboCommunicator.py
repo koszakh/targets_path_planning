@@ -49,9 +49,9 @@ class Robot(thr.Thread):
 		self.longitude = None
 		self.total_damage = 0
 		self.path_p_count = 0
-		self.local_path_dir = const.PATHS_DIR + const.LOCAL_PATH_DIRS[4] + self.name + '.txt'
-		#f = open(self.local_path_dir, 'w+')
-		#f.close()
+		self.local_path_dir = const.PATHS_DIR + const.LOCAL_PATH_DIRS[0] + self.name + '.txt'
+		f = open(self.local_path_dir, 'w+')
+		f.close()
 		
 	def init_topics(self):
 		
@@ -167,7 +167,7 @@ class Robot(thr.Thread):
 			u = up + ui + ud
 			self.movement(self.ms, u)
 			#self.add_path_gps('a+')
-			#self.add_path_local_coords()
+			self.add_path_local_coords()
 			rospy.sleep(self.pid_delay)
 
 

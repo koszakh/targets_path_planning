@@ -38,10 +38,10 @@ def group_path_planning():
 	avg_x = numpy.mean([min_x, max_x])
 	avg_y = numpy.mean([min_y, max_y])
 	
-	new_x = mh.min_x#numpy.mean([min_x, avg_x])# + 7
-	new_y = mh.min_y#numpy.mean([min_y, avg_y])# + 4
-	new_x1 = mh.max_x#numpy.mean([avg_x, max_x])# - 15
-	new_y1 = mh.max_y#numpy.mean([avg_y, max_y])# - 23
+	new_x = numpy.mean([min_x, avg_x])# + 7
+	new_y = numpy.mean([min_y, avg_y])# + 4
+	new_x1 = numpy.mean([avg_x, max_x])# - 15
+	new_y1 = numpy.mean([avg_y, max_y])# - 23
 	
 	offset = const.DIST_OFFSET
 
@@ -67,27 +67,20 @@ def group_path_planning():
 		
 		if robot_pos:
 		
+			print('\nPath planning for ' + name + ' has begun!')
 			gc.spawn_target(name, robot_pos, orient)
 			
 			robot_orient = gc.get_robot_orientation_vector(name)
-			start_id, goal_id, start_pos = mh.get_start_and_goal_id(robot_pos, robot_orient, goal[0], goal[1], offset)
+			path = mh.get_path(robot_pos, robot_orient, goal[0], goal[1], offset)
 			#goal_id = True
 			
-			if goal_id:
-			
-				print('\nPath planning for ' + name + ' has begun!')
-				path, path_ids, path_cost = mh.find_path(start_id, goal_id, robot_orient)
-				
-				#goal_v = mh.heightmap[goal_id]
-				#path = [start_pos, goal_v]
-					
-				if path:
+			if path:
 
-					orca.add_agent(name, path)
+				orca.add_agent(name, path)
 					
-				else:
-				
-					orca.add_agent(name, [])
+			else:
+			
+				orca.add_agent(name, [])
 					
 			print('Current ORCA agents count: ' + str(orca.sim.getNumAgents()))
 	

@@ -20,8 +20,9 @@ from scipy.spatial.transform import Rotation
 
 def group_movement():
 
-	robot_names = ['sim_p3at' + str(i) for i in range(1, const.ROBOTS_COUNT + 1)]
 	root_path = gc_const.PATHS_DIR
+
+	robot_names = ['sim_p3at' + str(i) for i in range(1, const.ROBOTS_COUNT + 1)]
 	rootDir = pathlib.Path(root_path)
 	local_dirs = [rootItem.stem + '/' for rootItem in rootDir.iterdir()]
 	print(len(local_dirs))
@@ -33,7 +34,6 @@ def group_movement():
 	
 		current_dir = root_path + folder
 		currentDirectory = pathlib.Path(current_dir)
-		#print('Current dir: ' + str(current_dir))
 		dir_items = [currentFile.stem for currentFile in currentDirectory.iterdir()]
 		
 		
@@ -44,6 +44,7 @@ def group_movement():
 			rnd_path = random.choice(dir_items)
 			dir_items.remove(rnd_path)
 			file_path = current_dir + rnd_path + ".txt"
+			print(file_path)
 			path = txt_path_parser(file_path)[start_index:]
 			start_p = path[0]
 			next_p = path[1]

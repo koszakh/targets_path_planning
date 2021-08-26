@@ -46,7 +46,7 @@ class Cell:
 				name1 = [e1.label, e2.label]
 				name2 = [e2.label, e1.label]
 				
-				if not (name1 in names) and not (name2 in names):
+				if not (names.__contains__(name1)) and not (names.__contains__(name2)):
 					
 					self.edges.append(edge)
 					names.append(name1)
@@ -472,7 +472,6 @@ v1.get_distance_to(v2) #+ fabs(v1.riskiness - v2.riskiness)
 			v = self.heightmap[key]
 			v.path_cost = None
 			v.set_predecessor(None)
-			v.edges = {}
 
 		self.open = []
 		self.closed = []
@@ -503,23 +502,26 @@ v1.get_distance_to(v2) #+ fabs(v1.riskiness - v2.riskiness)
 # closest_id: best vertex key
 	def best_vertice_choice(self, goal):
 		min_path_cost = float('inf')
+		min_dist = float('inf')
 		closest_id = None
 
 		for v_id in self.open:
 
 			v = self.heightmap[v_id]
 
-			if not v.obstacle:
+			dist = v.get_distance_to(goal)
+			#total_path_cost = v.path_cost + dist
 
-				dist = v.get_distance_to(goal)
-				total_path_cost = v.path_cost + dist
+			#if total_path_cost < min_path_cost:
+			if dist < min_dist:
 
-				if total_path_cost < min_path_cost:
+				min_dist = dist
+				#min_path_cost = total_path_cost
+				closest_id = v_id
 
-					min_path_cost = total_path_cost
-					closest_id = v_id
+		self.closed.append(closest_id)
 
-		if closest_id and closest_id in self.open:
+		if closest_id and self.open.__contains__(closest_id):
 
 			self.open.remove(closest_id)
 
@@ -700,7 +702,7 @@ v1.get_distance_to(v2) #+ fabs(v1.riskiness - v2.riskiness)
 				new_p = Point(new_x, new_y, z)
 				new_p.set_id(new_p_id)
 				
-				if not new_p_id in self.heightmap.keys():
+				if not self.heightmap.get(new_p_id):
 				
 					self.heightmap[new_p_id] = new_p
 				
@@ -737,14 +739,14 @@ v1.get_distance_to(v2) #+ fabs(v1.riskiness - v2.riskiness)
 # Output
 # start_id: starting vertex key
 # goal_id: target vertex key
-	def get_start_and_goal_id(self, pos, orient, x, y, offset):
+	def get_path(self, pos, orient, x, y, offset):
 		start_id, start_pos = self.get_start_vertice_id(pos, orient)
 		if start_id:
-			goal_id = self.get_reliable_goal_id(start_id, x, y, offset, orient)
+			path = self.find_path_in_area(start_id, x, y, offset, orient)
 		else:
 			#print('Path planning from the point ' + str(pos) + ' is impossible.')
-			return None, None, None
-		return start_id, goal_id, start_pos
+			return None
+		return path
 
 		
 
@@ -771,14 +773,14 @@ v1.get_distance_to(v2) #+ fabs(v1.riskiness - v2.riskiness)
 			iter_count += 1
 
 			for v_id in current_neighbors:
-
+				
 				v = self.heightmap[v_id]
 				vect = current_v.get_dir_vector_between_points(v)
 				angle_difference = fabs(current_v.dir_vect.get_angle_between_vectors(vect))
-
+				
 				if not v.obstacle and angle_difference < const.ORIENT_BOUND:
 
-					if not v_id in self.open and not v_id in self.closed:
+					if not self.open.__contains__(v_id) and not self.closed.__contains__(v_id):
 
 						self.open.append(v_id)
 
@@ -789,7 +791,7 @@ v1.get_distance_to(v2) #+ fabs(v1.riskiness - v2.riskiness)
 
 					new_path_cost = current_v.path_cost + current_v.edges[v_id]
 
-					if (not v.path_cost and not isinstance(v.path_cost, float)) or new_path_cost < v.path_cost:
+					if v.path_cost == None or new_path_cost < v.path_cost:
 					
 						v.dir_vect = vect
 						v.path_cost = new_path_cost
@@ -802,13 +804,9 @@ v1.get_distance_to(v2) #+ fabs(v1.riskiness - v2.riskiness)
 				break
 
 			current_v = self.heightmap[current_v_id]
-			#gc.spawn_sdf_model(current_v, gc_const.VERTICE_PATH, 'v_' + str(current_v_id) + '_' + str(start_id) + '_' + str(goal_id))
 			current_neighbors = copy.copy(current_v.neighbors_list.values())
-			self.closed.append(current_v_id)
-
-			if current_v_id in self.open:
-
-				self.open.remove(current_v_id)
+			
+		print('Iter count: ' + str(iter_count))
 
 		if not goal_v.get_predecessor() == None:
 
@@ -853,7 +851,7 @@ v1.get_distance_to(v2) #+ fabs(v1.riskiness - v2.riskiness)
 			new_p_id = self.get_nearest_vertice_id(p)
 			new_p = self.heightmap[new_p_id]
 
-			if not new_p.obstacle and not new_p_id in self.closed_start_points:
+			if not new_p.obstacle and not self.closed_start_points.__contains__(new_p_id):
 
 				self.add_closed_start_id(new_p_id)
 				roll, pitch = self.get_start_orientation(new_p_id)
@@ -870,9 +868,14 @@ v1.get_distance_to(v2) #+ fabs(v1.riskiness - v2.riskiness)
 		
 		for n_id in v.neighbors_list.values():
 		
-			if not n_id in self.closed_start_points:
+			n = self.heightmap[n_id]
+			n_neighbors = n.neighbors_list.values()
+			
+			for n_n_id in n_neighbors:
 
-				self.closed_start_points.append(n_id)
+				if not self.closed_start_points.__contains__(n_n_id):
+
+					self.closed_start_points.append(n_n_id)
 
 	def get_spawn_height(self, p_id):
 		p = self.heightmap[p_id]
@@ -1021,12 +1024,18 @@ v1.get_distance_to(v2) #+ fabs(v1.riskiness - v2.riskiness)
 	def calc_start_ids_range(self, v_id):
 		ids_range = []
 		v = self.heightmap[v_id]
+		
 		for n_id in v.neighbors_list.values():
+		
 			n = self.heightmap[n_id]
+			
 			for n_n_id in n.neighbors_list.values():
-				if not n_n_id in ids_range:
+			
+				if not ids_range.__contains__(n_n_id):
+				
 					ids_range.append(n_n_id)
-		if v_id in ids_range:
+					
+		if ids_range.__contains__(v_id):
 		
 			ids_range.remove(v_id)
 
@@ -1098,7 +1107,7 @@ v1.get_distance_to(v2) #+ fabs(v1.riskiness - v2.riskiness)
 			goal_v = self.heightmap[goal_id]
 			dist = goal_v.get_distance_to(start_v)
 
-			if not(start_v.obstacle or goal_v.obstacle or goal_id == start_id or goal_id in self.closed_goals):
+			if not(start_v.obstacle or goal_v.obstacle or goal_id == start_id or self.closed_goals.__contains__(goal_id)):
 
 				iter_count += 1
 				path, path_ids, path_cost = self.find_path(start_id, goal_id, start_orient)
@@ -1117,7 +1126,7 @@ v1.get_distance_to(v2) #+ fabs(v1.riskiness - v2.riskiness)
 		return goal_id
 
 
-	def get_reliable_goal_id(self, start_id, x, y, offset, start_orient):
+	def find_path_in_area(self, start_id, x, y, offset, start_orient):
 		
 		current_goals = []
 
@@ -1126,12 +1135,14 @@ v1.get_distance_to(v2) #+ fabs(v1.riskiness - v2.riskiness)
 		while True:
 
 			goal_id = self.get_goal_id(x, y, offset)
-			goal_v = self.heightmap[goal_id]
 			iter_count += 1
 
-			if not(goal_id == start_id or goal_id in current_goals):
+			if not(goal_id == start_id or current_goals.__contains__(goal_id)):
 
+				start_time = time.time()
 				path, path_ids, path_cost = self.find_path(start_id, goal_id, start_orient)
+				finish_time = time.time()
+				print('Path planning time: ' + str(finish_time - start_time))
 				current_goals.append(goal_id)
 				
 				if path:
@@ -1142,10 +1153,10 @@ v1.get_distance_to(v2) #+ fabs(v1.riskiness - v2.riskiness)
 			if iter_count > const.MAX_ITER_COUNT:
 			
 				print(str(start_id) + ' vertice is isolated.')
-				goal_id = None
+				return None
 				break
 
-		return goal_id
+		return path
 
 	def get_start_id(self, x, y, offset):
 			
@@ -1164,7 +1175,7 @@ v1.get_distance_to(v2) #+ fabs(v1.riskiness - v2.riskiness)
 			
 				start_v = self.heightmap[start_id]
 
-				if not start_v.obstacle and not start_id in self.closed_start_points:
+				if not start_v.obstacle and not self.closed_start_points.__contains__(start_id):
 				
 					self.add_closed_start_id(start_id)
 					break
@@ -1190,9 +1201,9 @@ v1.get_distance_to(v2) #+ fabs(v1.riskiness - v2.riskiness)
 			
 				goal_v = self.heightmap[goal_id]
 
-			if not goal_v.obstacle and not goal_id in self.closed_goals:
-			
-				break
+				if not goal_v.obstacle and not self.closed_goals.__contains__(goal_id):
+				
+					break
 				
 		return goal_id
 
@@ -1248,9 +1259,14 @@ v1.get_distance_to(v2) #+ fabs(v1.riskiness - v2.riskiness)
 		
 		for n_id in v.neighbors_list.values():
 		
-			if not n_id in self.closed_goals:
+			n = self.heightmap[n_id]
+			n_neighbors = n.neighbors_list.values()
+			
+			for n_n_id in n_neighbors:
 
-				self.closed_goals.append(n_id)
+				if not self.closed_goals.__contains__(n_n_id):
+
+					self.closed_goals.append(n_n_id)
 
 	def get_start_pos(self, x, y, offset):
 

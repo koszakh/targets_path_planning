@@ -120,7 +120,6 @@ const.ORCA_RADIUS, self.ms)
 			am.current_goal = path[0]
 			gc.spawn_sdf_model(goal_p, gc_const.RED_VERTICE_PATH, 'goal_' + robot_name[8:])
 			self.init_paths[robot_name] = copy.copy(path)
-			print('Robot ' + robot_name + ' initial path length: ' + str(len(path)))
 		
 		am.last_goal = robot_pos
 		robot_pos_2d = robot_pos.get_xy()
@@ -132,7 +131,6 @@ const.ORCA_RADIUS, self.ms)
 		self.final_paths[robot_name] = []
 		radius = self.sim.getAgentRadius(self.agents[robot_name])
 		self.amanager[robot_name] = am
-		print(robot_name + ' radius: ' + str(radius))
 
 # Calculating the smallest distance from a given agent to any of the others
 
@@ -183,7 +181,7 @@ const.ORCA_RADIUS, self.ms)
 		
 			am.min_n_dist = min_neighbor_dist
 		
-		if min_neighbor_dist > (const.ORCA_NEIGHBOR_DIST + const.ORCA_RADIUS + gc_const.DISTANCE_ERROR):
+		if min_neighbor_dist > (const.ORCA_NEIGHBOR_DIST + const.ORCA_RADIUS * 2):
 			
 			vect = self.calc_new_vel_direction(last_p, last_vect, current_goal)
 		
@@ -202,14 +200,11 @@ const.ORCA_RADIUS, self.ms)
 			next_n_p = n_last_point.get_point_in_direction(n_des_vect, self.ms * const.ORCA_TIME_STEP)
 			
 			dist = last_p.get_distance_to(n_last_point)
-			next_dist = last_p.get_distance_to(next_n_p)
-			
-			n_dist = n_last_point.get_distance_to(last_p)
-			next_n_dist = n_last_point.get_distance_to(next_p)
+			next_dist = next_p.get_distance_to(n_last_point)
 			
 			n_vel = self.sim.getAgentPrefVelocity(self.agents[closest_neighbor_id])
 			
-			if det_angle > const.ORCA_MAX_ANGLE or next_dist > dist or next_n_dist > n_dist:
+			if det_angle > const.ORCA_MAX_ANGLE or next_dist > dist:# or next_n_dist > n_dist:
 			
 				vect = self.calc_new_vel_direction(last_p, last_vect, current_goal)
 				
@@ -258,7 +253,9 @@ const.ORCA_RADIUS, self.ms)
 		pref_vect = robot_pos.get_dir_vector_between_points(current_goal)
 		angle = fabs(am.last_vect.get_angle_between_vectors(pref_vect))
 		
-		if ((dist_2d < const.ROBOT_RADIUS or (dist_2d < const.ROBOT_RADIUS + gc_const.DISTANCE_ERROR and angle > const.ORCA_MAX_ANGLE)) and not current_goal == am.goal_point) or (dist_2d < gc_const.DISTANCE_ERROR and current_goal == am.goal_point):
+		#if ((dist_2d < gc_const.DISTANCE_ERROR * 2 or (dist_2d < const.ROBOT_RADIUS + gc_const.DISTANCE_ERROR and angle > const.ORCA_MAX_ANGLE)) and not current_goal.id == am.goal_point.id) or (dist_2d < gc_const.DISTANCE_ERROR and current_goal.id == am.goal_point.id):
+		
+		if ((dist_2d < gc_const.DISTANCE_ERROR * 2 or (dist_2d < const.ROBOT_RADIUS + gc_const.DISTANCE_ERROR and angle > const.ORCA_MAX_ANGLE)) and not current_goal.id == am.goal_point.id) or (dist_2d < gc_const.DISTANCE_ERROR and current_goal.id == am.goal_point.id):
 		
 			if len(self.init_paths[robot_name]) > 1:
 			
@@ -272,13 +269,10 @@ const.ORCA_RADIUS, self.ms)
 			else:
 			
 				path = copy.copy(self.final_paths[robot_name])
-				path = path_loops_deleting(path)
 				self.final_paths[robot_name] = copy.copy(path)
-				self.final_paths[robot_name].append(am.goal_point)
 				self.sim.setAgentPrefVelocity(self.agents[robot_name], (0, 0))
 				self.sim.setAgentVelocity(self.agents[robot_name], (0, 0))
 				am.finished_planning = True
-				print('>>> ' + robot_name + ' min neighbor dist: ' + str(am.min_n_dist))
 				
 		else:
 		
@@ -294,7 +288,6 @@ const.ORCA_RADIUS, self.ms)
 		while cont_flag:
 		
 			cont_flag = False
-			
 			self.sim.doStep()
 			
 			for key in self.amanager.keys():
@@ -308,14 +301,14 @@ const.ORCA_RADIUS, self.ms)
 					self.final_paths[key].append(robot_pos)
 					self.goal_achievement_check(key, robot_pos)
 					self.amanager[key].last_point = robot_pos
-					
-		for key in self.final_paths.keys():
+			
+		print('ORCA3D for ' + str(len(self.agents)) + ' agents is completed!')		
+		#for key in self.final_paths.keys():
 	
-			path = self.final_paths[key]
-			short_path = delete_intermediate_points(path, 6)
+			#path = self.final_paths[key]
+			#short_path = delete_intermediate_points(path, 6)
 			#gc.visualise_path(short_path, random.choice(list(gc_const.PATH_COLORS)), str(key) + '_p_')
 			
-		print('ORCA3D for ' + str(len(self.agents)) + ' agents is completed!')
 		return self.final_paths
 		
 def delete_doubled_vertices(path):
