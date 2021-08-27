@@ -1,18 +1,18 @@
 #!/usr/bin/env python
 
 # Path planning node for ground targets
-import path_planning.PathPlanner as pp
+import PathPlanner as pp
 import rospy
 import copy
 import numpy
 from targets_path_planning.msg import AllPaths, Path
 from geometry_msgs.msg import Point
-from path_planning.Point import Point as PointGeom, Vector2d
-from path_planning.Heightmap import Heightmap
-import path_planning.Constants as const
-import gazebo_communicator.GazeboCommunicator as gc
-import gazebo_communicator.GazeboConstants as gc_const
-from path_planning.ORCA import ORCAsolver
+from Point import Point as PointGeom, Vector2d
+from Heightmap import Heightmap
+import Constants as const
+import GazeboCommunicator as gc
+import GazeboConstants as gc_const
+from ORCA import ORCAsolver
 import random
 
 def group_path_planning():

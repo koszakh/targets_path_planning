@@ -7,7 +7,7 @@ project(targets_path_planning)
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
-catkin_python_setup()
+#catkin_python_setup()
 find_package(
   catkin REQUIRED COMPONENTS
   rospy

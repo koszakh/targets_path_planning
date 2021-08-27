@@ -5,9 +5,9 @@
 import rospy
 import rvo2
 from targets_path_planning.msg import AllPaths, Vector2d
-from path_planning.Point import Point
-import gazebo_communicator.GazeboConstants as const
-import gazebo_communicator.GazeboCommunicator as gc
+from Point import Point
+import GazeboConstants as const
+import GazeboCommunicator as gc
 from time import sleep
 import copy
 
