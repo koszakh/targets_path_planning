@@ -177,10 +177,6 @@ const.ORCA_RADIUS, self.ms)
 		am.last_vect = last_vect
 		min_neighbor_dist, closest_neighbor_id = self.calc_min_neighbor_dist(robot_name)
 		
-		if min_neighbor_dist < am.min_n_dist:
-		
-			am.min_n_dist = min_neighbor_dist
-		
 		if min_neighbor_dist > (const.ORCA_NEIGHBOR_DIST + const.ORCA_RADIUS * 2):
 			
 			vect = self.calc_new_vel_direction(last_p, last_vect, current_goal)
@@ -255,7 +251,10 @@ const.ORCA_RADIUS, self.ms)
 		
 		#if ((dist_2d < gc_const.DISTANCE_ERROR * 2 or (dist_2d < const.ROBOT_RADIUS + gc_const.DISTANCE_ERROR and angle > const.ORCA_MAX_ANGLE)) and not current_goal.id == am.goal_point.id) or (dist_2d < gc_const.DISTANCE_ERROR and current_goal.id == am.goal_point.id):
 		
-		if ((dist_2d < gc_const.DISTANCE_ERROR * 2 or (dist_2d < const.ROBOT_RADIUS + gc_const.DISTANCE_ERROR and angle > const.ORCA_MAX_ANGLE)) and not current_goal.id == am.goal_point.id) or (dist_2d < gc_const.DISTANCE_ERROR and current_goal.id == am.goal_point.id):
+		if dist_2d < gc_const.DISTANCE_ERROR * 2 or (dist_2d < const.ROBOT_RADIUS + gc_const.DISTANCE_ERROR and angle > const.ORCA_MAX_ANGLE):
+		
+			#goal_dist = robot_pos.get_distance_to(am.goal_point)
+			#print(robot_name + ' dist to goal: ' + str(goal_dist))
 		
 			if len(self.init_paths[robot_name]) > 1:
 			
@@ -272,6 +271,7 @@ const.ORCA_RADIUS, self.ms)
 				self.final_paths[robot_name] = copy.copy(path)
 				self.sim.setAgentPrefVelocity(self.agents[robot_name], (0, 0))
 				self.sim.setAgentVelocity(self.agents[robot_name], (0, 0))
+				print(' >>> ' + robot_name + ' has finished! <<<')
 				am.finished_planning = True
 				
 		else:

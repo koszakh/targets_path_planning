@@ -1,7 +1,7 @@
 # Gazebo constants
 
 ROOT_PATH = '/root'
-CURRENT_MAP = 'hmap1'
+CURRENT_MAP = 'hmap4'
 ROBOT_MODEL_PATH = ROOT_PATH + '/catkin_ws/src/targets_path_planning/urdf/' + CURRENT_MAP + '/pioneer3at.urdf'
 DIR_POINT_SUFFIX = '::dir_point'
 VERTICE_PATH = ROOT_PATH + '/.gazebo/models/vertice/model.sdf'
@@ -17,7 +17,7 @@ PATH_COLORS = [RED_VERTICE_PATH, GREEN_VERTICE_PATH, BLUE_VERTICE_PATH]
 MOVEMENT_SPEED = 0.4#0.4
 ROTATION_SPEED = 0.15#1
 LIFTING_SPEED = 0.01
-ANGLE_ERROR = 10
+ANGLE_ERROR = 12
 DISTANCE_ERROR = 0.2
 PID_NSEC_DELAY = 100000000
 

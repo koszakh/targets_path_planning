@@ -1,8 +1,8 @@
 import random
 
-ROBOTS_COUNT = 10
+ROBOTS_COUNT = 20
 ROOT_PATH = "/root/.gazebo/models"
-CURRENT_MAP = 'hmap1'
+CURRENT_MAP = 'hmap4'
 HEIGHTMAP_SDF_PATH = ROOT_PATH + '/' + CURRENT_MAP + '/model.sdf'
 HIGH_BOUND_HEIGHT_DIFF = 0.45#1
 MAX_ROUGHNESS = 45#55
@@ -18,27 +18,27 @@ MAX_ITERATIONS_COUNT = 5
 MAP_SIZE_WORDS = ['<collision', '<heightmap', '<size']
 MAP_PATH_WORDS = ['<collision', '<heightmap', '<uri']
 MAP_POS_WORDS = ['<collision', '<heightmap', '<pos']
-ORIENT_BOUND = 47
+ORIENT_BOUND = 50
 START_GRID_RANGE = 2
 MAX_ITER_COUNT = 500
 GRID_SIZE = 1
-DIST_OFFSET = 2 * ROBOTS_COUNT
+DIST_OFFSET = 25 * ROBOTS_COUNT
 
 ORCA_TIME_STEP = 0.2
 ORCA_NEIGHBOR_DIST = 2.5
 ORCA_MAX_NEIGHBORS = ROBOTS_COUNT
-ORCA_TIME_HORIZON = 0.5
+ORCA_TIME_HORIZON = 1
 ORCA_TIME_HORIZON_OBST = 0.4
 ORCA_RADIUS = 0.5
 ORCA_MAX_ANGLE = 30
 
 # HEIGHTMAP BOUNDARY INDICES
 
-COL = 816#495#random.randint(0, 1024)
-ROW = 664#60#random.randint(0, 1024)
+COL = random.randint(0, 1024)
+ROW = random.randint(0, 1024)
 
-COL_RANGE = [COL, COL + 7]
-ROW_RANGE = [ROW, ROW + 7]
+COL_RANGE = [COL, COL + 6]
+ROW_RANGE = [ROW, ROW + 6]
 
 #hmap1
 
@@ -72,3 +72,21 @@ ROW_RANGE = [ROW, ROW + 7]
 #test1
 #COL_RANGE = [803, 808]
 #ROW_RANGE = [658, 663]
+
+#hmap4
+
+#test1
+#COL_RANGE = [505, 510]
+#ROW_RANGE = [90, 95]
+
+#test2
+#COL_RANGE = [570, 576]
+#ROW_RANGE = [485, 491]
+
+#test3
+#COL_RANGE = [, ]
+#ROW_RANGE = [, ]
+
+#test4
+#COL_RANGE = [, ]
+#ROW_RANGE = [, ]

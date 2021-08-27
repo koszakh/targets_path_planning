@@ -7,7 +7,7 @@
     </include>
     <!--     Terrain model -->
     <include>
-      <uri>model://hmap1</uri>
+      <uri>model://hmap4</uri>
     </include>
   </world>
 </sdf>

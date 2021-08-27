@@ -17,10 +17,12 @@ import random
 import pathlib
 import io
 from scipy.spatial.transform import Rotation
+from time import sleep
 
 def group_movement():
 
 	root_path = gc_const.PATHS_DIR
+	height_offset = 997
 
 	robot_names = ['sim_p3at' + str(i) for i in range(1, const.ROBOTS_COUNT + 1)]
 	rootDir = pathlib.Path(root_path)
@@ -45,7 +47,7 @@ def group_movement():
 			dir_items.remove(rnd_path)
 			file_path = current_dir + rnd_path + ".txt"
 			print(file_path)
-			path = txt_path_parser(file_path)[start_index:]
+			path = txt_path_parser(file_path, height_offset)[start_index:]
 			start_p = path[0]
 			next_p = path[1]
 			angle = start_p.get_dir_vector_between_points(next_p).vector_to_angle()
@@ -55,7 +57,8 @@ def group_movement():
 			robot = gc.Robot(name)
 			robot.waypoints_publisher(path)
 			robots[name] = robot
-			#print(path)
+
+	sleep(1)
 			
 	for key in robots.keys():
 	
@@ -106,7 +109,7 @@ def convert_to_point(msg_data):
 	point = PointGeom(x, y, z)
 	return point
 	
-def txt_path_parser(file_path):
+def txt_path_parser(file_path, height_offset):
 
 	#print('File path: ' + str(file_path))
 	#print('Type: ' + str(type(file_path)))
@@ -120,7 +123,7 @@ def txt_path_parser(file_path):
 			coords = point.split(', ')
 			x = float(coords[0])
 			y = float(coords[1])
-			z = float(coords[2])
+			z = float(coords[2]) + height_offset
 			p = PointGeom(x, y, z)
 			path.append(p)
 			

@@ -38,21 +38,15 @@ def group_path_planning():
 	avg_x = numpy.mean([min_x, max_x])
 	avg_y = numpy.mean([min_y, max_y])
 	
-	new_x = numpy.mean([min_x, avg_x])# + 7
-	new_y = numpy.mean([min_y, avg_y])# + 4
-	new_x1 = numpy.mean([avg_x, max_x]) - 15
-	new_y1 = numpy.mean([avg_y, max_y]) - 23
+	new_x = numpy.mean([min_x, avg_x]) + 7
+	new_y = numpy.mean([min_y, avg_y]) + 11
+	new_x1 = numpy.mean([avg_x, max_x]) - 10
+	new_y1 = numpy.mean([avg_y, max_y]) - 15
 	
 	offset = const.DIST_OFFSET
 
-	cell_id = mh.get_current_cell_id(Point(-13238, 485, 0))
-	print(cell_id)
-
 	start = (new_x, new_y)
 	goal = (new_x1, new_y1)
-
-	print('start: ' + str(start))
-	print('goal: ' + str(goal))
 	
 	mh.gridmap_preparing()
 	cells = mh.cells
