@@ -85,23 +85,23 @@ else:
 	rot = pp.Rotation.from_euler('xyz', [0, 0, vect], degrees=True)
 	quat = rot.as_quat()
 	#gc.spawn_target(name, p, quat)
-	p1 = Point(-3, 0, 0.2)
-	g1 = Point(3, 0, 0)
-	g1_1 = p1.get_point_in_direction(p1.get_dir_vector_between_points(g1), 6)
+	p1 = Point(-5, -1.7, 0.2)
+	g1 = Point(1, 1.7, 0)
+	g1_1 = p1.get_point_at_distance_and_angle(g1, p1.get_distance_to(g1) / 2)
 	g1_1.set_z(0)
 	vect1 = p1.get_angle_between_points(g1)
-	#gc.spawn_sdf_model(g1, gc_const.GREEN_VERTICE_PATH, 'g1')
-	#gc.spawn_sdf_model(g1_1, gc_const.GREEN_VERTICE_PATH, 'g1_1')
+	gc.spawn_sdf_model(g1, gc_const.GREEN_VERTICE_PATH, 'g1')
+	gc.spawn_sdf_model(g1_1, gc_const.GREEN_VERTICE_PATH, 'g1_1')
 	name1 = 'p3at2'
 	rot1 = pp.Rotation.from_euler('xyz', [0, 0, vect1], degrees=True)
 	quat1 = rot1.as_quat()
 	gc.spawn_target(name1, p1, quat1)
-	p2 = Point(0, 3, 0)
-	g2 = Point(0, -3, 0)
-	g2_1 = p2.get_point_in_direction(p2.get_dir_vector_between_points(g2), 6)
+	p2 = Point(-4.5, 1.7, 0)
+	g2 = Point(1, -1.7, 0)
+	g2_1 = p2.get_point_at_distance_and_angle(g2, p2.get_distance_to(g2) / 2)
 	g2_1.set_z(0)
-	#gc.spawn_sdf_model(g2, gc_const.RED_VERTICE_PATH, 'g2')
-	#gc.spawn_sdf_model(g2_1, gc_const.RED_VERTICE_PATH, 'g2_1')
+	gc.spawn_sdf_model(g2, gc_const.RED_VERTICE_PATH, 'g2')
+	gc.spawn_sdf_model(g2_1, gc_const.RED_VERTICE_PATH, 'g2_1')
 	name2 = 'p3at3'
 	vect2 = p2.get_angle_between_points(g2)
 	rot2 = pp.Rotation.from_euler('xyz', [0, 0, vect2], degrees=True)
@@ -112,8 +112,8 @@ else:
 	robot2 = gc.Robot(name2)
 	orca = ORCAsolver(None, None, None, None, None, None)
 	#orca.add_agent(robot.name, [robot.get_robot_position(), g])
-	orca.add_agent(robot1.name, [robot1.get_robot_position(), g1])
-	orca.add_agent(robot2.name, [robot2.get_robot_position(), g2])
+	orca.add_agent(robot1.name, [robot1.get_robot_position(),g1_1, g1])
+	orca.add_agent(robot2.name, [robot2.get_robot_position(), g2_1, g2])
 	paths = orca.run_orca()
 	#robot.path = paths[robot.name]
 	robot1.path = paths[robot1.name]
@@ -122,7 +122,7 @@ else:
 	for key in paths.keys():
 
 		path = paths[key]
-		path = delete_intermediate_points(path, 3)
+		path = delete_intermediate_points(path, 6)
 		
 		gc.visualise_path(path, random.choice(gc_const.PATH_COLORS), str(key) + '_')
 	

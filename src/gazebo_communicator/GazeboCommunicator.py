@@ -49,7 +49,7 @@ class Robot(thr.Thread):
 		self.longitude = None
 		self.total_damage = 0
 		self.path_p_count = 0
-		self.local_path_dir = const.PATHS_DIR + const.LOCAL_PATH_DIRS[2] + self.name + '.txt'
+		self.local_path_dir = const.PATHS_DIR + const.LOCAL_PATH_DIRS[3] + self.name + '.txt'
 		f = open(self.local_path_dir, 'w+')
 		f.close()
 		
@@ -167,7 +167,6 @@ class Robot(thr.Thread):
 			u = up + ui + ud
 			self.movement(self.ms, u)
 			#self.add_path_gps('a+')
-			self.add_path_local_coords()
 			rospy.sleep(self.pid_delay)
 
 
@@ -256,7 +255,11 @@ class Robot(thr.Thread):
 			self.stop()
 			
 			end_coords = self.get_gps_coords()
-			#self.write_coords(start_coords, end_coords)
+			self.write_coords(start_coords, end_coords)
+			
+			for state in self.path:
+			
+				self.add_path_local_coords(state)
 			
 			print(self.name + ' end GPS coordinates: ' + self.get_gps_coords())
 			print('The robot ' + str(self.name) + ' has finished!')
@@ -285,7 +288,7 @@ class Robot(thr.Thread):
 	def write_coords(self, start_coords, end_coords):
 		
 		f = open(const.MAP_DYNAMIC_COORDS_PATH, 'a+')
-		f.write(self.name[4:] + ': (' + str(start_coords) + ', ' + str(end_coords) + ')\n\n')
+		f.write(self.name[8:] + ': (' + str(start_coords) + ', ' + str(end_coords) + ')\n\n')
 		f.close()
 		
 	def add_path_gps(self, open_mode):
@@ -296,12 +299,11 @@ class Robot(thr.Thread):
 		f.write(str(self.path_p_count) + ': ' + gps_coords + '\n')
 		f.close()
 		
-	def add_path_local_coords(self):
+	def add_path_local_coords(self, state):
 
-		robot_pos = self.get_robot_position()
-		x = robot_pos.x
-		y = robot_pos.y
-		z = robot_pos.z
+		x = state.x
+		y = state.y
+		z = state.z
 		pos = '(' + str(x) + ', ' + str(y) + ', ' + str(z) + ')'
 		f = open(self.local_path_dir, 'a+')
 		f.write(pos + '\n')

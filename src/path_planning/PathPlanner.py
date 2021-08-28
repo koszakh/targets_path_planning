@@ -872,8 +872,11 @@ v1.get_distance_to(v2) #+ fabs(v1.riskiness - v2.riskiness)
 			n_neighbors = n.neighbors_list.values()
 			
 			for n_n_id in n_neighbors:
+			
+				n_n = self.heightmap[n_n_id]
+				dist = n_n.get_distance_to(v)
 
-				if not self.closed_start_points.__contains__(n_n_id):
+				if not self.closed_start_points.__contains__(n_n_id) and dist > const.ORCA_NEIGHBOR_DIST:
 
 					self.closed_start_points.append(n_n_id)
 
@@ -1264,7 +1267,10 @@ v1.get_distance_to(v2) #+ fabs(v1.riskiness - v2.riskiness)
 			
 			for n_n_id in n_neighbors:
 
-				if not self.closed_goals.__contains__(n_n_id):
+				n_n = self.heightmap[n_n_id]
+				dist = n_n.get_distance_to(v)
+				
+				if not self.closed_goals.__contains__(n_n_id) and dist < const.ORCA_NEIGHBOR_DIST:
 
 					self.closed_goals.append(n_n_id)
 

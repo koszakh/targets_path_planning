@@ -112,6 +112,7 @@ const.ORCA_RADIUS, self.ms)
 		if len(path) == 0:
 		
 			am.finished_planning = True
+			am.current_goal = am.last_point
 		
 		else:
 		
@@ -177,7 +178,7 @@ const.ORCA_RADIUS, self.ms)
 		am.last_vect = last_vect
 		min_neighbor_dist, closest_neighbor_id = self.calc_min_neighbor_dist(robot_name)
 		
-		if min_neighbor_dist > (const.ORCA_NEIGHBOR_DIST + const.ORCA_RADIUS * 2):
+		if min_neighbor_dist > (const.ORCA_NEIGHBOR_DIST + const.ORCA_RADIUS):
 			
 			vect = self.calc_new_vel_direction(last_p, last_vect, current_goal)
 		
@@ -196,15 +197,16 @@ const.ORCA_RADIUS, self.ms)
 			next_n_p = n_last_point.get_point_in_direction(n_des_vect, self.ms * const.ORCA_TIME_STEP)
 			
 			dist = last_p.get_distance_to(n_last_point)
-			next_dist = next_p.get_distance_to(n_last_point)
+			next_dist = next_p.get_distance_to(next_n_p)
+			#next_dist = next_p.get_distance_to(n_last_point)
 			
-			n_vel = self.sim.getAgentPrefVelocity(self.agents[closest_neighbor_id])
+			#next_n_dist = next_n_p.get_distance_to(last_p)
 			
-			if det_angle > const.ORCA_MAX_ANGLE or next_dist > dist:# or next_n_dist > n_dist:
+			if det_angle > const.ORCA_MAX_ANGLE or next_dist > dist:# or next_n_dist > dist:
 			
 				vect = self.calc_new_vel_direction(last_p, last_vect, current_goal)
 				
-			elif angle_to_neighbor < 0 and n_vel == (0, 0):
+			elif angle_to_neighbor < 0 and closest_am.finished_planning:
 			
 				vect = last_vect.get_rotated_vector(gc_const.ANGLE_ERROR)
 				
@@ -248,10 +250,11 @@ const.ORCA_RADIUS, self.ms)
 		dist_2d = robot_pos.get_2d_distance(current_goal)
 		pref_vect = robot_pos.get_dir_vector_between_points(current_goal)
 		angle = fabs(am.last_vect.get_angle_between_vectors(pref_vect))
+		goal_dist = current_goal.get_distance_to(am.goal_point)
 		
-		#if ((dist_2d < gc_const.DISTANCE_ERROR * 2 or (dist_2d < const.ROBOT_RADIUS + gc_const.DISTANCE_ERROR and angle > const.ORCA_MAX_ANGLE)) and not current_goal.id == am.goal_point.id) or (dist_2d < gc_const.DISTANCE_ERROR and current_goal.id == am.goal_point.id):
+		if ((dist_2d < gc_const.DISTANCE_ERROR * 2 or (dist_2d < const.GRID_SIZE and angle > gc_const.ANGLE_ERROR * 2)) and goal_dist > gc_const.DISTANCE_ERROR) or (dist_2d < gc_const.DISTANCE_ERROR and goal_dist < gc_const.DISTANCE_ERROR):
 		
-		if dist_2d < gc_const.DISTANCE_ERROR * 2 or (dist_2d < const.ROBOT_RADIUS + gc_const.DISTANCE_ERROR and angle > const.ORCA_MAX_ANGLE):
+		#if dist_2d < gc_const.DISTANCE_ERROR * 2 or (dist_2d < const.ROBOT_RADIUS + gc_const.DISTANCE_ERROR and angle > const.ORCA_MAX_ANGLE):
 		
 			#goal_dist = robot_pos.get_distance_to(am.goal_point)
 			#print(robot_name + ' dist to goal: ' + str(goal_dist))
@@ -304,10 +307,10 @@ const.ORCA_RADIUS, self.ms)
 			
 		print('ORCA3D for ' + str(len(self.agents)) + ' agents is completed!')		
 		
-		#for key in self.final_paths.keys():
+		for key in self.final_paths.keys():
 	
-			#path = self.final_paths[key]
-			#short_path = delete_intermediate_points(path, 10)
+			path = self.final_paths[key]
+			#short_path = delete_intermediate_points(path, 80)
 			#gc.visualise_path(short_path, random.choice(list(gc_const.PATH_COLORS)), str(key) + '_p_')
 			
 		return self.final_paths
