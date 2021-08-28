@@ -119,7 +119,7 @@ const.ORCA_RADIUS, self.ms)
 			am.set_init_path(path)
 			goal_p = am.goal_point
 			am.current_goal = path[0]
-			gc.spawn_sdf_model(goal_p, gc_const.RED_VERTICE_PATH, 'goal_' + robot_name[8:])
+			gc.spawn_sdf_model(goal_p, gc_const.BIG_GREEN_VERTICE_PATH, 'goal_' + robot_name[8:])
 			self.init_paths[robot_name] = copy.copy(path)
 		
 		am.last_goal = robot_pos

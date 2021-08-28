@@ -38,10 +38,10 @@ def group_path_planning():
 	avg_x = numpy.mean([min_x, max_x])
 	avg_y = numpy.mean([min_y, max_y])
 	
-	new_x = numpy.mean([min_x, avg_x]) + 17
-	new_y = numpy.mean([min_y, avg_y]) + 18
-	new_x1 = numpy.mean([avg_x, max_x]) - 25
-	new_y1 = numpy.mean([avg_y, max_y]) - 30
+	new_x = numpy.mean([min_x, avg_x]) + 7
+	new_y = numpy.mean([min_y, avg_y]) + 28
+	new_x1 = numpy.mean([avg_x, max_x]) - 5
+	new_y1 = numpy.mean([avg_y, max_y]) - 13
 
 	p1 = PointGeom(new_x, new_y, 0)
 	p2 = PointGeom(new_x1, new_y1, 0)
@@ -50,7 +50,7 @@ def group_path_planning():
 	
 	offset = const.DIST_OFFSET
 
-	f = open(const.MAP_DYNAMIC_COORDS_PATH, 'w+')
+	f = open(gc_const.MAP_DYNAMIC_COORDS_PATH, 'w+')
 	f.close()
 
 	start = (new_x, new_y)

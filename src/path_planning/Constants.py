@@ -1,6 +1,6 @@
 import random
 
-ROBOTS_COUNT = 10
+ROBOTS_COUNT = 15
 ROOT_PATH = "/root/.gazebo/models"
 CURRENT_MAP = 'hmap4'
 HEIGHTMAP_SDF_PATH = ROOT_PATH + '/' + CURRENT_MAP + '/model.sdf'
@@ -30,12 +30,12 @@ ORCA_MAX_NEIGHBORS = ROBOTS_COUNT
 ORCA_TIME_HORIZON = 1
 ORCA_TIME_HORIZON_OBST = 0.4
 ORCA_RADIUS = 0.5
-ORCA_MAX_ANGLE = 45
+ORCA_MAX_ANGLE = 60
 
 # HEIGHTMAP BOUNDARY INDICES
 
-COL = 350#random.randint(0, 1024)
-ROW = 375#random.randint(0, 1024)
+COL = random.randint(0, 1024)
+ROW = random.randint(0, 1024)
 
 COL_RANGE = [COL, COL + 5]
 ROW_RANGE = [ROW, ROW + 5]
@@ -92,8 +92,8 @@ ROW_RANGE = [ROW, ROW + 5]
 #ROW_RANGE = [375, 380]
 
 #test5
-#COL_RANGE = [, ]
-#ROW_RANGE = [, ]
+#COL_RANGE = [792, 797]
+#ROW_RANGE = [111, 116]
 
 #test6
 #COL_RANGE = [, ]

@@ -49,7 +49,7 @@ class Robot(thr.Thread):
 		self.longitude = None
 		self.total_damage = 0
 		self.path_p_count = 0
-		self.local_path_dir = const.PATHS_DIR + const.LOCAL_PATH_DIRS[3] + self.name + '.txt'
+		self.local_path_dir = const.PATHS_DIR + const.LOCAL_PATH_DIRS[5] + self.name + '.txt'
 		f = open(self.local_path_dir, 'w+')
 		f.close()
 		
@@ -97,8 +97,8 @@ class Robot(thr.Thread):
 		self.ki = 0.045 * self.ms
 		self.kd = 0.0125 * self.ms
 
-		self.i_min = -(10 + self.ms * 15)
-		self.i_max = 10 + self.ms * 15
+		self.i_min = -(5 + self.ms * 15)
+		self.i_max = 5 + self.ms * 15
 
 
 # Getting the position of the robot in 3D space in the Gazebo environment

@@ -74,19 +74,19 @@ if flag:
 	
 else:
 
-	p = Point(30, 0, 0.2)
-	g = Point(-30, 0, 0)
-	g_1 = p.get_point_in_direction(p.get_dir_vector_between_points(g), 6)
+	p = Point(-5, -2, 0.2)
+	g = Point(5, -2, 0)
+	g_1 = p.get_point_at_distance_and_angle(g, p.get_distance_to(g) / 2)
 	g_1.set_z(0)
-	#gc.spawn_sdf_model(g, gc_const.BLUE_VERTICE_PATH, 'g')
-	#gc.spawn_sdf_model(g_1, gc_const.BLUE_VERTICE_PATH, 'g_1')
+	gc.spawn_sdf_model(g, gc_const.BLUE_VERTICE_PATH, 'g')
+	gc.spawn_sdf_model(g_1, gc_const.BLUE_VERTICE_PATH, 'g_1')
 	name = 'p3at1'
 	vect = p.get_angle_between_points(g)
 	rot = pp.Rotation.from_euler('xyz', [0, 0, vect], degrees=True)
 	quat = rot.as_quat()
-	#gc.spawn_target(name, p, quat)
-	p1 = Point(-5, -1.7, 0.2)
-	g1 = Point(1, 1.7, 0)
+	gc.spawn_target(name, p, quat)
+	p1 = Point(-4, 0, 0.2)
+	g1 = Point(4, 0, 0)
 	g1_1 = p1.get_point_at_distance_and_angle(g1, p1.get_distance_to(g1) / 2)
 	g1_1.set_z(0)
 	vect1 = p1.get_angle_between_points(g1)
@@ -96,8 +96,8 @@ else:
 	rot1 = pp.Rotation.from_euler('xyz', [0, 0, vect1], degrees=True)
 	quat1 = rot1.as_quat()
 	gc.spawn_target(name1, p1, quat1)
-	p2 = Point(-4.5, 1.7, 0)
-	g2 = Point(1, -1.7, 0)
+	p2 = Point(-3, 2, 0)
+	g2 = Point(3, -2, 0)
 	g2_1 = p2.get_point_at_distance_and_angle(g2, p2.get_distance_to(g2) / 2)
 	g2_1.set_z(0)
 	gc.spawn_sdf_model(g2, gc_const.RED_VERTICE_PATH, 'g2')
@@ -111,11 +111,11 @@ else:
 	robot1 = gc.Robot(name1)
 	robot2 = gc.Robot(name2)
 	orca = ORCAsolver(None, None, None, None, None, None)
-	#orca.add_agent(robot.name, [robot.get_robot_position(), g])
+	orca.add_agent(robot.name, [robot.get_robot_position(), g_1, g])
 	orca.add_agent(robot1.name, [robot1.get_robot_position(),g1_1, g1])
 	orca.add_agent(robot2.name, [robot2.get_robot_position(), g2_1, g2])
 	paths = orca.run_orca()
-	#robot.path = paths[robot.name]
+	robot.path = paths[robot.name]
 	robot1.path = paths[robot1.name]
 	robot2.path = paths[robot2.name]
 
