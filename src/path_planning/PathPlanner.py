@@ -10,7 +10,6 @@ import random
 import time
 import gazebo_communicator.GazeboCommunicator as gc
 import gazebo_communicator.GazeboConstants as gc_const
-import cv2
 from scipy.spatial.transform import Rotation
 from numpy import array, mean
 from matplotlib.path import Path
@@ -768,7 +767,7 @@ v1.get_distance_to(v2) #+ fabs(v1.riskiness - v2.riskiness)
 		iter_count = 0
 		current_v.dir_vect = start_orient
 
-		while not current_v.id == goal_id and iter_count < len(self.heightmap) / 10:
+		while not current_v.id == goal_id and iter_count < len(self.heightmap) / 3:
 
 			iter_count += 1
 

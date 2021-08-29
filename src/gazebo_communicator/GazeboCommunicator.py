@@ -3,7 +3,6 @@
 #!/usr/bin/env python
 
 import rospy
-import rospkg
 import path_planning.Point as PointGeom
 from targets_path_planning.msg import Path, TargetDamage
 import GazeboConstants as const
@@ -49,9 +48,9 @@ class Robot(thr.Thread):
 		self.longitude = None
 		self.total_damage = 0
 		self.path_p_count = 0
-		self.local_path_dir = const.PATHS_DIR + const.LOCAL_PATH_DIRS[5] + self.name + '.txt'
-		f = open(self.local_path_dir, 'w+')
-		f.close()
+		self.local_path_dir = const.PATHS_DIR + const.LOCAL_PATH_DIRS[2] + self.name + '.txt'
+		#f = open(self.local_path_dir, 'w+')
+		#f.close()
 		
 	def init_topics(self):
 		
@@ -255,11 +254,12 @@ class Robot(thr.Thread):
 			self.stop()
 			
 			end_coords = self.get_gps_coords()
-			self.write_coords(start_coords, end_coords)
+			#self.write_coords(start_coords, end_coords)
 			
 			for state in self.path:
 			
-				self.add_path_local_coords(state)
+				pass
+				#self.add_path_local_coords(state)
 			
 			print(self.name + ' end GPS coordinates: ' + self.get_gps_coords())
 			print('The robot ' + str(self.name) + ' has finished!')

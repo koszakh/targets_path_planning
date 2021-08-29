@@ -193,6 +193,7 @@ const.ORCA_RADIUS, self.ms)
 			vect_to_neighbor = robot_pos.get_dir_vector_between_points(n_last_point)
 			angle_to_neighbor = last_vect.get_angle_between_vectors(vect_to_neighbor)
 			
+			det_targets_vect = fabs(vect_to_goal.get_angle_between_vectors(n_des_vect))
 			next_p = last_p.get_point_in_direction(vect_to_goal, self.ms * const.ORCA_TIME_STEP)
 			next_n_p = n_last_point.get_point_in_direction(n_des_vect, self.ms * const.ORCA_TIME_STEP)
 			
@@ -202,7 +203,7 @@ const.ORCA_RADIUS, self.ms)
 			
 			#next_n_dist = next_n_p.get_distance_to(last_p)
 			
-			if det_angle > const.ORCA_MAX_ANGLE or next_dist > dist:# or next_n_dist > dist:
+			if det_angle > const.ORCA_MAX_ANGLE or next_dist > dist or (det_targets_vect < gc_const.ANGLE_ERROR and not closest_am.finished_planning):# or next_n_dist > dist:
 			
 				vect = self.calc_new_vel_direction(last_p, last_vect, current_goal)
 				
