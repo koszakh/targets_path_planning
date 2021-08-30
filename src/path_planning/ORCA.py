@@ -178,7 +178,7 @@ const.ORCA_RADIUS, self.ms)
 		am.last_vect = last_vect
 		min_neighbor_dist, closest_neighbor_id = self.calc_min_neighbor_dist(robot_name)
 		
-		if min_neighbor_dist > (const.ORCA_NEIGHBOR_DIST + const.ORCA_RADIUS):
+		if min_neighbor_dist > const.UB_NEIGHBOR_DIST:
 			
 			vect = self.calc_new_vel_direction(last_p, last_vect, current_goal)
 		
@@ -203,7 +203,7 @@ const.ORCA_RADIUS, self.ms)
 			
 			#next_n_dist = next_n_p.get_distance_to(last_p)
 			
-			if det_angle > const.ORCA_MAX_ANGLE or next_dist > dist or (det_targets_vect < gc_const.ANGLE_ERROR and not closest_am.finished_planning):# or next_n_dist > dist:
+			if det_angle > const.ORCA_MAX_ANGLE or next_dist > dist or (det_targets_vect < gc_const.ANGLE_ERROR / 2 and not closest_am.finished_planning) or len(self.init_paths[robot_name]) == 1:# or next_n_dist > dist:
 			
 				vect = self.calc_new_vel_direction(last_p, last_vect, current_goal)
 				

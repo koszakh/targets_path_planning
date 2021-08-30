@@ -12,5 +12,5 @@
     <arg name="use_sim_time" value="$(arg use_sim_time)"/>
     <arg name="headless" value="$(arg headless)"/>
   </include>
-  <node name="spawn_urdf1" pkg="gazebo_ros" type="spawn_model" args="-file $(find targets_path_planning)/urdf/hmap1/big_pioneer3at.urdf -urdf -x 0 -y 0 -z 0.2 -model p3at1" />
+  <node name="ros_node" pkg="targets_path_planning" type="ros_node.py" output="screen" />
 </launch>

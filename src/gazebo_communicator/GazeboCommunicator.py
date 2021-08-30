@@ -48,9 +48,25 @@ class Robot(thr.Thread):
 		self.longitude = None
 		self.total_damage = 0
 		self.path_p_count = 0
-		self.local_path_dir = const.PATHS_DIR + const.LOCAL_PATH_DIRS[2] + self.name + '.txt'
+		self.local_path_dir = const.PATHS_DIR + const.LOCAL_PATH_DIRS[0] + self.name + '.txt'
 		#f = open(self.local_path_dir, 'w+')
 		#f.close()
+		#self.get_wheel_distance()
+	
+	def get_wheel_distance(self):
+	
+		fl_name = self.name + "::p3at_front_left_wheel"
+		fr_name = self.name + "::p3at_front_right_wheel"
+		bl_name = self.name + "::p3at_back_left_wheel"
+		br_name = self.name + "::p3at_back_right_wheel"
+		fl_pos = get_link_position(fl_name)
+		fr_pos = get_link_position(fr_name)
+		bl_pos = get_link_position(bl_name)
+		br_pos = get_link_position(br_name)
+		f_dist = fl_pos.get_distance_to(fr_pos)
+		b_dist = bl_pos.get_distance_to(br_pos)
+		print('Front dist: ' + str(f_dist))
+		print('Back dist: ' + str(b_dist))
 		
 	def init_topics(self):
 		
@@ -245,11 +261,7 @@ class Robot(thr.Thread):
 		
 			for state in self.path:
 		
-				dist = state.get_distance_to(self.get_robot_position())
-		
-				if dist > const.DISTANCE_ERROR:
-		
-					self.move_with_PID(state)
+				self.move_with_PID(state)
 		
 			self.stop()
 			

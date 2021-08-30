@@ -5,6 +5,12 @@
 <!-- =================================================================================== -->
 <robot name="pioneer3at" xmlns:controller="http://playerstage.sourceforge.net/gazebo/xmlschema/#controller" xmlns:interface="http://playerstage.sourceforge.net/gazebo/xmlschema/#interface" xmlns:sensor="http://playerstage.sourceforge.net/gazebo/xmlschema/#sensor" xmlns:xacro="http://ros.org/wiki/xacro">
   <!-- Chassis -->
+  <link name="world"/>
+
+  <joint name="fixed" type="fixed">
+    <parent link="world"/>
+    <child link="base_link"/>
+  </joint>
   <link name="base_link">
     <!--  For pointers on inertial and gazebo-related parameters see
 		       * http://wiki.ros.org/urdf/Tutorials/Adding%20Physical%20and%20Collision%20Properties%20to%20a%20URDF%20Model
@@ -14,24 +20,24 @@
                        * http://en.wikipedia.org/wiki/List_of_moment_of_inertia_tensors  
                 -->
     <inertial>
-      <mass value="26.5"/>
+      <mass value="344"/>
       <!-- P3AT 18.6kg plus three batteries @ 2.4kg each  minus four wheels @ 1.4 kg ea and top plate @ 0.1 kg-->
-      <origin xyz=" -0.1 0 0.177"/>
+      <origin xyz=" -0.1 0 0.708"/>
       <inertia ixx="0.3338" ixy="0.0" ixz="0.0" iyy="0.4783" iyz="0.0" izz="0.3338"/>
     </inertial>
     <visual>
-      <origin rpy="0 0 0" xyz="0 0 0.177"/>
+      <origin rpy="0 0 0" xyz="0 0 0.708"/>
       <geometry name="pioneer_geom">
-        <mesh filename="package://amr_robots_description/meshes/p3at_meshes/chassis.stl" scale="2 2 2"/>
+        <mesh filename="package://amr_robots_description/meshes/p3at_meshes/chassis.stl" scale="4 4 4"/>
       </geometry>
       <material name="ChassisRed">
         <color rgba="0.851 0.0 0.0 1.0"/>
       </material>
     </visual>
     <collision>
-      <origin rpy="0 0 0" xyz="0 0 0.177"/>
+      <origin rpy="0 0 0" xyz="0 0 0.708"/>
       <geometry>
-        <mesh filename="package://amr_robots_description/meshes/p3at_meshes/chassis.stl" scale="2 2 2"/>
+        <mesh filename="package://amr_robots_description/meshes/p3at_meshes/chassis.stl" scale="4 4 4"/>
       </geometry>
     </collision>
   </link>
@@ -44,12 +50,12 @@
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <box size="0.05 0.05 0.01"/>
+        <box size="0.2 0.2 0.04"/>
       </geometry>
     </collision>
   </link>
   <joint name="hardener_joint" type="fixed">
-    <origin rpy="0 0 0" xyz="0.16 0 0.074"/>
+    <origin rpy="0 0 0" xyz="0.64 0 0.296"/>
     <parent link="base_link"/>
     <child link="hardener"/>
   </joint>
@@ -60,13 +66,13 @@
   <link name="top_plate">
     <inertial>
       <mass value="0.1"/>
-      <origin xyz="-0.025 0 -0.223"/>
+      <origin xyz="-0.1 0 -0.892"/>
       <inertia ixx="1.0" ixy="0.0" ixz="0.0" iyy="1.0" iyz="0.0" izz="1.0"/>
     </inertial>
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry name="pioneer_geom">
-        <mesh filename="package://amr_robots_description/meshes/p3at_meshes/top.stl"  scale="2 2 2"/>
+        <mesh filename="package://amr_robots_description/meshes/p3at_meshes/top.stl"  scale="4 4 4"/>
       </geometry>
       <material name="TopBlack">
         <color rgba="0.038 0.038 0.038 1.0"/>
@@ -77,7 +83,7 @@
     <material>Gazebo/Black</material>
   </gazebo>
   <joint name="base_top_joint" type="fixed">
-    <origin rpy="0 0 0" xyz="0.003 0 0.274"/>
+    <origin rpy="0 0 0" xyz="0.012 0 1.096"/>
     <parent link="base_link"/>
     <child link="top_plate"/>
   </joint>
@@ -91,7 +97,7 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry name="pioneer_geom">
-        <mesh filename="package://amr_robots_description/meshes/p3at_meshes/front_sonar.stl"  scale="2 2 2"/>
+        <mesh filename="package://amr_robots_description/meshes/p3at_meshes/front_sonar.stl"  scale="4 4 4"/>
       </geometry>
       <material name="SonarYellow">
         <color rgba="0.715 0.583 0.210 1.0"/>
@@ -102,7 +108,7 @@
     <material value="Gazebo/Yellow"/>
   </gazebo>
   <joint name="base_front_joint" type="fixed">
-    <origin rpy="0 0 0" xyz="0.193 0 0.25"/>
+    <origin rpy="0 0 0" xyz="0.772 0 1"/>
     <parent link="base_link"/>
     <child link="front_sonar"/>
   </joint>
@@ -115,7 +121,7 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry name="pioneer_geom">
-        <mesh filename="package://amr_robots_description/meshes/p3at_meshes/back_sonar.stl"  scale="2 2 2"/>
+        <mesh filename="package://amr_robots_description/meshes/p3at_meshes/back_sonar.stl"  scale="4 4 4"/>
       </geometry>
       <material name="SonarYellow">
         <color rgba="0.715 0.583 0.210 1.0"/>
@@ -126,7 +132,7 @@
     <material value="Gazebo/Yellow"/>
   </gazebo>
   <joint name="base_back_joint" type="fixed">
-    <origin rpy="0 0 0" xyz="-0.187 0 0.247"/>
+    <origin rpy="0 0 0" xyz="-0.748 0 0.988"/>
     <parent link="base_link"/>
     <child link="back_sonar"/>
   </joint>
@@ -140,7 +146,7 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry name="pioneer_geom">
-        <mesh filename="package://amr_robots_description/meshes/p3at_meshes/axle.stl"  scale="2 2 2"/>
+        <mesh filename="package://amr_robots_description/meshes/p3at_meshes/axle.stl"  scale="4 4 4"/>
       </geometry>
       <material name="AxleGrey">
         <color rgba="0.5 0.5 0.5 1"/>
@@ -151,7 +157,7 @@
     <material value="Gazebo/Grey"/>
   </gazebo>
   <joint name="base_front_left_axle_joint" type="fixed">
-    <origin rpy="0 0 0" xyz="0.135 0.156 0.111"/>
+    <origin rpy="0 0 0" xyz="0.540 0.624 0.444"/>
     <parent link="base_link"/>
     <child link="p3at_front_left_axle"/>
   </joint>
@@ -164,7 +170,7 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry name="pioneer_geom">
-        <mesh filename="package://amr_robots_description/meshes/p3at_meshes/left_hubcap.stl"  scale="2 2 2"/>
+        <mesh filename="package://amr_robots_description/meshes/p3at_meshes/left_hubcap.stl"  scale="4 4 4"/>
       </geometry>
       <material name="HubcapYellow">
         <color rgba="1.0 0.811 0.151 1.0"/>
@@ -175,13 +181,13 @@
     <material value="Gazebo/Yellow"/>
   </gazebo>
   <joint name="base_front_left_hub_joint" type="fixed">
-    <origin rpy="0 0 0" xyz="0 0.041 0"/>
+    <origin rpy="0 0 0" xyz="0 0.164 0"/>
     <parent link="p3at_front_left_axle"/>
     <child link="p3at_front_left_hub"/>
   </joint>
   <link name="p3at_front_left_wheel">
     <inertial>
-      <mass value="1.2"/>
+      <mass value="19.2"/>
       <!-- 1.4 kg - axle 0.1 kg - hub 0.1 kg -->
       <origin xyz="0 0 0"/>
       <inertia ixx="0.012411765597" ixy="0" ixz="0" iyy="0.015218160428" iyz="0" izz="0.011763977943"/>
@@ -189,7 +195,7 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry name="pioneer_geom">
-        <mesh filename="package://amr_robots_description/meshes/p3at_meshes/wheel.stl"  scale="2 2 2"/>
+        <mesh filename="package://amr_robots_description/meshes/p3at_meshes/wheel.stl"  scale="4 4 4"/>
       </geometry>
       <material name="WheelBlack">
         <color rgba="0.117 0.117 0.117 1"/>
@@ -198,8 +204,8 @@
     <collision>
       <origin rpy="-1.57079635 0 0" xyz="0 0 0"/>
       <geometry>
-        <!--mesh filename="package://amr_robots_description/meshes/p3at_meshes/wheel.stl"  scale="2 2 2"/-->
-        <cylinder length="0.075" radius="0.111"/>
+        <!--mesh filename="package://amr_robots_description/meshes/p3at_meshes/wheel.stl"  scale="4 4 4"/-->
+        <cylinder length="0.3" radius="0.444"/>
       </geometry>
     </collision>
   </link>
@@ -225,7 +231,7 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry name="pioneer_geom">
-        <mesh filename="package://amr_robots_description/meshes/p3at_meshes/axle.stl"  scale="2 2 2"/>
+        <mesh filename="package://amr_robots_description/meshes/p3at_meshes/axle.stl"  scale="4 4 4"/>
       </geometry>
       <material name="AxleGrey">
         <color rgba="0.5 0.5 0.5 1"/>
@@ -234,7 +240,7 @@
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://amr_robots_description/meshes/p3at_meshes/axle.stl"  scale="2 2 2"/>
+        <mesh filename="package://amr_robots_description/meshes/p3at_meshes/axle.stl"  scale="4 4 4"/>
       </geometry>
     </collision>
   </link>
@@ -242,7 +248,7 @@
     <material value="Gazebo/Grey"/>
   </gazebo>
   <joint name="p3at_back_left_axle_joint" type="fixed">
-    <origin rpy="0 0 0" xyz="-0.134 0.156 0.111"/>
+    <origin rpy="0 0 0" xyz="-0.540 0.624 0.444"/>
     <parent link="base_link"/>
     <child link="p3at_back_left_axle"/>
   </joint>
@@ -255,14 +261,14 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry name="pioneer_geom">
-        <mesh filename="package://amr_robots_description/meshes/p3at_meshes/left_hubcap.stl"  scale="2 2 2"/>
+        <mesh filename="package://amr_robots_description/meshes/p3at_meshes/left_hubcap.stl"  scale="4 4 4"/>
       </geometry>
       <material name="HubcapYellow"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://amr_robots_description/meshes/p3at_meshes/left_hubcap.stl"  scale="2 2 2"/>
+        <mesh filename="package://amr_robots_description/meshes/p3at_meshes/left_hubcap.stl"  scale="4 4 4"/>
       </geometry>
     </collision>
   </link>
@@ -270,28 +276,28 @@
     <material value="Gazebo/Yellow"/>
   </gazebo>
   <joint name="p3at_back_left_hub_joint" type="fixed">
-    <origin rpy="0 0 0" xyz="-0 0.041 0"/>
+    <origin rpy="0 0 0" xyz="-0 0.164 0"/>
     <parent link="p3at_back_left_axle"/>
     <child link="p3at_back_left_hub"/>
   </joint>
   <link name="p3at_back_left_wheel">
     <inertial>
-      <mass value="1.2"/>
+      <mass value="19.2"/>
       <origin xyz="0 0 0"/>
       <inertia ixx="0.012411765597" ixy="0" ixz="0" iyy="0.015218160428" iyz="0" izz="0.011763977943"/>
     </inertial>
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry name="pioneer_geom">
-        <mesh filename="package://amr_robots_description/meshes/p3at_meshes/wheel.stl"  scale="2 2 2"/>
+        <mesh filename="package://amr_robots_description/meshes/p3at_meshes/wheel.stl"  scale="4 4 4"/>
       </geometry>
       <material name="WheelBlack"/>
     </visual>
     <collision>
       <origin rpy="-1.57079635 0 0" xyz="0 0 0"/>
       <geometry>
-        <!--mesh filename="package://amr_robots_description/meshes/p3at_meshes/wheel.stl"  scale="2 2 2"/-->
-        <cylinder length="0.075" radius="0.111"/>
+        <!--mesh filename="package://amr_robots_description/meshes/p3at_meshes/wheel.stl"  scale="4 4 4"/-->
+        <cylinder length="0.3" radius="0.444"/>
       </geometry>
     </collision>
   </link>
@@ -352,7 +358,7 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry name="pioneer_geom">
-        <mesh filename="package://amr_robots_description/meshes/p3at_meshes/axle.stl"  scale="2 2 2"/>
+        <mesh filename="package://amr_robots_description/meshes/p3at_meshes/axle.stl"  scale="4 4 4"/>
       </geometry>
       <material name="AxleGrey">
         <color rgba="0.5 0.5 0.5 1"/>
@@ -363,7 +369,7 @@
     <material value="Gazebo/Grey"/>
   </gazebo>
   <joint name="base_front_right_axle_joint" type="fixed">
-    <origin rpy="0 0 0" xyz="0.135 -0.156 0.111"/>
+    <origin rpy="0 0 0" xyz="0.540 -0.624 0.444"/>
     <parent link="base_link"/>
     <child link="p3at_front_right_axle"/>
   </joint>
@@ -376,7 +382,7 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry name="pioneer_geom">
-        <mesh filename="package://amr_robots_description/meshes/p3at_meshes/right_hubcap.stl"  scale="2 2 2"/>
+        <mesh filename="package://amr_robots_description/meshes/p3at_meshes/right_hubcap.stl"  scale="4 4 4"/>
       </geometry>
       <material name="HubcapYellow">
         <color rgba="1.0 0.811 0.151 1.0"/>
@@ -387,13 +393,13 @@
     <material value="Gazebo/Yellow"/>
   </gazebo>
   <joint name="base_front_right_hub_joint" type="fixed">
-    <origin rpy="0 0 0" xyz="0 -0.041 0"/>
+    <origin rpy="0 0 0" xyz="0 -0.164 0"/>
     <parent link="p3at_front_right_axle"/>
     <child link="p3at_front_right_hub"/>
   </joint>
   <link name="p3at_front_right_wheel">
     <inertial>
-      <mass value="1.2"/>
+      <mass value="19.2"/>
       <!-- 1.4 kg - axle 0.1 kg - hub 0.1 kg -->
       <origin xyz="0 0 0"/>
       <inertia ixx="0.012411765597" ixy="0" ixz="0" iyy="0.015218160428" iyz="0" izz="0.011763977943"/>
@@ -401,7 +407,7 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry name="pioneer_geom">
-        <mesh filename="package://amr_robots_description/meshes/p3at_meshes/wheel.stl"  scale="2 2 2"/>
+        <mesh filename="package://amr_robots_description/meshes/p3at_meshes/wheel.stl"  scale="4 4 4"/>
       </geometry>
       <material name="WheelBlack">
         <color rgba="0.117 0.117 0.117 1"/>
@@ -410,8 +416,8 @@
     <collision>
       <origin rpy="-1.57079635 0 0" xyz="0 0 0"/>
       <geometry>
-        <!--mesh filename="package://amr_robots_description/meshes/p3at_meshes/wheel.stl"  scale="2 2 2"/-->
-        <cylinder length="0.075" radius="0.111"/>
+        <!--mesh filename="package://amr_robots_description/meshes/p3at_meshes/wheel.stl"  scale="4 4 4"/-->
+        <cylinder length="0.3" radius="0.444"/>
       </geometry>
     </collision>
   </link>
@@ -437,7 +443,7 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry name="pioneer_geom">
-        <mesh filename="package://amr_robots_description/meshes/p3at_meshes/axle.stl"  scale="2 2 2"/>
+        <mesh filename="package://amr_robots_description/meshes/p3at_meshes/axle.stl"  scale="4 4 4"/>
       </geometry>
       <material name="AxleGrey">
         <color rgba="0.5 0.5 0.5 1"/>
@@ -446,7 +452,7 @@
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://amr_robots_description/meshes/p3at_meshes/axle.stl"  scale="2 2 2"/>
+        <mesh filename="package://amr_robots_description/meshes/p3at_meshes/axle.stl"  scale="4 4 4"/>
       </geometry>
     </collision>
   </link>
@@ -454,7 +460,7 @@
     <material value="Gazebo/Grey"/>
   </gazebo>
   <joint name="p3at_back_right_axle_joint" type="fixed">
-    <origin rpy="0 0 0" xyz="-0.134 -0.156 0.111"/>
+    <origin rpy="0 0 0" xyz="-0.540 -0.624 0.444"/>
     <parent link="base_link"/>
     <child link="p3at_back_right_axle"/>
   </joint>
@@ -467,14 +473,14 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry name="pioneer_geom">
-        <mesh filename="package://amr_robots_description/meshes/p3at_meshes/right_hubcap.stl"  scale="2 2 2"/>
+        <mesh filename="package://amr_robots_description/meshes/p3at_meshes/right_hubcap.stl"  scale="4 4 4"/>
       </geometry>
       <material name="HubcapYellow"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://amr_robots_description/meshes/p3at_meshes/right_hubcap.stl"  scale="2 2 2"/>
+        <mesh filename="package://amr_robots_description/meshes/p3at_meshes/right_hubcap.stl"  scale="4 4 4"/>
       </geometry>
     </collision>
   </link>
@@ -482,28 +488,28 @@
     <material value="Gazebo/Yellow"/>
   </gazebo>
   <joint name="p3at_back_right_hub_joint" type="fixed">
-    <origin rpy="0 0 0" xyz="-0 -0.041 0"/>
+    <origin rpy="0 0 0" xyz="-0 -0.164 0"/>
     <parent link="p3at_back_right_axle"/>
     <child link="p3at_back_right_hub"/>
   </joint>
   <link name="p3at_back_right_wheel">
     <inertial>
-      <mass value="1.2"/>
+      <mass value="19.2"/>
       <origin xyz="0 0 0"/>
       <inertia ixx="0.012411765597" ixy="0" ixz="0" iyy="0.015218160428" iyz="0" izz="0.011763977943"/>
     </inertial>
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry name="pioneer_geom">
-        <mesh filename="package://amr_robots_description/meshes/p3at_meshes/wheel.stl"  scale="2 2 2"/>
+        <mesh filename="package://amr_robots_description/meshes/p3at_meshes/wheel.stl"  scale="4 4 4"/>
       </geometry>
       <material name="WheelBlack"/>
     </visual>
     <collision>
       <origin rpy="-1.57079635 0 0" xyz="0 0 0"/>
       <geometry>
-        <!--mesh filename="package://amr_robots_description/meshes/p3at_meshes/wheel.stl"  scale="2 2 2"/-->
-        <cylinder length="0.075" radius="0.111"/>
+        <!--mesh filename="package://amr_robots_description/meshes/p3at_meshes/wheel.stl"  scale="4 4 4"/-->
+        <cylinder length="0.3" radius="0.444"/>
       </geometry>
     </collision>
   </link>
@@ -562,7 +568,7 @@
     </inertial>
     <visual>
       <geometry>
-        <sphere radius="0.01"/>
+        <sphere radius="0.04"/>
       </geometry>
       <material name="white"/>
     </visual>
@@ -573,7 +579,7 @@
   <joint name="dir_point_joint" type="prismatic">
     <axis xyz="1 0 0"/>
     <limit effort="0" velocity="0" lower="0" upper="0"/>
-    <origin rpy="0 0 0" xyz="0.1 0 0.278"/>
+    <origin rpy="0 0 0" xyz="0.1 0 1.112"/>
     <parent link="base_link"/>
     <child link="dir_point"/>
   </joint>
@@ -584,11 +590,11 @@
       <rightFrontJoint>p3at_front_right_wheel_joint</rightFrontJoint>
       <leftRearJoint>p3at_back_left_wheel_joint</leftRearJoint>
       <rightRearJoint>p3at_back_right_wheel_joint</rightRearJoint>
-      <wheelSeparation>0.4</wheelSeparation>
-      <wheelDiameter>0.215</wheelDiameter>
+      <wheelSeparation>1.58</wheelSeparation>
+      <wheelDiameter>0.888</wheelDiameter>
       <robotBaseFrame>base_link</robotBaseFrame>
-      <MaxForce>5.0</MaxForce>
-      <torque>300</torque>
+      <MaxForce>80.0</MaxForce>
+      <torque>3200</torque>
       <commandTopic>cmd_vel</commandTopic>
       <odometryTopic>odom</odometryTopic>
       <odometryFrame>odom</odometryFrame>

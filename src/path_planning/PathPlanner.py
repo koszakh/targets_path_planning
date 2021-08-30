@@ -875,7 +875,7 @@ v1.get_distance_to(v2) #+ fabs(v1.riskiness - v2.riskiness)
 				n_n = self.heightmap[n_n_id]
 				dist = n_n.get_distance_to(v)
 
-				if not self.closed_start_points.__contains__(n_n_id) and dist > const.ORCA_NEIGHBOR_DIST:
+				if not self.closed_start_points.__contains__(n_n_id) and dist < const.UB_NEIGHBOR_DIST:
 
 					self.closed_start_points.append(n_n_id)
 
@@ -1218,7 +1218,7 @@ v1.get_distance_to(v2) #+ fabs(v1.riskiness - v2.riskiness)
 		
 		if min_x < self.min_x or max_x < self.min_x:
 		
-			min_x = self.min_x
+			min_x = self.min_x + const.GRID_SIZE * 2
 			max_x = min_x + offset * 2
 			
 			if max_x > self.max_x:
@@ -1227,7 +1227,7 @@ v1.get_distance_to(v2) #+ fabs(v1.riskiness - v2.riskiness)
 		
 		if min_y < self.min_y or max_y < self.min_y:
 		
-			min_y = self.min_y
+			min_y = self.min_y + const.GRID_SIZE * 2
 			max_y = min_y + offset * 2
 			
 			if max_y > self.max_y:
@@ -1236,7 +1236,7 @@ v1.get_distance_to(v2) #+ fabs(v1.riskiness - v2.riskiness)
 		
 		if max_x > self.max_x or min_x > self.max_x:
 		
-			max_x = self.max_x
+			max_x = self.max_x - const.GRID_SIZE * 2
 			min_x = max_x - offset * 2
 			
 			if min_x < self.min_x:
@@ -1245,7 +1245,7 @@ v1.get_distance_to(v2) #+ fabs(v1.riskiness - v2.riskiness)
 		
 		if max_y > self.max_y or min_y > self.max_y:
 		
-			max_y = self.max_y
+			max_y = self.max_y - const.GRID_SIZE * 2
 			min_y = max_y - offset * 2
 			
 			if min_y < self.min_y:
@@ -1269,7 +1269,7 @@ v1.get_distance_to(v2) #+ fabs(v1.riskiness - v2.riskiness)
 				n_n = self.heightmap[n_n_id]
 				dist = n_n.get_distance_to(v)
 				
-				if not self.closed_goals.__contains__(n_n_id) and dist < const.ORCA_NEIGHBOR_DIST:
+				if not self.closed_goals.__contains__(n_n_id) and dist < const.UB_NEIGHBOR_DIST:
 
 					self.closed_goals.append(n_n_id)
 

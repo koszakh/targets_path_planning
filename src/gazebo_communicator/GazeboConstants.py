@@ -19,8 +19,7 @@ PATH_COLORS = [RED_VERTICE_PATH, GREEN_VERTICE_PATH, BLUE_VERTICE_PATH]
 MOVEMENT_SPEED = 0.4#0.4
 ROTATION_SPEED = 0.15#1
 LIFTING_SPEED = 0.01
-ANGLE_ERROR = float(60 * const.ORCA_TIME_STEP)
-print(' >>> ANGLE_ERROR: ' + str(ANGLE_ERROR))
+ANGLE_ERROR = float(45 * const.ORCA_TIME_STEP)
 DISTANCE_ERROR = 0.25
 PID_NSEC_DELAY = 100000000
 
@@ -30,7 +29,7 @@ UPPER_DAMAGE_LIMIT = 0.9
 #------------------------------------------
 
 LOCAL_PATH_DIRS = ['paths1_local/', 'paths2_local/', 'paths3_local/', 'paths4_local/', 'paths5_local/', 'paths6_local/']
-MAP_DYNAMIC_COORDS_PATH = ROOT_PATH + '/catkin_ws/src/targets_path_planning/map_logs/' + CURRENT_MAP + '/dynamic/dyn_scen_4.txt'
+MAP_DYNAMIC_COORDS_PATH = ROOT_PATH + '/catkin_ws/src/targets_path_planning/map_logs/' + CURRENT_MAP + '/dynamic/dyn_scen_1.txt'
 MAP_STATIC_COORDS_PATH = ROOT_PATH + '/catkin_ws/src/targets_path_planning/map_logs/' + CURRENT_MAP + '/static/stat_scen_1.txt'
 GPS_PATHS_DIR_PATH = ROOT_PATH + '/catkin_ws/src/targets_path_planning/map_logs/' + CURRENT_MAP + '/paths/paths1/'
 PATHS_DIR = ROOT_PATH + '/catkin_ws/src/targets_path_planning/path_logs/' + CURRENT_MAP + '/'

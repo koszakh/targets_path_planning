@@ -30,6 +30,8 @@ def group_path_planning():
 		
 	mh = pp.PathPlanner(hmap, l_scale, w_scale, x_step, y_step, step_count)
 
+	offset = const.DIST_OFFSET
+
 	min_x = mh.min_x
 	max_x = mh.max_x
 	min_y = mh.min_y
@@ -38,20 +40,18 @@ def group_path_planning():
 	avg_x = numpy.mean([min_x, max_x])
 	avg_y = numpy.mean([min_y, max_y])
 	
-	new_x = numpy.mean([min_x, avg_x]) + 7
-	new_y = numpy.mean([avg_y, max_y]) - 18
-	new_x1 = numpy.mean([avg_x, max_x]) - 5
-	new_y1 = numpy.mean([avg_y, max_y]) + 13
+	new_x = numpy.mean([min_x, avg_x]) + 13
+	new_y = numpy.mean([min_y, avg_y]) - 8
+	new_x1 = new_x + 2 + offset * 2#numpy.mean([avg_x, max_x]) - 15
+	new_y1 = new_y + 3 + offset * 2#numpy.mean([avg_y, max_y]) + 13
 
 	p1 = PointGeom(new_x, new_y, 0)
 	p2 = PointGeom(new_x1, new_y1, 0)
 	area_dist = p1.get_distance_to(p2)
 	print('Distance between areas centers: ' + str(area_dist))
-	
-	offset = const.DIST_OFFSET
 
-	f = open(gc_const.MAP_DYNAMIC_COORDS_PATH, 'w+')
-	f.close()
+	#f = open(gc_const.MAP_DYNAMIC_COORDS_PATH, 'w+')
+	#f.close()
 
 	start = (new_x, new_y)
 	goal = (new_x1, new_y1)
