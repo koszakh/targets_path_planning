@@ -62,17 +62,20 @@ flag = False
 
 if flag:
 
-	bb_path = "/root/catkin_ws/src/targets_path_planning/urdf/hmap1/big_pioneer3at.urdf"
+	bb_path = gc_const.ROOT_PATH + "/catkin_ws/src/targets_path_planning/urdf/hmap1/t1.urdf"
 	name = "bigboy"
 	p = Point(0, 0, 0.7)
 	gc.spawn_urdf_model(name, bb_path, p, (0, 0, 0, 0))
+	robot = gc.Robot(name)
+	sleep(2)
+	robot.movement(0.5, 0)
 	
 else:
 
-	model_path = "/root/catkin_ws/src/targets_path_planning/urdf/hmap1/big_pioneer3at.urdf"
+	model_path = gc_const.ROOT_PATH + "/catkin_ws/src/targets_path_planning/urdf/hmap1/big_pioneer3at.urdf"
 	
-	p = Point(0, -12, 0.2)
-	g = Point(0, 12, 0)
+	p = Point(10, 0, 0.2)
+	g = Point(-10, 0, 0)
 	g_1 = p.get_point_at_distance_and_angle(g, p.get_distance_to(g) / 2)
 	g_1.set_z(0)
 	gc.spawn_sdf_model(g, gc_const.BLUE_VERTICE_PATH, 'g')
@@ -83,8 +86,8 @@ else:
 	quat = rot.as_quat()
 	gc.spawn_urdf_model(name, model_path, p, quat)
 
-	p1 = Point(-12, 0, 0.2)
-	g1 = Point(12, 0, 0)
+	p1 = Point(0, -10, 0.2)
+	g1 = Point(0, 10, 0)
 	g1_1 = p1.get_point_at_distance_and_angle(g1, p1.get_distance_to(g1) / 2)
 	g1_1.set_z(0)
 	vect1 = p1.get_angle_between_points(g1)
@@ -95,8 +98,8 @@ else:
 	quat1 = rot1.as_quat()
 	gc.spawn_urdf_model(name1, model_path, p1, quat1)
 
-	p2 = Point(12, 6, 0)
-	g2 = Point(-12, -6, 0)
+	p2 = Point(8, -8, 0)
+	g2 = Point(-10, 10, 0)
 	g2_1 = p2.get_point_at_distance_and_angle(g2, p2.get_distance_to(g2) / 2)
 	g2_1.set_z(0)
 	gc.spawn_sdf_model(g2, gc_const.RED_VERTICE_PATH, 'g2')
@@ -129,7 +132,7 @@ else:
 		color = random.choice(colors)
 		colors.remove(color)
 		path = paths[key]
-		path = delete_intermediate_points(path, 20)
+		path = delete_intermediate_points(path, 10)
 		
 		gc.visualise_path(path, color, str(key) + '_')
 	

@@ -889,7 +889,7 @@ v1.get_distance_to(v2) #+ fabs(v1.riskiness - v2.riskiness)
 	
 		v = self.heightmap[v_id]
 		self.closed_start_points.append(v_id)
-		ids = self.get_close_points_list(v_id, const.UB_NEIGHBOR_DIST)
+		ids = self.get_close_points_list(v_id, const.UB_NEIGHBOR_DIST + const.ROBOT_RADIUS)
 		
 		for n_id in ids:
 		
@@ -1273,7 +1273,7 @@ v1.get_distance_to(v2) #+ fabs(v1.riskiness - v2.riskiness)
 	
 		v = self.heightmap[v_id]
 		self.closed_start_points.append(v_id)
-		ids = self.get_close_points_list(v_id, const.UB_NEIGHBOR_DIST)
+		ids = self.get_close_points_list(v_id, const.UB_NEIGHBOR_DIST + const.ROBOT_RADIUS)
 		
 		for n_id in ids:
 		

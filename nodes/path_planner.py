@@ -40,10 +40,10 @@ def group_path_planning():
 	avg_x = numpy.mean([min_x, max_x])
 	avg_y = numpy.mean([min_y, max_y])
 	
-	new_x = numpy.mean([min_x, avg_x]) + 4
-	new_y = numpy.mean([min_y, avg_y]) - 5
-	new_x1 = new_x + offset * 4#numpy.mean([avg_x, max_x]) - 6
-	new_y1 = new_y + offset * 5#numpy.mean([avg_y, max_y]) + 3
+	new_x = numpy.mean([min_x, avg_x])
+	new_y = avg_y#numpy.mean([min_y, avg_y])
+	new_x1 = numpy.mean([avg_x, max_x]) + 6
+	new_y1 = avg_y#numpy.mean([avg_y, max_y])
 
 	p1 = PointGeom(new_x, new_y, 0)
 	p2 = PointGeom(new_x1, new_y1, 0)

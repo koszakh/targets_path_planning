@@ -1,17 +1,17 @@
 # Gazebo constants
 import path_planning.Constants as const
 
-ROOT_PATH = '/root'
+ROOT_PATH = '/home/admin'
 CURRENT_MAP = 'hmap1'
 ROBOT_MODEL_PATH = ROOT_PATH + '/catkin_ws/src/targets_path_planning/urdf/' + CURRENT_MAP + '/big_pioneer3at.urdf'
 DIR_POINT_SUFFIX = '::dir_point'
-VERTICE_PATH = ROOT_PATH + '/.gazebo/models/vertice/model.sdf'
-RED_VERTICE_PATH = ROOT_PATH + '/.gazebo/models/red_vertice/model.sdf'
-BIG_RED_VERTICE_PATH = ROOT_PATH + '/.gazebo/models/big_red_vertice/model.sdf'
-GREEN_VERTICE_PATH = ROOT_PATH + '/.gazebo/models/green_vertice/model.sdf'
-BIG_GREEN_VERTICE_PATH = ROOT_PATH + '/.gazebo/models/big_green_vertice/model.sdf'
-GOAL_VERTICE_PATH = ROOT_PATH + '/.gazebo/models/goal_vertice/model.sdf'
-BLUE_VERTICE_PATH = ROOT_PATH + '/.gazebo/models/blue_vertice/model.sdf'
+VERTICE_PATH = '/root/.gazebo/models/vertice/model.sdf'
+RED_VERTICE_PATH = '/root/.gazebo/models/red_vertice/model.sdf'
+BIG_RED_VERTICE_PATH = '/root/.gazebo/models/big_red_vertice/model.sdf'
+GREEN_VERTICE_PATH = '/root/.gazebo/models/green_vertice/model.sdf'
+BIG_GREEN_VERTICE_PATH = '/root/.gazebo/models/big_green_vertice/model.sdf'
+GOAL_VERTICE_PATH = '/root/.gazebo/models/goal_vertice/model.sdf'
+BLUE_VERTICE_PATH = '/root/.gazebo/models/blue_vertice/model.sdf'
 PATH_COLORS = [RED_VERTICE_PATH, GREEN_VERTICE_PATH, BLUE_VERTICE_PATH]
 
 # Target constants
@@ -19,8 +19,8 @@ PATH_COLORS = [RED_VERTICE_PATH, GREEN_VERTICE_PATH, BLUE_VERTICE_PATH]
 MOVEMENT_SPEED = 0.4#0.4
 ROTATION_SPEED = 0.15#1
 LIFTING_SPEED = 0.01
-ANGLE_ERROR = float(30 * const.ORCA_TIME_STEP)
-DISTANCE_ERROR = 0.25
+ANGLE_ERROR = float(45 * const.ORCA_TIME_STEP)
+DISTANCE_ERROR = 0.375
 PID_NSEC_DELAY = 100000000
 
 SPAWN_HEIGHT_OFFSET = 0.1
