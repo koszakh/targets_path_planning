@@ -35,7 +35,7 @@ class Robot(thr.Thread):
 	
 		thr.Thread.__init__(self)
 		self.name = robot_name
-		#print('\n!!! ' + self.name + ' initialised !!!\n')
+		self.id = self.name[self.name.find('t') + 1:]
 		self.init_topics()
 		self.pid_delay = rospy.Duration(0, const.PID_NSEC_DELAY)
 		msg = Twist()
@@ -48,9 +48,9 @@ class Robot(thr.Thread):
 		self.longitude = None
 		self.total_damage = 0
 		self.path_p_count = 0
-		self.local_path_dir = const.PATHS_DIR + const.LOCAL_PATH_DIRS[0] + self.name + '.txt'
-		#f = open(self.local_path_dir, 'w+')
-		#f.close()
+		self.local_path_dir = const.PATHS_DIR + const.LOCAL_PATH_DIRS[3] + self.name + '.txt'
+		f = open(self.local_path_dir, 'w+')
+		f.close()
 		#self.get_wheel_distance()
 	
 	def get_wheel_distance(self):
@@ -266,12 +266,12 @@ class Robot(thr.Thread):
 			self.stop()
 			
 			end_coords = self.get_gps_coords()
-			#self.write_coords(start_coords, end_coords)
+			self.write_coords(start_coords, end_coords)
 			
 			for state in self.path:
 			
 				pass
-				#self.add_path_local_coords(state)
+				self.add_path_local_coords(state)
 			
 			print(self.name + ' end GPS coordinates: ' + self.get_gps_coords())
 			print('The robot ' + str(self.name) + ' has finished!')

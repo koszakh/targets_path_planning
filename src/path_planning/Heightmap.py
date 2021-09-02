@@ -126,10 +126,13 @@ class Heightmap:
 		
 		self.x_grid_size = float(self.length_scale / (self.image.shape[0] - 1))
 		self.y_grid_size = float(self.width_scale / (self.image.shape[1] - 1))
-		self.steps_count = int(self.x_grid_size / const.GRID_SIZE)
+		self.steps_count = int(self.x_grid_size / const.DES_GRID_SIZE) + 1
+		real_grid_size = float(self.x_grid_size / self.steps_count)
+		rospy.set_param('real_grid_size', real_grid_size)
 		print('x_grid_size: ' + str(self.x_grid_size) + 'm')
 		print('y_grid_size: ' + str(self.y_grid_size) + 'm')
 		print('steps_count: ' + str(self.steps_count))
+		print('Real grid size: ' + str(real_grid_size) + ' m')
 
 	def get_all_heightmap_points(self):
 	
@@ -186,7 +189,7 @@ class Heightmap:
 		return p
 
 # Preparing a heightmap for further path planning (generation + converting to dictionary)
-	def prepare_heightmap(self, min_col, max_col, min_row, max_row):
+	def prepare_heightmap(self):
 	
 		self.calc_heightmap_bounds()
 		hmap = self.get_all_heightmap_points()

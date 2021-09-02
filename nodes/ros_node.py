@@ -58,22 +58,21 @@ def make_pose_msg(state, orient):
 
 rospy.init_node('ros_node')
 sleep(1)
-flag = True
+flag = False
 
 if flag:
 
 	bb_path = "/root/catkin_ws/src/targets_path_planning/urdf/hmap1/big_pioneer3at.urdf"
 	name = "bigboy"
-	p = Point(0, 0, 1)
+	p = Point(0, 0, 0.7)
 	gc.spawn_urdf_model(name, bb_path, p, (0, 0, 0, 0))
-	robot = gc.Robot(name)
-	robot.movement(0.5, 0)
-	robot.movement(1, 0)
 	
 else:
 
-	p = Point(-5, -2, 0.2)
-	g = Point(5, -2, 0)
+	model_path = "/root/catkin_ws/src/targets_path_planning/urdf/hmap1/big_pioneer3at.urdf"
+	
+	p = Point(0, -12, 0.2)
+	g = Point(0, 12, 0)
 	g_1 = p.get_point_at_distance_and_angle(g, p.get_distance_to(g) / 2)
 	g_1.set_z(0)
 	gc.spawn_sdf_model(g, gc_const.BLUE_VERTICE_PATH, 'g')
@@ -82,9 +81,10 @@ else:
 	vect = p.get_angle_between_points(g)
 	rot = pp.Rotation.from_euler('xyz', [0, 0, vect], degrees=True)
 	quat = rot.as_quat()
-	gc.spawn_target(name, p, quat)
-	p1 = Point(-4, 0, 0.2)
-	g1 = Point(4, 0, 0)
+	gc.spawn_urdf_model(name, model_path, p, quat)
+
+	p1 = Point(-12, 0, 0.2)
+	g1 = Point(12, 0, 0)
 	g1_1 = p1.get_point_at_distance_and_angle(g1, p1.get_distance_to(g1) / 2)
 	g1_1.set_z(0)
 	vect1 = p1.get_angle_between_points(g1)
@@ -93,9 +93,10 @@ else:
 	name1 = 'p3at2'
 	rot1 = pp.Rotation.from_euler('xyz', [0, 0, vect1], degrees=True)
 	quat1 = rot1.as_quat()
-	gc.spawn_target(name1, p1, quat1)
-	p2 = Point(-3, 2, 0)
-	g2 = Point(3, -2, 0)
+	gc.spawn_urdf_model(name1, model_path, p1, quat1)
+
+	p2 = Point(12, 6, 0)
+	g2 = Point(-12, -6, 0)
 	g2_1 = p2.get_point_at_distance_and_angle(g2, p2.get_distance_to(g2) / 2)
 	g2_1.set_z(0)
 	gc.spawn_sdf_model(g2, gc_const.RED_VERTICE_PATH, 'g2')
@@ -104,25 +105,33 @@ else:
 	vect2 = p2.get_angle_between_points(g2)
 	rot2 = pp.Rotation.from_euler('xyz', [0, 0, vect2], degrees=True)
 	quat2 = rot2.as_quat()
-	gc.spawn_target(name2, p2, quat2)
+	gc.spawn_urdf_model(name2, model_path, p2, quat2)
+
 	robot = gc.Robot(name)
 	robot1 = gc.Robot(name1)
 	robot2 = gc.Robot(name2)
+
 	orca = ORCAsolver(None, None, None, None, None, None)
 	orca.add_agent(robot.name, [robot.get_robot_position(), g_1, g])
 	orca.add_agent(robot1.name, [robot1.get_robot_position(),g1_1, g1])
 	orca.add_agent(robot2.name, [robot2.get_robot_position(), g2_1, g2])
+
 	paths = orca.run_orca()
+
 	robot.path = paths[robot.name]
 	robot1.path = paths[robot1.name]
 	robot2.path = paths[robot2.name]
 
+	colors = copy.copy(gc_const.PATH_COLORS)
+
 	for key in paths.keys():
 
+		color = random.choice(colors)
+		colors.remove(color)
 		path = paths[key]
-		path = delete_intermediate_points(path, 6)
+		path = delete_intermediate_points(path, 20)
 		
-		gc.visualise_path(path, random.choice(gc_const.PATH_COLORS), str(key) + '_')
+		gc.visualise_path(path, color, str(key) + '_')
 	
 	robot.start()
 	robot1.start()

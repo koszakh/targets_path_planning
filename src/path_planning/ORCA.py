@@ -60,7 +60,7 @@ class ORCAsolver:
 		self.ms = gc_const.MOVEMENT_SPEED
 		self.sim = rvo2.PyRVOSimulator(const.ORCA_TIME_STEP, const.ORCA_NEIGHBOR_DIST, \
 const.ORCA_MAX_NEIGHBORS, const.ORCA_TIME_HORIZON, const.ORCA_TIME_HORIZON_OBST, \
-const.ORCA_RADIUS, self.ms)
+const.ROBOT_RADIUS, self.ms)
 		self.heightmap = heightmap
 		self.cells = cells
 		self.x_step = x_step
@@ -72,6 +72,8 @@ const.ORCA_RADIUS, self.ms)
 		self.final_paths = {}
 		self.init_paths = {}
 		self.path_subs = {}
+		self.grid_size = rospy.get_param('real_grid_size')
+		#self.grid_size = const.DES_GRID_SIZE
 		
 # Finding the height value of an adjacent point on a height map
 # Input
@@ -81,12 +83,21 @@ const.ORCA_RADIUS, self.ms)
 # Output
 # z: calculated point z-coordinate value
 
-	def find_z(self, x, y):
+	def find_z(self, x, y, robot_name):
 	
 		p = Point(x, y, 0)
 		cell_id = self.get_current_cell_id(p)
-		cell = self.cells[cell_id]
-		z = cell.find_z_on_cell(x, y)
+
+		if self.cells.get(cell_id):
+
+			cell = self.cells[cell_id]
+			z = cell.find_z_on_cell(x, y)
+			
+		else:
+		
+			self.finish_target_planning(robot_name)
+			z = None
+			
 		return z
 		
 	def get_current_cell_id(self, point):
@@ -119,7 +130,7 @@ const.ORCA_RADIUS, self.ms)
 			am.set_init_path(path)
 			goal_p = am.goal_point
 			am.current_goal = path[0]
-			gc.spawn_sdf_model(goal_p, gc_const.BIG_GREEN_VERTICE_PATH, 'goal_' + robot_name[8:])
+			gc.spawn_sdf_model(goal_p, gc_const.BIG_GREEN_VERTICE_PATH, 'goal_' + robot_name[robot_name.find('t') + 1:])
 			self.init_paths[robot_name] = copy.copy(path)
 		
 		am.last_goal = robot_pos
@@ -143,18 +154,19 @@ const.ORCA_RADIUS, self.ms)
 	def calc_min_neighbor_dist(self, robot_name):
 	
 		agents_copy = copy.copy(self.agents)
-		current_agent = self.agents[robot_name]
-		current_agent_pos_2d = self.sim.getAgentPosition(current_agent)
-		current_agent_pos = Point(current_agent_pos_2d[0], current_agent_pos_2d[1], 0)
+		agent = self.agents[robot_name]
+		am = self.amanager[robot_name]
+		agent_pos_2d = self.sim.getAgentPosition(agent)
+		agent_pos = Point(agent_pos_2d[0], agent_pos_2d[1], 0)
 		agents_copy.pop(robot_name)
 		min_dist = float('inf')
 		closest_agent = None
 		
 		for agent_name in agents_copy.keys():
 		
-			agent_pos_2d = self.sim.getAgentPosition(self.agents[agent_name])
-			agent_pos = Point(agent_pos_2d[0], agent_pos_2d[1], 0)
-			dist = current_agent_pos.get_distance_to(agent_pos)
+			cur_agent_pos_2d = self.sim.getAgentPosition(self.agents[agent_name])
+			cur_agent_pos = Point(cur_agent_pos_2d[0], cur_agent_pos_2d[1], 0)
+			dist = cur_agent_pos.get_2d_distance(agent_pos)
 		
 			if dist < min_dist:
 		
@@ -203,7 +215,7 @@ const.ORCA_RADIUS, self.ms)
 			
 			#next_n_dist = next_n_p.get_distance_to(last_p)
 			
-			if det_angle > const.ORCA_MAX_ANGLE or next_dist > dist or (det_targets_vect < gc_const.ANGLE_ERROR / 2 and not closest_am.finished_planning) or len(self.init_paths[robot_name]) == 1:# or next_n_dist > dist:
+			if det_angle > const.ORCA_MAX_ANGLE or next_dist > dist or (det_targets_vect < gc_const.ANGLE_ERROR / 2 and not closest_am.finished_planning) or len(self.init_paths[robot_name]) == 1:
 			
 				vect = self.calc_new_vel_direction(last_p, last_vect, current_goal)
 				
@@ -253,12 +265,7 @@ const.ORCA_RADIUS, self.ms)
 		angle = fabs(am.last_vect.get_angle_between_vectors(pref_vect))
 		goal_dist = current_goal.get_distance_to(am.goal_point)
 		
-		if ((dist_2d < gc_const.DISTANCE_ERROR * 2 or (dist_2d < const.GRID_SIZE and angle > gc_const.ANGLE_ERROR * 2)) and goal_dist > gc_const.DISTANCE_ERROR) or (dist_2d < gc_const.DISTANCE_ERROR and goal_dist < gc_const.DISTANCE_ERROR):
-		
-		#if dist_2d < gc_const.DISTANCE_ERROR * 2 or (dist_2d < const.ROBOT_RADIUS + gc_const.DISTANCE_ERROR and angle > const.ORCA_MAX_ANGLE):
-		
-			#goal_dist = robot_pos.get_distance_to(am.goal_point)
-			#print(robot_name + ' dist to goal: ' + str(goal_dist))
+		if ((dist_2d < gc_const.DISTANCE_ERROR * 2 or (dist_2d < const.ORCA_NEIGHBOR_DIST and angle > gc_const.ANGLE_ERROR * 2)) and goal_dist > gc_const.DISTANCE_ERROR) or (dist_2d < gc_const.DISTANCE_ERROR and goal_dist < gc_const.DISTANCE_ERROR):
 		
 			if len(self.init_paths[robot_name]) > 1:
 			
@@ -271,17 +278,21 @@ const.ORCA_RADIUS, self.ms)
 				
 			else:
 			
-				path = copy.copy(self.final_paths[robot_name])
-				self.final_paths[robot_name] = copy.copy(path)
-				self.sim.setAgentPrefVelocity(self.agents[robot_name], (0, 0))
-				self.sim.setAgentVelocity(self.agents[robot_name], (0, 0))
-				print(' >>> ' + robot_name + ' has finished! <<<')
-				am.finished_planning = True
+				self.finish_target_planning(robot_name)
 				
 		else:
 		
 			vel_vect = self.calc_vel_vect_3d(robot_name, robot_pos)
 			self.sim.setAgentPrefVelocity(self.agents[robot_name], vel_vect)
+
+	def finish_target_planning(self, robot_name):
+	
+		agent = self.agents[robot_name]
+		am = self.amanager[robot_name]
+		self.sim.setAgentPrefVelocity(agent, (0, 0))
+		self.sim.setAgentVelocity(agent, (0, 0))
+		print(' >>> ' + robot_name + ' has finished! <<<')
+		am.finished_planning = True
 
 # Running a simulation of the movement of a group of targets
 	def run_orca(self):
@@ -295,16 +306,20 @@ const.ORCA_RADIUS, self.ms)
 			self.sim.doStep()
 			
 			for key in self.amanager.keys():
+			
+				am = self.amanager[key]
 				
-				if not self.amanager[key].finished_planning:
+				if not am.finished_planning:
 					
 					cont_flag = True
 					pos = self.sim.getAgentPosition(self.agents[key])
-					z = self.find_z(pos[0], pos[1])
-					robot_pos = Point(pos[0], pos[1], z)						
-					self.final_paths[key].append(robot_pos)
-					self.goal_achievement_check(key, robot_pos)
-					self.amanager[key].last_point = robot_pos
+					z = self.find_z(pos[0], pos[1], key)
+					if not z == None:
+
+						robot_pos = Point(pos[0], pos[1], z)						
+						self.final_paths[key].append(robot_pos)
+						self.goal_achievement_check(key, robot_pos)
+						am.last_point = robot_pos
 			
 		print('ORCA3D for ' + str(len(self.agents)) + ' agents is completed!')		
 		
