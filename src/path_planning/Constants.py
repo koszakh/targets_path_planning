@@ -1,6 +1,6 @@
 import random
 
-ROBOTS_COUNT = 10
+ROBOTS_COUNT = 7
 ROOT_PATH = "/root/.gazebo/models"
 CURRENT_MAP = 'hmap1'
 HEIGHTMAP_SDF_PATH = ROOT_PATH + '/' + CURRENT_MAP + '/model.sdf'
@@ -32,8 +32,8 @@ print('UB_NEIGHBOR_DIST: ' + str(UB_NEIGHBOR_DIST))
 COL = 767#random.randint(0, 1024)
 ROW = 808#random.randint(0, 1024)
 
-COL_RANGE = [408, 415]
-ROW_RANGE = [488, 495]
+COL_RANGE = [680, 703]
+ROW_RANGE = [605, 607]
 
 #hmap4
 

@@ -1238,7 +1238,7 @@ v1.get_distance_to(v2) #+ fabs(v1.riskiness - v2.riskiness)
 			
 			if max_x > self.max_x:
 			
-				max_x = self.max_x
+				max_x = self.max_x - self.real_grid_size * 2
 		
 		if min_y < self.min_y or max_y < self.min_y:
 		
@@ -1247,7 +1247,7 @@ v1.get_distance_to(v2) #+ fabs(v1.riskiness - v2.riskiness)
 			
 			if max_y > self.max_y:
 			
-				max_y = self.max_y
+				max_y = self.max_y - self.real_grid_size * 2
 		
 		if max_x > self.max_x or min_x > self.max_x:
 		
@@ -1256,7 +1256,7 @@ v1.get_distance_to(v2) #+ fabs(v1.riskiness - v2.riskiness)
 			
 			if min_x < self.min_x:
 			
-				min_x = self.min_x
+				min_x = self.min_x + self.real_grid_size * 2
 		
 		if max_y > self.max_y or min_y > self.max_y:
 		
@@ -1265,7 +1265,7 @@ v1.get_distance_to(v2) #+ fabs(v1.riskiness - v2.riskiness)
 			
 			if min_y < self.min_y:
 			
-				min_y = self.min_y
+				min_y = self.min_y + self.real_grid_size * 2
 				
 		return min_x, max_x, min_y, max_y
 
