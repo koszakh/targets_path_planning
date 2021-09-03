@@ -48,7 +48,7 @@ class Robot(thr.Thread):
 		self.longitude = None
 		self.total_damage = 0
 		self.path_p_count = 0
-		self.local_path_dir = const.PATHS_DIR + const.LOCAL_PATH_DIRS[3] + self.name + '.txt'
+		self.local_path_dir = const.PATHS_DIR + const.LOCAL_PATH_DIRS[4] + self.name + '.txt'
 		f = open(self.local_path_dir, 'w+')
 		f.close()
 		#self.get_wheel_distance()

@@ -74,8 +74,8 @@ else:
 
 	model_path = gc_const.ROOT_PATH + "/catkin_ws/src/targets_path_planning/urdf/hmap1/big_pioneer3at.urdf"
 	
-	p = Point(10, 0, 0.2)
-	g = Point(-10, 0, 0)
+	p = Point(10, 3, 0.2)
+	g = Point(-2, -3, 0)
 	g_1 = p.get_point_at_distance_and_angle(g, p.get_distance_to(g) / 2)
 	g_1.set_z(0)
 	gc.spawn_sdf_model(g, gc_const.BLUE_VERTICE_PATH, 'g')
@@ -86,8 +86,8 @@ else:
 	quat = rot.as_quat()
 	gc.spawn_urdf_model(name, model_path, p, quat)
 
-	p1 = Point(0, -10, 0.2)
-	g1 = Point(0, 10, 0)
+	p1 = Point(9, -3, 0.2)
+	g1 = Point(-2, 3, 0)
 	g1_1 = p1.get_point_at_distance_and_angle(g1, p1.get_distance_to(g1) / 2)
 	g1_1.set_z(0)
 	vect1 = p1.get_angle_between_points(g1)
@@ -102,28 +102,28 @@ else:
 	g2 = Point(-10, 10, 0)
 	g2_1 = p2.get_point_at_distance_and_angle(g2, p2.get_distance_to(g2) / 2)
 	g2_1.set_z(0)
-	gc.spawn_sdf_model(g2, gc_const.RED_VERTICE_PATH, 'g2')
-	gc.spawn_sdf_model(g2_1, gc_const.RED_VERTICE_PATH, 'g2_1')
+	#gc.spawn_sdf_model(g2, gc_const.RED_VERTICE_PATH, 'g2')
+	#gc.spawn_sdf_model(g2_1, gc_const.RED_VERTICE_PATH, 'g2_1')
 	name2 = 'p3at3'
 	vect2 = p2.get_angle_between_points(g2)
 	rot2 = pp.Rotation.from_euler('xyz', [0, 0, vect2], degrees=True)
 	quat2 = rot2.as_quat()
-	gc.spawn_urdf_model(name2, model_path, p2, quat2)
+	#gc.spawn_urdf_model(name2, model_path, p2, quat2)
 
 	robot = gc.Robot(name)
 	robot1 = gc.Robot(name1)
-	robot2 = gc.Robot(name2)
+	#robot2 = gc.Robot(name2)
 
 	orca = ORCAsolver(None, None, None, None, None, None)
 	orca.add_agent(robot.name, [robot.get_robot_position(), g_1, g])
 	orca.add_agent(robot1.name, [robot1.get_robot_position(),g1_1, g1])
-	orca.add_agent(robot2.name, [robot2.get_robot_position(), g2_1, g2])
+	#orca.add_agent(robot2.name, [robot2.get_robot_position(), g2_1, g2])
 
 	paths = orca.run_orca()
 
 	robot.path = paths[robot.name]
 	robot1.path = paths[robot1.name]
-	robot2.path = paths[robot2.name]
+	#robot2.path = paths[robot2.name]
 
 	colors = copy.copy(gc_const.PATH_COLORS)
 
@@ -138,7 +138,7 @@ else:
 	
 	robot.start()
 	robot1.start()
-	robot2.start()
+	#robot2.start()
 	
 print('Finish!')
 rospy.spin()

@@ -10,7 +10,6 @@ import rvo2
 from time import sleep
 from math import fabs
 import random
-import numpy
 
 class AgentManager:
 
@@ -84,21 +83,12 @@ const.ROBOT_RADIUS, self.ms)
 # Output
 # z: calculated point z-coordinate value
 
-	def find_z(self, x, y, robot_name):
+	def find_z(self, x, y):
 	
 		p = Point(x, y, 0)
 		cell_id = self.get_current_cell_id(p)
-
-		if self.cells.get(cell_id):
-
-			cell = self.cells[cell_id]
-			z = cell.find_z_on_cell(x, y)
-			
-		else:
-		
-			self.finish_target_planning(robot_name)
-			z = None
-			
+		cell = self.cells[cell_id]
+		z = cell.find_z_on_cell(x, y)
 		return z
 		
 	def get_current_cell_id(self, point):
@@ -131,7 +121,7 @@ const.ROBOT_RADIUS, self.ms)
 			am.set_init_path(path)
 			goal_p = am.goal_point
 			am.current_goal = path[0]
-			gc.spawn_sdf_model(goal_p, gc_const.BIG_GREEN_VERTICE_PATH, 'goal_' + robot_name)
+			gc.spawn_sdf_model(goal_p, gc_const.BIG_GREEN_VERTICE_PATH, 'goal_' + str(random.uniform(0, 1)))
 			self.init_paths[robot_name] = copy.copy(path)
 		
 		am.last_goal = robot_pos
@@ -205,8 +195,6 @@ const.ROBOT_RADIUS, self.ms)
 			vect_to_neighbor = robot_pos.get_dir_vector_between_points(n_last_point)
 			angle_to_neighbor = last_vect.get_angle_between_vectors(vect_to_neighbor)
 			
-			des_angle_to_neighbor = fabs(vect_to_goal.get_angle_between_vectors(vect_to_neighbor))
-			
 			det_targets_vect = fabs(vect_to_goal.get_angle_between_vectors(n_des_vect))
 			next_p = last_p.get_point_in_direction(vect_to_goal, self.ms * const.ORCA_TIME_STEP)
 			next_n_p = n_last_point.get_point_in_direction(n_des_vect, self.ms * const.ORCA_TIME_STEP)
@@ -217,7 +205,7 @@ const.ROBOT_RADIUS, self.ms)
 			
 			#next_n_dist = next_n_p.get_distance_to(last_p)
 			
-			if des_angle_to_neighbor > 65 or det_angle > const.ORCA_MAX_ANGLE or next_dist > dist or (det_targets_vect < gc_const.ANGLE_ERROR / 2 and not closest_am.finished_planning):# or len(self.init_paths[robot_name]) == 1:
+			if det_angle > const.ORCA_MAX_ANGLE or next_dist > dist or (det_targets_vect < gc_const.ANGLE_ERROR / 2 and not closest_am.finished_planning):# or next_n_dist > dist:
 			
 				vect = self.calc_new_vel_direction(last_p, last_vect, current_goal)
 				
@@ -265,9 +253,10 @@ const.ROBOT_RADIUS, self.ms)
 		dist_2d = robot_pos.get_2d_distance(current_goal)
 		pref_vect = robot_pos.get_dir_vector_between_points(current_goal)
 		angle = fabs(am.last_vect.get_angle_between_vectors(pref_vect))
+		goal_dist = current_goal.get_distance_to(am.goal_point)
 		p_count = len(self.init_paths[robot_name])
 		
-		if ((dist_2d < gc_const.DISTANCE_ERROR * 2 or angle > const.ORCA_MAX_ANGLE) and p_count > 1) or (dist_2d < gc_const.DISTANCE_ERROR and p_count == 1):
+		if ((dist_2d < gc_const.DISTANCE_ERROR * 2 or (dist_2d < const.ORCA_NEIGHBOR_DIST and angle > const.ORCA_MAX_ANGLE)) and p_count > 1) or (dist_2d < gc_const.DISTANCE_ERROR and p_count <= 1):
 		
 		#if dist_2d < gc_const.DISTANCE_ERROR * 2 or (dist_2d < const.ROBOT_RADIUS + gc_const.DISTANCE_ERROR and angle > const.ORCA_MAX_ANGLE):
 		
@@ -314,7 +303,7 @@ const.ROBOT_RADIUS, self.ms)
 					
 					cont_flag = True
 					pos = self.sim.getAgentPosition(self.agents[key])
-					z = self.find_z(pos[0], pos[1], key)
+					z = self.find_z(pos[0], pos[1])
 					robot_pos = Point(pos[0], pos[1], z)						
 					self.final_paths[key].append(robot_pos)
 					self.goal_achievement_check(key, robot_pos)
@@ -325,7 +314,7 @@ const.ROBOT_RADIUS, self.ms)
 		for key in self.final_paths.keys():
 	
 			path = self.final_paths[key]
-			#short_path = delete_intermediate_points(path, 50)
+			#short_path = delete_intermediate_points(path, 80)
 			#gc.visualise_path(short_path, random.choice(list(gc_const.PATH_COLORS)), str(key) + '_p_')
 			
 		return self.final_paths
