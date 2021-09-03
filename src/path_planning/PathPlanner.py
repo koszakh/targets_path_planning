@@ -510,13 +510,13 @@ v1.get_distance_to(v2) #+ fabs(v1.riskiness - v2.riskiness)
 			v = self.heightmap[v_id]
 
 			dist = v.get_distance_to(goal)
-			#total_path_cost = v.path_cost + dist
+			total_path_cost = v.path_cost + dist
 
-			#if total_path_cost < min_path_cost:
-			if dist < min_dist:
+			if total_path_cost < min_path_cost:
+			#if dist < min_dist:
 
-				min_dist = dist
-				#min_path_cost = total_path_cost
+				#min_dist = dist
+				min_path_cost = total_path_cost
 				closest_id = v_id
 
 		self.closed.append(closest_id)
@@ -866,7 +866,7 @@ v1.get_distance_to(v2) #+ fabs(v1.riskiness - v2.riskiness)
 	
 		v = self.heightmap[v_id]
 		
-		min_x, max_x, min_y, max_y = self.calc_area_bounds(v.x, v.y, offset + const.ROBOT_RADIUS)
+		min_x, max_x, min_y, max_y = self.calc_area_bounds(v.x, v.y, offset)
 		ids = []
 	
 		for x in arange(min_x, max_x, self.real_grid_size):
@@ -1233,39 +1233,39 @@ v1.get_distance_to(v2) #+ fabs(v1.riskiness - v2.riskiness)
 		
 		if min_x < self.min_x or max_x < self.min_x:
 		
-			min_x = self.min_x + self.real_grid_size * 2
+			min_x = self.min_x + const.UB_NEIGHBOR_DIST
 			max_x = min_x + offset * 2
 			
 			if max_x > self.max_x:
 			
-				max_x = self.max_x - self.real_grid_size * 2
+				max_x = self.max_x - const.UB_NEIGHBOR_DIST
 		
 		if min_y < self.min_y or max_y < self.min_y:
 		
-			min_y = self.min_y + self.real_grid_size * 2
+			min_y = self.min_y + const.UB_NEIGHBOR_DIST
 			max_y = min_y + offset * 2
 			
 			if max_y > self.max_y:
 			
-				max_y = self.max_y - self.real_grid_size * 2
+				max_y = self.max_y - const.UB_NEIGHBOR_DIST
 		
 		if max_x > self.max_x or min_x > self.max_x:
 		
-			max_x = self.max_x - self.real_grid_size * 2
+			max_x = self.max_x - const.UB_NEIGHBOR_DIST
 			min_x = max_x - offset * 2
 			
 			if min_x < self.min_x:
 			
-				min_x = self.min_x + self.real_grid_size * 2
+				min_x = self.min_x + const.UB_NEIGHBOR_DIST
 		
 		if max_y > self.max_y or min_y > self.max_y:
 		
-			max_y = self.max_y - self.real_grid_size * 2
+			max_y = self.max_y - const.UB_NEIGHBOR_DIST
 			min_y = max_y - offset * 2
 			
 			if min_y < self.min_y:
 			
-				min_y = self.min_y + self.real_grid_size * 2
+				min_y = self.min_y + const.UB_NEIGHBOR_DIST
 				
 		return min_x, max_x, min_y, max_y
 

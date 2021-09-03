@@ -74,9 +74,10 @@ else:
 
 	model_path = gc_const.ROOT_PATH + "/catkin_ws/src/targets_path_planning/urdf/hmap1/big_pioneer3at.urdf"
 	
-	p = Point(10, 3, 0.2)
-	g = Point(-2, -3, 0)
-	g_1 = p.get_point_at_distance_and_angle(g, p.get_distance_to(g) / 2)
+	p = Point(10, 0, 0.2)
+	g = Point(0, 0, 0)
+	g_1 = Point(-10, 0, 0)
+	#g_1 = p.get_point_at_distance_and_angle(g, p.get_distance_to(g) / 2)
 	g_1.set_z(0)
 	gc.spawn_sdf_model(g, gc_const.BLUE_VERTICE_PATH, 'g')
 	gc.spawn_sdf_model(g_1, gc_const.BLUE_VERTICE_PATH, 'g_1')
@@ -86,9 +87,10 @@ else:
 	quat = rot.as_quat()
 	gc.spawn_urdf_model(name, model_path, p, quat)
 
-	p1 = Point(9, -3, 0.2)
-	g1 = Point(-2, 3, 0)
-	g1_1 = p1.get_point_at_distance_and_angle(g1, p1.get_distance_to(g1) / 2)
+	p1 = Point(0, -0.2, 0.2)
+	g1 = Point(0, 0, 0)
+	g1_1 = Point(0, 0.2, 0)
+	#g1_1 = p1.get_point_at_distance_and_angle(g1, p1.get_distance_to(g1) / 2)
 	g1_1.set_z(0)
 	vect1 = p1.get_angle_between_points(g1)
 	gc.spawn_sdf_model(g1, gc_const.GREEN_VERTICE_PATH, 'g1')
@@ -115,8 +117,8 @@ else:
 	#robot2 = gc.Robot(name2)
 
 	orca = ORCAsolver(None, None, None, None, None, None)
-	orca.add_agent(robot.name, [robot.get_robot_position(), g_1, g])
-	orca.add_agent(robot1.name, [robot1.get_robot_position(),g1_1, g1])
+	orca.add_agent(robot.name, [robot.get_robot_position(), g, g_1])
+	orca.add_agent(robot1.name, [robot1.get_robot_position(),g1, g1_1])
 	#orca.add_agent(robot2.name, [robot2.get_robot_position(), g2_1, g2])
 
 	paths = orca.run_orca()
