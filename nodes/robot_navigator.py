@@ -31,7 +31,7 @@ def paths_callback(msg_data):
 	paths_list = msg_data.path_list
 	robots = []
 	for path_msg in paths_list:
-	
+
 		final_path = convert_to_path(path_msg.path)	
 		name = path_msg.robot_name
 		robot = gc.Robot(path_msg.robot_name)

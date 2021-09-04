@@ -40,10 +40,10 @@ def group_path_planning():
 	avg_x = numpy.mean([min_x, max_x])
 	avg_y = numpy.mean([min_y, max_y])
 	
-	new_x = avg_x#numpy.mean([min_x, avg_x])
-	new_y = numpy.mean([min_y, avg_y])
-	new_x1 = avg_x#numpy.mean([avg_x, max_x])
-	new_y1 = new_y + offset * 2.15#numpy.mean([avg_y, max_y]) + 11
+	new_x = min_x + offset#numpy.mean([min_x, avg_x])
+	new_y = min_y + offset#numpy.mean([min_y, avg_y])
+	new_x1 = new_x + offset * 3#max_x - offset#numpy.mean([avg_x, max_x])
+	new_y1 = new_y + offset * 3#max_y - offset#numpy.mean([avg_y, max_y]) + 11
 
 	p1 = PointGeom(new_x, new_y, 0)
 	p2 = PointGeom(new_x1, new_y1, 0)
@@ -54,8 +54,17 @@ def group_path_planning():
 
 	if not testing:
 
-		f = open(gc_const.MAP_DYNAMIC_COORDS_PATH, 'w+')
-		f.close()
+		dynamic = True		
+
+		if dynamic:
+
+			f = open(gc_const.MAP_DYNAMIC_COORDS_PATH, 'w+')
+			f.close()
+
+		else:
+		
+			f = open(gc_const.MAP_STATIC_COORDS_PATH, 'w+')
+			f.close()
 
 	start = (new_x, new_y)
 	goal = (new_x1, new_y1)

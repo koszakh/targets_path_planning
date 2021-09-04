@@ -244,8 +244,7 @@ class PathPlanner:
 
 				if not vertice.obstacle:
 
-					max_height_diff = self.calc_max_height_difference(key)
-					local_roughness = self.calc_local_roughness(key)
+					local_roughness, max_height_diff = self.calc_local_roughness(key)
 
 					if max_height_diff > const.HIGH_BOUND_HEIGHT_DIFF or local_roughness > const.MAX_ROUGHNESS:
 
@@ -378,19 +377,6 @@ v1.get_distance_to(v2) #+ fabs(v1.riskiness - v2.riskiness)
 		#print('min_y: ' + str(self.min_y))
 		#print('max_y: ' + str(self.max_y))
 
-
-# Calculating the weight of an obstacle
-# Input
-# vertice_id: obstacle vertex id
-
-# Output
-# obst_cost: weight of this obstacle
-	def calc_obst_cost(self, vertice_id):
-		max_height_diff = self.calc_max_height_difference(vertice_id)
-		local_roughness = self.calc_local_roughness(vertice_id)
-		obst_cost = const.ROUGHNESS_COEF * local_roughness * const.HD_COEF * max_height_diff
-		return obst_cost
-
 # Calculation of the local roughness parameter for a vertex
 # Input
 # vertice_id: vertex key
@@ -401,14 +387,23 @@ v1.get_distance_to(v2) #+ fabs(v1.riskiness - v2.riskiness)
 		vertice = self.heightmap[vertice_id]
 		ln_count = len(vertice.neighbors_list)
 		sum_angles = 0
+		mhd = vertice.max_height_diff
+		
 		for v_id in vertice.neighbors_list.values():
 
 			v = self.heightmap[v_id]
 			surf_angle = self.calc_heightmap_surf_angle(vertice_id, v_id)
+			
+			if fabs(surf_angle) > mhd:
+			
+				mhd = fabs(surf_angle)
+				
 			sum_angles += fabs(surf_angle)
+			
+		vertice.max_height_diff = mhd
 
 		roughness = fabs(sum_angles / ln_count)
-		return roughness
+		return roughness, mhd
 
 	def calc_heightmap_surf_angle(self, v1_id, v2_id):
 		v1 = self.heightmap[v1_id]
@@ -438,31 +433,6 @@ v1.get_distance_to(v2) #+ fabs(v1.riskiness - v2.riskiness)
 			surf_angle = asin(sin_a) * 180 / pi
 			
 		return surf_angle
-
-# Calculation of the largest height difference between a vertex and one of its neighboring vertices
-# Input
-# vertice_id: vertex key
-
-# Output
-# max_height_diff: the value of the maximum height difference between the vertices (in meters)
-	def calc_max_height_difference(self, vertice_id):
-		vertice = self.heightmap[vertice_id]
-		z = vertice.z
-		max_height_diff = 0
-		#print('vertice_id: ' + str(vertice_id) + '\n')
-		for v_id in vertice.neighbors_list.values():
-
-			#print(v_id)
-			v = self.heightmap[v_id]
-			z1 = v.z
-			
-			height_diff = fabs(z1 - z)
-
-			if height_diff > max_height_diff:
-
-				max_height_diff = height_diff
-
-		return max_height_diff
 
 # Clearing path cost values for each vertex and clearing open and closed arrays
 	def clear_path_costs(self):
@@ -510,16 +480,18 @@ v1.get_distance_to(v2) #+ fabs(v1.riskiness - v2.riskiness)
 			v = self.heightmap[v_id]
 
 			dist = v.get_distance_to(goal)
-			total_path_cost = v.path_cost + dist
+			#total_path_cost = v.path_cost + dist
 
-			if total_path_cost < min_path_cost:
-			#if dist < min_dist:
+			#if total_path_cost < min_path_cost:
+			if dist < min_dist:
 
-				#min_dist = dist
-				min_path_cost = total_path_cost
+				min_dist = dist
+				#min_path_cost = total_path_cost
 				closest_id = v_id
 
 		self.closed.append(closest_id)
+
+		print('Current vertice dist to goal: ' + str(min_dist))
 
 		if closest_id and self.open.__contains__(closest_id):
 
@@ -866,7 +838,30 @@ v1.get_distance_to(v2) #+ fabs(v1.riskiness - v2.riskiness)
 	
 		v = self.heightmap[v_id]
 		
-		min_x, max_x, min_y, max_y = self.calc_area_bounds(v.x, v.y, offset)
+		min_x = v.x - offset
+		
+		if min_x < self.min_x:
+		
+			min_x = self.min_x
+			
+		max_x = v.x + offset
+		
+		if max_x > self.max_x:
+		
+			max_x = self.max_x
+			
+		min_y = v.y - offset
+		
+		if min_y < self.min_y:
+		
+			min_y = self.min_y
+			
+		max_y = v.y + offset
+		
+		if max_y > self.max_y:
+		
+			max_y = self.max_y
+		
 		ids = []
 	
 		for x in arange(min_x, max_x, self.real_grid_size):
@@ -1328,6 +1323,8 @@ v1.get_distance_to(v2) #+ fabs(v1.riskiness - v2.riskiness)
 
 		print('\n>>> Detecting obstacles <<<\n')
 		self.detect_obstacles()
+		
+		self.visualise_obstacles()
 
 # Calculating path curvature
 # Input

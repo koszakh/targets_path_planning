@@ -2,7 +2,7 @@
 import path_planning.Constants as const
 
 ROOT_PATH = '/root'
-CURRENT_MAP = 'hmap1'
+CURRENT_MAP = 'hmap2'
 ROBOT_MODEL_PATH = ROOT_PATH + '/catkin_ws/src/targets_path_planning/urdf/' + CURRENT_MAP + '/big_pioneer3at.urdf'
 DIR_POINT_SUFFIX = '::dir_point'
 VERTICE_PATH = '/root/.gazebo/models/vertice/model.sdf'
@@ -30,7 +30,7 @@ UPPER_DAMAGE_LIMIT = 0.9
 
 LOCAL_PATH_DIRS = ['paths1_local/', 'paths2_local/', 'paths3_local/', 'paths4_local/', 'paths5_local/', 'paths6_local/']
 MAP_DYNAMIC_COORDS_PATH = ROOT_PATH + '/catkin_ws/src/targets_path_planning/map_logs/' + CURRENT_MAP + '/dynamic/dyn_scen_6.txt'
-MAP_STATIC_COORDS_PATH = ROOT_PATH + '/catkin_ws/src/targets_path_planning/map_logs/' + CURRENT_MAP + '/static/stat_scen_1.txt'
+MAP_STATIC_COORDS_PATH = ROOT_PATH + '/catkin_ws/src/targets_path_planning/map_logs/' + CURRENT_MAP + '/static/stat_scen_6.txt'
 GPS_PATHS_DIR_PATH = ROOT_PATH + '/catkin_ws/src/targets_path_planning/map_logs/' + CURRENT_MAP + '/paths/paths1/'
 PATHS_DIR = ROOT_PATH + '/catkin_ws/src/targets_path_planning/path_logs/' + CURRENT_MAP + '/'
 

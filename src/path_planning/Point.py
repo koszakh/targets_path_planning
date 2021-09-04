@@ -54,12 +54,18 @@ class Vector2d:
 		return str(self.x) + ", " + str(self.y)
 
 	def get_rotated_vector(self, angle):
+	
 		self_angle = self.vector_to_angle()
 		v_angle = self_angle + angle
+		
 		if v_angle > 180:
+		
 			v_angle = -(360 - v_angle)
+		
 		elif angle < -180:
+		
 			v_angle = 360 + v_angle
+		
 		vect = angle_to_vector(v_angle)
 		return vect
 
@@ -75,7 +81,9 @@ class Vector2d:
 # edge_attach: a boolean that determines if the vertex is on an edge
 # init_point: the vertex of the starting path corresponding to the given point
 class Point:
+
 	def __init__(self, x, y, z):
+	
 		self.x = x
 		self.y = y
 		self.z = z
