@@ -1324,7 +1324,7 @@ v1.get_distance_to(v2) #+ fabs(v1.riskiness - v2.riskiness)
 		print('\n>>> Detecting obstacles <<<\n')
 		self.detect_obstacles()
 		
-		self.visualise_obstacles()
+		#self.visualise_obstacles()
 
 # Calculating path curvature
 # Input
