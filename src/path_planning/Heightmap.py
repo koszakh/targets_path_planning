@@ -7,6 +7,14 @@ import gazebo_communicator.GazeboCommunicator as gc
 import gazebo_communicator.GazeboConstants as gc_const
 import cv2
 import io
+import copy
+
+def viewImage(image, name_of_window):
+
+    cv2.namedWindow(name_of_window, cv2.WINDOW_NORMAL)
+    cv2.imshow(name_of_window, image)
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
 
 # Heightmap class used for generating cell matrix
 # heightmap: heightmap vertex list
@@ -17,6 +25,8 @@ class Heightmap:
 		self.sdf_path = sdf_path
 		self.png_path = self.get_png_path()
 		self.image = cv2.imread(self.png_path, 0)
+		cv2.line(self.image, (0, 100), (1024, 100), (255, 0, 255), 1)
+		viewImage(self.image, 'Map')
 		print(self.image.shape[0], self.image.shape[1])
 		self.length_scale, self.width_scale, self.height_scale = self.get_map_size()
 		self.get_map_pos()
@@ -126,10 +136,13 @@ class Heightmap:
 		
 		self.x_grid_size = float(self.length_scale / (self.image.shape[0] - 1))
 		self.y_grid_size = float(self.width_scale / (self.image.shape[1] - 1))
-		self.steps_count = int(self.x_grid_size / const.GRID_SIZE)
+		self.steps_count = int(self.x_grid_size / const.DES_GRID_SIZE) + 1
+		real_grid_size = float(self.x_grid_size / self.steps_count)
+		rospy.set_param('real_grid_size', real_grid_size)
 		print('x_grid_size: ' + str(self.x_grid_size) + 'm')
 		print('y_grid_size: ' + str(self.y_grid_size) + 'm')
 		print('steps_count: ' + str(self.steps_count))
+		print('Real grid size: ' + str(real_grid_size) + ' m')
 
 	def get_all_heightmap_points(self):
 	
@@ -138,11 +151,13 @@ class Heightmap:
 		self.min_y = float('inf')
 		self.max_y = -float('inf')
 		self.max_z = 0
+		self.image_copy = copy.copy(self.image)
 		hmap = {(str(float(i)), str(float(j))): self.get_heightmap_point(i, j) for i in \
 		 range(self.min_col, self.max_col + 1) for j in range(self.min_row, self.max_row + 1)}
 		print('max_z: ' + str(self.max_z))
 		print('\np_min = (' + str(self.min_x) + ', ' + str(self.min_y) + ')')
 		print('p_max = (' + str(self.max_x) + ', ' + str(self.max_y) + ')\n')
+		viewImage(self.image_copy, 'Map with desired areas.')
 		return hmap
 
 	def get_heightmap_point(self, col, row):
@@ -174,19 +189,21 @@ class Heightmap:
 		
 			self.max_y = y
 
-		#if z < 700:
-		
+		if z < 400:
+
+			pass
+			#cv2.line(self.image_copy, (col, row), (col, row), (0, 255, 255), 1)
 			#gc.spawn_sdf_model(p, gc_const.GREEN_VERTICE_PATH, 'p' + str(p_id))
 				
 		if (col == self.min_col and row == self.min_row) or (col == self.max_col and row == self.min_row) or (col == self.min_col and row == self.max_row) or (col == self.max_col and row == self.max_row):
 		
 			pass
-			gc.spawn_sdf_model(p, gc_const.BIG_RED_VERTICE_PATH, 'v' + str(p_id))
+			#gc.spawn_sdf_model(p, gc_const.BIG_RED_VERTICE_PATH, 'v' + str(p_id))
 		
 		return p
 
 # Preparing a heightmap for further path planning (generation + converting to dictionary)
-	def prepare_heightmap(self, min_col, max_col, min_row, max_row):
+	def prepare_heightmap(self):
 	
 		self.calc_heightmap_bounds()
 		hmap = self.get_all_heightmap_points()

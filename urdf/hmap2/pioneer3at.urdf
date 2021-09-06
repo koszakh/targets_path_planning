@@ -35,24 +35,6 @@
       </geometry>
     </collision>
   </link>
-  <link name="hardener">
-    <inertial>
-      <mass value="4"/>
-      <origin xyz="0 0 0"/>
-      <inertia ixx="0.3338" ixy="0.0" ixz="0.0" iyy="0.4783" iyz="0.0" izz="0.3338"/>
-    </inertial>
-    <collision>
-      <origin rpy="0 0 0" xyz="0 0 0"/>
-      <geometry>
-        <box size="0.05 0.05 0.01"/>
-      </geometry>
-    </collision>
-  </link>
-  <joint name="hardener_joint" type="fixed">
-    <origin rpy="0 0 0" xyz="0.16 0 0.074"/>
-    <parent link="base_link"/>
-    <child link="hardener"/>
-  </joint>
   <gazebo reference="base_link">
     <material value="Gazebo/Red"/>
   </gazebo>

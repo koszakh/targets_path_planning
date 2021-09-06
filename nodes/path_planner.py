@@ -26,7 +26,7 @@ def group_path_planning():
 	max_row = const.ROW_RANGE[1]
 
 	hmap, l_scale, w_scale, x_step, y_step, step_count = \
-		hm.prepare_heightmap(min_col, max_col, min_row, max_row)
+		hm.prepare_heightmap()
 		
 	mh = pp.PathPlanner(hmap, l_scale, w_scale, x_step, y_step, step_count)
 
@@ -40,21 +40,41 @@ def group_path_planning():
 	avg_x = numpy.mean([min_x, max_x])
 	avg_y = numpy.mean([min_y, max_y])
 	
-	new_x = numpy.mean([min_x, avg_x]) + 13
-	new_y = numpy.mean([min_y, avg_y]) - 8
-	new_x1 = new_x + 2 + offset * 2#numpy.mean([avg_x, max_x]) - 15
-	new_y1 = new_y + 3 + offset * 2#numpy.mean([avg_y, max_y]) + 13
+	s_x = min_x + offset#numpy.mean([min_x, avg_x]) + 13
+	s_y = min_y + offset#numpy.mean([min_y, avg_y]) - 8
+	
+	g1_x = min_x + mh.real_grid_size * 3
+	g1_y = max_y - mh.real_grid_size * 3
+	
+	g2_x = max_x - mh.real_grid_size * 3
+	g2_y = max_y - mh.real_grid_size * 3
+	
+	g3_x = max_x - mh.real_grid_size * 3
+	g3_y = min_y + mh.real_grid_size * 3
+	
+	g4_x = numpy.mean([min_x, avg_x])
+	g4_y = min_y + mh.real_grid_size * 3
 
-	p1 = PointGeom(new_x, new_y, 0)
-	p2 = PointGeom(new_x1, new_y1, 0)
-	area_dist = p1.get_distance_to(p2)
-	print('Distance between areas centers: ' + str(area_dist))
+	p1 = PointGeom(s_x, s_y, 0)
+	p2 = PointGeom(g1_x, g1_y, 0)
+	p3 = PointGeom(g2_x, g2_y, 0)
+	p4 = PointGeom(g3_x, g3_y, 0)
+	p5 = PointGeom(g4_x, g4_y, 0)
+	
+	areas_dist = p1.get_distance_to(p2) + p2.get_distance_to(p3) + p3.get_distance_to(p4) + p4.get_distance_to(p5)
 
 	#f = open(gc_const.MAP_DYNAMIC_COORDS_PATH, 'w+')
 	#f.close()
 
-	start = (new_x, new_y)
-	goal = (new_x1, new_y1)
+	start = (s_x, s_y)
+	g1 = (g1_x, g1_y)
+	g2 = (g2_x, g2_y)
+	g3 = (g3_x, g3_y)
+	g4 = (g4_x, g4_y)
+	
+	goal_regions = [g1, g2, g3, g4]
+		
+	print('Distance between areas centers: ' + str(areas_dist))
 	
 	mh.gridmap_preparing()
 	cells = mh.cells
@@ -72,13 +92,31 @@ def group_path_planning():
 			print('\nPath planning for ' + name + ' has begun!')
 			gc.spawn_target(name, robot_pos, orient)
 			
-			robot_orient = gc.get_robot_orientation_vector(name)
-			path = mh.get_path(robot_pos, robot_orient, goal[0], goal[1], offset)
+			last_vect = gc.get_robot_orientation_vector(name)
+			whole_path = []
+			
+			for g in goal_regions:
+			
+				path = mh.get_path(robot_pos, last_vect, g[0], g[1], offset)
+				
+				if path:
+
+					whole_path.extend(path)
+					goal = path[len(path) - 1]
+					last_goal = path[len(path) - 2]
+					robot_pos = goal
+					last_vect = last_goal.get_dir_vector_between_points(goal)
+
+				else:
+				
+					print('PATH PLANNING FOR ' + name + ' IS IMPOSSIBLE IN ' + str(g) + ' REGION!')
+					break
+				
 			#goal_id = True
 			
-			if path:
+			if whole_path:
 
-				orca.add_agent(name, path)
+				orca.add_agent(name, whole_path)
 					
 			else:
 			

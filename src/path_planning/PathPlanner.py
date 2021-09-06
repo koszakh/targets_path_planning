@@ -11,7 +11,7 @@ import time
 import gazebo_communicator.GazeboCommunicator as gc
 import gazebo_communicator.GazeboConstants as gc_const
 from scipy.spatial.transform import Rotation
-from numpy import array, mean
+from numpy import arange, array, mean
 from matplotlib.path import Path
 
 # A class describing the heightmap cells formed by its vertices.
@@ -170,6 +170,7 @@ class PathPlanner:
 		self.x_step = x_step
 		self.y_step = y_step
 		self.step_count = step_count
+		self.real_grid_size = rospy.get_param('real_grid_size')
 		self.start_id = None
 		self.open = []
 		self.closed = []
@@ -243,8 +244,7 @@ class PathPlanner:
 
 				if not vertice.obstacle:
 
-					max_height_diff = self.calc_max_height_difference(key)
-					local_roughness = self.calc_local_roughness(key)
+					local_roughness, max_height_diff = self.calc_local_roughness(key)
 
 					if max_height_diff > const.HIGH_BOUND_HEIGHT_DIFF or local_roughness > const.MAX_ROUGHNESS:
 
@@ -372,23 +372,6 @@ v1.get_distance_to(v2) #+ fabs(v1.riskiness - v2.riskiness)
 		self.min_y = min(y1, y2)
 		self.max_x = max(x1, x2)
 		self.max_y = max(y1, y2)
-		#print('min_x: ' + str(self.min_x))
-		#print('max_x: ' + str(self.max_x))
-		#print('min_y: ' + str(self.min_y))
-		#print('max_y: ' + str(self.max_y))
-
-
-# Calculating the weight of an obstacle
-# Input
-# vertice_id: obstacle vertex id
-
-# Output
-# obst_cost: weight of this obstacle
-	def calc_obst_cost(self, vertice_id):
-		max_height_diff = self.calc_max_height_difference(vertice_id)
-		local_roughness = self.calc_local_roughness(vertice_id)
-		obst_cost = const.ROUGHNESS_COEF * local_roughness * const.HD_COEF * max_height_diff
-		return obst_cost
 
 # Calculation of the local roughness parameter for a vertex
 # Input
@@ -400,14 +383,23 @@ v1.get_distance_to(v2) #+ fabs(v1.riskiness - v2.riskiness)
 		vertice = self.heightmap[vertice_id]
 		ln_count = len(vertice.neighbors_list)
 		sum_angles = 0
+		mhd = vertice.max_height_diff
+		
 		for v_id in vertice.neighbors_list.values():
 
 			v = self.heightmap[v_id]
 			surf_angle = self.calc_heightmap_surf_angle(vertice_id, v_id)
+			
+			if fabs(surf_angle) > mhd:
+			
+				mhd = fabs(surf_angle)
+				
 			sum_angles += fabs(surf_angle)
+			
+		vertice.max_height_diff = mhd
 
 		roughness = fabs(sum_angles / ln_count)
-		return roughness
+		return roughness, mhd
 
 	def calc_heightmap_surf_angle(self, v1_id, v2_id):
 		v1 = self.heightmap[v1_id]
@@ -437,31 +429,6 @@ v1.get_distance_to(v2) #+ fabs(v1.riskiness - v2.riskiness)
 			surf_angle = asin(sin_a) * 180 / pi
 			
 		return surf_angle
-
-# Calculation of the largest height difference between a vertex and one of its neighboring vertices
-# Input
-# vertice_id: vertex key
-
-# Output
-# max_height_diff: the value of the maximum height difference between the vertices (in meters)
-	def calc_max_height_difference(self, vertice_id):
-		vertice = self.heightmap[vertice_id]
-		z = vertice.z
-		max_height_diff = 0
-		#print('vertice_id: ' + str(vertice_id) + '\n')
-		for v_id in vertice.neighbors_list.values():
-
-			#print(v_id)
-			v = self.heightmap[v_id]
-			z1 = v.z
-			
-			height_diff = fabs(z1 - z)
-
-			if height_diff > max_height_diff:
-
-				max_height_diff = height_diff
-
-		return max_height_diff
 
 # Clearing path cost values for each vertex and clearing open and closed arrays
 	def clear_path_costs(self):
@@ -519,6 +486,8 @@ v1.get_distance_to(v2) #+ fabs(v1.riskiness - v2.riskiness)
 				closest_id = v_id
 
 		self.closed.append(closest_id)
+
+		#print('Current vertice dist to goal: ' + str(min_dist))
 
 		if closest_id and self.open.__contains__(closest_id):
 
@@ -586,8 +555,7 @@ v1.get_distance_to(v2) #+ fabs(v1.riskiness - v2.riskiness)
 				p3_4.label = p3_4_name
 				
 				if i % 2 == 0:
-					
-					#print('>>> i % 2 == 0 <<<')
+
 					mid_z = find_z_on_plane(avg_x, avg_y, p3, p3_4, p1)
 					p_mid = Point(avg_x, avg_y, mid_z)
 					p_mid.label = 'p_mid'
@@ -604,8 +572,6 @@ v1.get_distance_to(v2) #+ fabs(v1.riskiness - v2.riskiness)
 					self.cells[p1.id] = cell
 				
 				else:
-				
-					#print('>>> i % 2 == 1 <<<')
 					
 					mid_z = find_z_on_plane(avg_x, avg_y, p1, p1_2, p3)
 					p_mid = Point(avg_x, avg_y, mid_z)
@@ -637,7 +603,6 @@ v1.get_distance_to(v2) #+ fabs(v1.riskiness - v2.riskiness)
 			for k in range(self.step_count):
 				
 				new_p_id = (str(i) + '.' + str(l), str(j) + '.' + str(k))
-				#print('new_p_id: ' + str(new_p_id))
 				
 				if self.heightmap.get(new_p_id) or (l == 0 and k == 0):
 				
@@ -645,8 +610,8 @@ v1.get_distance_to(v2) #+ fabs(v1.riskiness - v2.riskiness)
 				
 				else:
 				
-					new_x = init_x + k * const.GRID_SIZE
-					new_y = init_y - l * const.GRID_SIZE
+					new_x = init_x + k * self.real_grid_size
+					new_y = init_y - l * self.real_grid_size
 					new_z = cell.find_z_on_cell(new_x, new_y)
 					
 					new_p = Point(new_x, new_y, new_z)
@@ -671,8 +636,7 @@ v1.get_distance_to(v2) #+ fabs(v1.riskiness - v2.riskiness)
 			for k in range(self.step_count):
 			
 				new_p_id = (str(float(i)), str(j) + '.' + str(k))
-				#print('new_p_id: ' + str(new_p_id))
-				new_x = v1.x + k * const.GRID_SIZE
+				new_x = v1.x + k * self.real_grid_size
 				new_y = v1.y
 				z = v1.find_z_coord(v2, new_x, new_y)
 				new_p = Point(new_x, new_y, z)
@@ -694,9 +658,8 @@ v1.get_distance_to(v2) #+ fabs(v1.riskiness - v2.riskiness)
 			for l in range(self.step_count):
 			
 				new_p_id = (str(i) + '.' + str(l), str(float(j)))
-				#print('new_p_id: ' + str(new_p_id))
 				new_x = v1.x
-				new_y = v1.y - l * const.GRID_SIZE
+				new_y = v1.y - l * self.real_grid_size
 				z = v1.find_z_coord(v2, new_x, new_y)
 				new_p = Point(new_x, new_y, z)
 				new_p.set_id(new_p_id)
@@ -709,7 +672,7 @@ v1.get_distance_to(v2) #+ fabs(v1.riskiness - v2.riskiness)
 	def make_heightmap_neighbors(self):
 		
 		for key in self.heightmap.keys():
-			#print(key)
+
 			v = self.heightmap[key]
 			v.set_neighbors_list(self.step_count)
 
@@ -740,11 +703,15 @@ v1.get_distance_to(v2) #+ fabs(v1.riskiness - v2.riskiness)
 # goal_id: target vertex key
 	def get_path(self, pos, orient, x, y, offset):
 		start_id, start_pos = self.get_start_vertice_id(pos, orient)
+		
 		if start_id:
+			
 			path = self.find_path_in_area(start_id, x, y, offset, orient)
+			
 		else:
-			#print('Path planning from the point ' + str(pos) + ' is impossible.')
+
 			return None
+			
 		return path
 
 		
@@ -767,7 +734,7 @@ v1.get_distance_to(v2) #+ fabs(v1.riskiness - v2.riskiness)
 		iter_count = 0
 		current_v.dir_vect = start_orient
 
-		while not current_v.id == goal_id and iter_count < len(self.heightmap) / 3:
+		while not current_v.id == goal_id and iter_count < len(self.heightmap) / 1.5:
 
 			iter_count += 1
 
@@ -805,11 +772,11 @@ v1.get_distance_to(v2) #+ fabs(v1.riskiness - v2.riskiness)
 			current_v = self.heightmap[current_v_id]
 			current_neighbors = copy.copy(current_v.neighbors_list.values())
 			
-		print('Iter count: ' + str(iter_count))
+		#print('Iter count: ' + str(iter_count))
+		#print('Len Open: ' + str(len(self.open)))
 
 		if not goal_v.get_predecessor() == None:
 
-			print('Path was found!')
 			current_v = goal_v
 			path = []
 			path_ids = []
@@ -826,10 +793,10 @@ v1.get_distance_to(v2) #+ fabs(v1.riskiness - v2.riskiness)
 			path_length = get_path_length(path)
 			path_cost = goal_v.path_cost
 			path_curvature = self.get_path_curvature_ids(path_ids)
-			print('Path cost: ' + str(path_cost))
-			print('Path length: ' + str(path_length))
-			print('Path curvature: ' + str(path_curvature))
-			print('Number of vertices = ' + str(len(path)))
+			#print('Path cost: ' + str(path_cost))
+			#print('Path length: ' + str(path_length))
+			#print('Path curvature: ' + str(path_curvature))
+			#print('Number of vertices = ' + str(len(path)))
 			self.clear_path_costs()
 			return path, path_ids, path_cost
 
@@ -860,26 +827,66 @@ v1.get_distance_to(v2) #+ fabs(v1.riskiness - v2.riskiness)
 
 		return new_p, quat
 
+	def get_close_points_list(self, v_id, offset):
+	
+		v = self.heightmap[v_id]
+		
+		min_x = v.x - offset
+		
+		if min_x < self.min_x:
+		
+			min_x = self.min_x
+			
+		max_x = v.x + offset
+		
+		if max_x > self.max_x:
+		
+			max_x = self.max_x
+			
+		min_y = v.y - offset
+		
+		if min_y < self.min_y:
+		
+			min_y = self.min_y
+			
+		max_y = v.y + offset
+		
+		if max_y > self.max_y:
+		
+			max_y = self.max_y
+		
+		ids = []
+	
+		for x in arange(min_x, max_x, self.real_grid_size):
+		
+			for y in arange(min_y, max_y, self.real_grid_size):
+		
+				n_id = self.get_nearest_vertice_id(x, y)
+				n = self.heightmap[n_id]
+				dist = n.get_distance_to(v)
+				
+				if dist < offset and not ids.__contains__(n_id):
+				
+					ids.append(n_id)
+			
+		return ids
+			
+			
+
 	def add_closed_start_id(self, v_id):
 	
 		v = self.heightmap[v_id]
 		self.closed_start_points.append(v_id)
+		ids = self.get_close_points_list(v_id, const.UB_NEIGHBOR_DIST + self.real_grid_size)
 		
-		for n_id in v.neighbors_list.values():
+		for n_id in ids:
 		
-			n = self.heightmap[n_id]
-			n_neighbors = n.neighbors_list.values()
-			
-			for n_n_id in n_neighbors:
-			
-				n_n = self.heightmap[n_n_id]
-				dist = n_n.get_distance_to(v)
+			if not self.closed_start_points.__contains__(n_id):
 
-				if not self.closed_start_points.__contains__(n_n_id) and dist < const.UB_NEIGHBOR_DIST:
-
-					self.closed_start_points.append(n_n_id)
+				self.closed_start_points.append(n_id)
 
 	def get_spawn_height(self, p_id):
+
 		p = self.heightmap[p_id]
 		neighbors = p.neighbors_list.values()
 		max_z = p.z
@@ -973,19 +980,18 @@ v1.get_distance_to(v2) #+ fabs(v1.riskiness - v2.riskiness)
 		return min_col, max_col, min_row, max_row
 
 
-	def get_nearest_vertice_id(self, point):
-		x = point.x
-		y = point.y
+	def get_nearest_vertice_id(self, x, y):
+	
 		j = int((x + (self.l_scale / 2)) // self.x_step)
 		i = int(((self.w_scale / 2) - y) // self.y_step)
 		j_mod = (x + (self.l_scale / 2)) % self.x_step
 		i_mod = ((self.w_scale / 2) - y) % self.y_step
-		l = i_mod // const.GRID_SIZE
-		k = j_mod // const.GRID_SIZE
-		det_l = i_mod % const.GRID_SIZE
-		det_k = j_mod % const.GRID_SIZE
+		l = i_mod // self.real_grid_size
+		k = j_mod // self.real_grid_size
+		det_l = i_mod % self.real_grid_size
+		det_k = j_mod % self.real_grid_size
 		
-		if det_l > (const.GRID_SIZE / 2):
+		if det_l > (self.real_grid_size / 2):
 		
 			l += 1
 			
@@ -994,7 +1000,7 @@ v1.get_distance_to(v2) #+ fabs(v1.riskiness - v2.riskiness)
 				l = 0
 				i += 1
 				
-		if det_k > (const.GRID_SIZE / 2):
+		if det_k > (self.real_grid_size / 2):
 		
 			k += 1
 			
@@ -1051,7 +1057,7 @@ v1.get_distance_to(v2) #+ fabs(v1.riskiness - v2.riskiness)
 # selected_key: closest vertex key
 	def get_start_vertice_id(self, point, robot_vect):
 
-		p_id = self.get_nearest_vertice_id(point)
+		p_id = self.get_nearest_vertice_id(point.x, point.y)
 		
 		if p_id:
 		
@@ -1144,7 +1150,7 @@ v1.get_distance_to(v2) #+ fabs(v1.riskiness - v2.riskiness)
 				start_time = time.time()
 				path, path_ids, path_cost = self.find_path(start_id, goal_id, start_orient)
 				finish_time = time.time()
-				print('Path planning time: ' + str(finish_time - start_time))
+				#print('Path planning time: ' + str(finish_time - start_time))
 				current_goals.append(goal_id)
 				
 				if path:
@@ -1154,7 +1160,7 @@ v1.get_distance_to(v2) #+ fabs(v1.riskiness - v2.riskiness)
 
 			if iter_count > const.MAX_ITER_COUNT:
 			
-				print(str(start_id) + ' vertice is isolated.')
+				#print(str(start_id) + ' vertice is isolated.')
 				return None
 				break
 
@@ -1170,8 +1176,7 @@ v1.get_distance_to(v2) #+ fabs(v1.riskiness - v2.riskiness)
 			iter_count += 1
 			new_x = random.uniform(min_x, max_x)
 			new_y = random.uniform(min_y, max_y)
-			p = Point(new_x, new_y, 0)
-			start_id = self.get_nearest_vertice_id(p)
+			start_id = self.get_nearest_vertice_id(new_x, new_y)
 			
 			if self.heightmap.get(start_id):
 			
@@ -1196,8 +1201,7 @@ v1.get_distance_to(v2) #+ fabs(v1.riskiness - v2.riskiness)
 				
 			new_x = random.uniform(min_x, max_x)
 			new_y = random.uniform(min_y, max_y)
-			p = Point(new_x, new_y, 0)
-			goal_id = self.get_nearest_vertice_id(p)
+			goal_id = self.get_nearest_vertice_id(new_x, new_y)
 			
 			if self.heightmap.get(goal_id):
 			
@@ -1218,60 +1222,53 @@ v1.get_distance_to(v2) #+ fabs(v1.riskiness - v2.riskiness)
 		
 		if min_x < self.min_x or max_x < self.min_x:
 		
-			min_x = self.min_x + const.GRID_SIZE * 2
+			min_x = self.min_x + const.UB_NEIGHBOR_DIST
 			max_x = min_x + offset * 2
 			
 			if max_x > self.max_x:
 			
-				max_x = self.max_x
+				max_x = self.max_x - const.UB_NEIGHBOR_DIST
 		
 		if min_y < self.min_y or max_y < self.min_y:
 		
-			min_y = self.min_y + const.GRID_SIZE * 2
+			min_y = self.min_y + const.UB_NEIGHBOR_DIST
 			max_y = min_y + offset * 2
 			
 			if max_y > self.max_y:
 			
-				max_y = self.max_y
+				max_y = self.max_y - const.UB_NEIGHBOR_DIST
 		
 		if max_x > self.max_x or min_x > self.max_x:
 		
-			max_x = self.max_x - const.GRID_SIZE * 2
+			max_x = self.max_x - const.UB_NEIGHBOR_DIST
 			min_x = max_x - offset * 2
 			
 			if min_x < self.min_x:
 			
-				min_x = self.min_x
+				min_x = self.min_x + const.UB_NEIGHBOR_DIST
 		
 		if max_y > self.max_y or min_y > self.max_y:
 		
-			max_y = self.max_y - const.GRID_SIZE * 2
+			max_y = self.max_y - const.UB_NEIGHBOR_DIST
 			min_y = max_y - offset * 2
 			
 			if min_y < self.min_y:
 			
-				min_y = self.min_y
+				min_y = self.min_y + const.UB_NEIGHBOR_DIST
 				
 		return min_x, max_x, min_y, max_y
 
 	def add_closed_goal_id(self, v_id):
 	
 		v = self.heightmap[v_id]
-		self.closed_goals.append(v_id)
+		self.closed_start_points.append(v_id)
+		ids = self.get_close_points_list(v_id, const.UB_NEIGHBOR_DIST + self.real_grid_size)
 		
-		for n_id in v.neighbors_list.values():
+		for n_id in ids:
 		
-			n = self.heightmap[n_id]
-			n_neighbors = n.neighbors_list.values()
-			
-			for n_n_id in n_neighbors:
+			if not self.closed_goals.__contains__(n_id):
 
-				n_n = self.heightmap[n_n_id]
-				dist = n_n.get_distance_to(v)
-				
-				if not self.closed_goals.__contains__(n_n_id) and dist < const.UB_NEIGHBOR_DIST:
-
-					self.closed_goals.append(n_n_id)
+				self.closed_goals.append(n_id)
 
 	def get_start_pos(self, x, y, offset):
 
@@ -1285,6 +1282,8 @@ v1.get_distance_to(v2) #+ fabs(v1.riskiness - v2.riskiness)
 		else:
 		
 			start_v = self.heightmap[start_id]
+			#print('Start V local roughness: ' + str(start_v.local_roughness))
+			#print('Start V max height difference: ' + str(start_v.max_height_diff))
 			self.closed_start_points.append(start_id)
 			roll, pitch = self.get_start_orientation(start_id)
 			rot = Rotation.from_euler('xyz', [roll, pitch, 0], degrees=True)
@@ -1320,6 +1319,8 @@ v1.get_distance_to(v2) #+ fabs(v1.riskiness - v2.riskiness)
 
 		print('\n>>> Detecting obstacles <<<\n')
 		self.detect_obstacles()
+		
+		#self.visualise_obstacles()
 
 # Calculating path curvature
 # Input
@@ -1398,4 +1399,3 @@ def get_path_curvature(path):
 def find_z_on_plane(x, y, p1, p2, p3):
 	z = p1.get_height_on_3d_plane(p2.x, p2.y, p2.z, p3.x, p3.y, p3.z, x, y)
 	return z
-

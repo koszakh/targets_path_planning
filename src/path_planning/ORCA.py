@@ -60,7 +60,7 @@ class ORCAsolver:
 		self.ms = gc_const.MOVEMENT_SPEED
 		self.sim = rvo2.PyRVOSimulator(const.ORCA_TIME_STEP, const.ORCA_NEIGHBOR_DIST, \
 const.ORCA_MAX_NEIGHBORS, const.ORCA_TIME_HORIZON, const.ORCA_TIME_HORIZON_OBST, \
-const.ORCA_RADIUS, self.ms)
+const.ROBOT_RADIUS, self.ms)
 		self.heightmap = heightmap
 		self.cells = cells
 		self.x_step = x_step
@@ -72,6 +72,8 @@ const.ORCA_RADIUS, self.ms)
 		self.final_paths = {}
 		self.init_paths = {}
 		self.path_subs = {}
+		self.grid_size = rospy.get_param('real_grid_size')
+		#self.grid_size = const.DES_GRID_SIZE
 		
 # Finding the height value of an adjacent point on a height map
 # Input
@@ -81,12 +83,22 @@ const.ORCA_RADIUS, self.ms)
 # Output
 # z: calculated point z-coordinate value
 
-	def find_z(self, x, y):
+	def find_z(self, x, y, robot_name):
 	
 		p = Point(x, y, 0)
 		cell_id = self.get_current_cell_id(p)
-		cell = self.cells[cell_id]
-		z = cell.find_z_on_cell(x, y)
+		
+		if self.cells.get(cell_id):
+		
+			cell = self.cells[cell_id]
+			z = cell.find_z_on_cell(x, y)
+		
+		else:
+		
+			print(robot_name + ' out of bounds!')
+			self.finish_target_planning(robot_name)
+			z = None
+
 		return z
 		
 	def get_current_cell_id(self, point):
@@ -119,7 +131,7 @@ const.ORCA_RADIUS, self.ms)
 			am.set_init_path(path)
 			goal_p = am.goal_point
 			am.current_goal = path[0]
-			gc.spawn_sdf_model(goal_p, gc_const.BIG_GREEN_VERTICE_PATH, 'goal_' + robot_name[8:])
+			gc.spawn_sdf_model(goal_p, gc_const.BIG_GREEN_VERTICE_PATH, 'goal_' + robot_name)
 			self.init_paths[robot_name] = copy.copy(path)
 		
 		am.last_goal = robot_pos
@@ -186,7 +198,7 @@ const.ORCA_RADIUS, self.ms)
 		   
 		   	closest_am = self.amanager[closest_neighbor_id]
 		   	vect_to_goal = last_p.get_dir_vector_between_points(current_goal)
-		   	det_angle = fabs(last_vect.get_angle_between_vectors(vect_to_goal))
+		   	det_angle = last_vect.get_angle_between_vectors(vect_to_goal)
 			n_last_point = closest_am.last_point
 			n_cur_goal = closest_am.current_goal
 			n_des_vect = n_last_point.get_dir_vector_between_points(n_cur_goal)#closest_am.last_vect
@@ -199,14 +211,11 @@ const.ORCA_RADIUS, self.ms)
 			
 			dist = last_p.get_distance_to(n_last_point)
 			next_dist = next_p.get_distance_to(next_n_p)
-			#next_dist = next_p.get_distance_to(n_last_point)
 			
-			#next_n_dist = next_n_p.get_distance_to(last_p)
-			
-			if det_angle > const.ORCA_MAX_ANGLE or next_dist > dist or (det_targets_vect < gc_const.ANGLE_ERROR / 2 and not closest_am.finished_planning) or len(self.init_paths[robot_name]) == 1:# or next_n_dist > dist:
+			if fabs(det_angle) > const.ORCA_MAX_ANGLE or next_dist > dist or (det_targets_vect < gc_const.ANGLE_ERROR * 2 and not closest_am.finished_planning):# or next_n_dist > dist:
 			
 				vect = self.calc_new_vel_direction(last_p, last_vect, current_goal)
-				
+			
 			elif angle_to_neighbor < 0 and closest_am.finished_planning:
 			
 				vect = last_vect.get_rotated_vector(gc_const.ANGLE_ERROR)
@@ -247,13 +256,15 @@ const.ORCA_RADIUS, self.ms)
 	def goal_achievement_check(self, robot_name, robot_pos):
 	
 		am = self.amanager[robot_name]
+		agent = self.agents[robot_name]
 		current_goal = am.current_goal
 		dist_2d = robot_pos.get_2d_distance(current_goal)
 		pref_vect = robot_pos.get_dir_vector_between_points(current_goal)
 		angle = fabs(am.last_vect.get_angle_between_vectors(pref_vect))
 		goal_dist = current_goal.get_distance_to(am.goal_point)
+		p_count = len(self.init_paths[robot_name])
 		
-		if ((dist_2d < gc_const.DISTANCE_ERROR * 2 or (dist_2d < const.GRID_SIZE and angle > gc_const.ANGLE_ERROR * 2)) and goal_dist > gc_const.DISTANCE_ERROR) or (dist_2d < gc_const.DISTANCE_ERROR and goal_dist < gc_const.DISTANCE_ERROR):
+		if ((dist_2d < gc_const.DISTANCE_ERROR * 2 or (dist_2d < const.ORCA_NEIGHBOR_DIST and angle > const.ORCA_MAX_ANGLE)) and p_count > 1) or (dist_2d < gc_const.DISTANCE_ERROR and p_count <= 1):
 		
 		#if dist_2d < gc_const.DISTANCE_ERROR * 2 or (dist_2d < const.ROBOT_RADIUS + gc_const.DISTANCE_ERROR and angle > const.ORCA_MAX_ANGLE):
 		
@@ -267,21 +278,26 @@ const.ORCA_RADIUS, self.ms)
 				new_goal = self.init_paths[robot_name][0]
 				am.current_goal = new_goal
 				vel_vect = self.calc_vel_vect_3d(robot_name, robot_pos)
-				self.sim.setAgentPrefVelocity(self.agents[robot_name], vel_vect)
+				self.sim.setAgentPrefVelocity(agent, vel_vect)
 				
 			else:
-			
-				path = copy.copy(self.final_paths[robot_name])
-				self.final_paths[robot_name] = copy.copy(path)
-				self.sim.setAgentPrefVelocity(self.agents[robot_name], (0, 0))
-				self.sim.setAgentVelocity(self.agents[robot_name], (0, 0))
-				print(' >>> ' + robot_name + ' has finished! <<<')
-				am.finished_planning = True
+
+				self.finish_target_planning(robot_name)
 				
 		else:
 		
 			vel_vect = self.calc_vel_vect_3d(robot_name, robot_pos)
-			self.sim.setAgentPrefVelocity(self.agents[robot_name], vel_vect)
+			self.sim.setAgentPrefVelocity(agent, vel_vect)
+			
+	def finish_target_planning(self, robot_name):
+	
+		am = self.amanager[robot_name]
+		agent = self.agents[robot_name]
+	
+		self.sim.setAgentPrefVelocity(agent, (0, 0))
+		self.sim.setAgentVelocity(agent, (0, 0))
+		print(' >>> ' + robot_name + ' has finished! <<<')
+		am.finished_planning = True
 
 # Running a simulation of the movement of a group of targets
 	def run_orca(self):
@@ -300,18 +316,21 @@ const.ORCA_RADIUS, self.ms)
 					
 					cont_flag = True
 					pos = self.sim.getAgentPosition(self.agents[key])
-					z = self.find_z(pos[0], pos[1])
-					robot_pos = Point(pos[0], pos[1], z)						
-					self.final_paths[key].append(robot_pos)
-					self.goal_achievement_check(key, robot_pos)
-					self.amanager[key].last_point = robot_pos
+					z = self.find_z(pos[0], pos[1], key)
+					
+					if not z == None:
+
+						robot_pos = Point(pos[0], pos[1], z)						
+						self.final_paths[key].append(robot_pos)
+						self.goal_achievement_check(key, robot_pos)
+						self.amanager[key].last_point = robot_pos
 			
 		print('ORCA3D for ' + str(len(self.agents)) + ' agents is completed!')		
 		
-		for key in self.final_paths.keys():
+		#for key in self.final_paths.keys():
 	
-			path = self.final_paths[key]
-			#short_path = delete_intermediate_points(path, 80)
+			#path = self.final_paths[key]
+			#short_path = delete_intermediate_points(path, 70)
 			#gc.visualise_path(short_path, random.choice(list(gc_const.PATH_COLORS)), str(key) + '_p_')
 			
 		return self.final_paths
