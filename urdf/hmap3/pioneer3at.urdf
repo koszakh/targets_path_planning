@@ -312,7 +312,7 @@
     <kp>1000000.0</kp>
     <!-- kp and kd for rubber -->
     <kd>100.0</kd>
-    <mu1>1.0</mu1>
+    <mu1>2.0</mu1>
     <!-- was 10 -->
     <mu2>1.0</mu2>
     <!-- how to get these into <surface><friction><ode>... ?
@@ -329,7 +329,7 @@
     <kp>1000000.0</kp>
     <!-- kp and kd for rubber -->
     <kd>100.0</kd>
-    <mu1>1.0</mu1>
+    <mu1>2.0</mu1>
     <!-- was 10 -->
     <mu2>1.0</mu2>
     <!-- how to get these into <surface><friction><ode>... ?
@@ -524,7 +524,7 @@
     <kp>1000000.0</kp>
     <!-- kp and kd for rubber -->
     <kd>100.0</kd>
-    <mu1>1.0</mu1>
+    <mu1>2.0</mu1>
     <!-- was 10 -->
     <mu2>1.0</mu2>
     <!-- how to get these into <surface><friction><ode>... ?
@@ -541,7 +541,7 @@
     <kp>1000000.0</kp>
     <!-- kp and kd for rubber -->
     <kd>100.0</kd>
-    <mu1>1.0</mu1>
+    <mu1>2.0</mu1>
     <!-- was 10 -->
     <mu2>1.0</mu2>
     <!-- how to get these into <surface><friction><ode>... ?

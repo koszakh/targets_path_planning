@@ -30,6 +30,6 @@ UPPER_DAMAGE_LIMIT = 0.9
 
 LOCAL_PATH_DIRS = ['paths1_local/', 'paths2_local/', 'paths3_local/', 'paths4_local/', 'paths5_local/', 'paths6_local/']
 MAP_DYNAMIC_COORDS_PATH = ROOT_PATH + '/catkin_ws/src/targets_path_planning/map_logs/' + CURRENT_MAP + '/dynamic/dyn_scen_6.txt'
-MAP_STATIC_COORDS_PATH = ROOT_PATH + '/catkin_ws/src/targets_path_planning/map_logs/' + CURRENT_MAP + '/static/stat_scen_6.txt'
+MAP_STATIC_COORDS_PATH = ROOT_PATH + '/catkin_ws/src/targets_path_planning/map_logs/' + CURRENT_MAP + '/static/stat_scen_1.txt'
 GPS_PATHS_DIR_PATH = ROOT_PATH + '/catkin_ws/src/targets_path_planning/map_logs/' + CURRENT_MAP + '/paths/paths1/'
 PATHS_DIR = ROOT_PATH + '/catkin_ws/src/targets_path_planning/path_logs/' + CURRENT_MAP + '/'

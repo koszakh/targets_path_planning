@@ -40,20 +40,20 @@ def group_path_planning():
 	avg_x = numpy.mean([min_x, max_x])
 	avg_y = numpy.mean([min_y, max_y])
 	
-	s_x = min_x + offset#numpy.mean([min_x, avg_x]) + 13
-	s_y = min_y + offset#numpy.mean([min_y, avg_y]) - 8
+	s_x = max_x - offset * 2
+	s_y = min_y + offset * 1.5#avg_y - 30
 	
-	g1_x = min_x + mh.real_grid_size * 3
-	g1_y = max_y - mh.real_grid_size * 3
+	g1_x = max_x - offset * 1.5
+	g1_y = max_y - offset * 1.5#max_y - offset * 3
 	
-	g2_x = max_x - mh.real_grid_size * 3
-	g2_y = max_y - mh.real_grid_size * 3
+	g2_x = min_x + offset * 1.5
+	g2_y = max_y - offset * 1.5
 	
-	g3_x = max_x - mh.real_grid_size * 3
-	g3_y = min_y + mh.real_grid_size * 3
+	g3_x = min_x + offset * 1.5
+	g3_y = min_y + offset * 1.5
 	
-	g4_x = numpy.mean([min_x, avg_x])
-	g4_y = min_y + mh.real_grid_size * 3
+	g4_x = avg_x + offset * 1.5
+	g4_y = min_y + offset * 1.5
 
 	p1 = PointGeom(s_x, s_y, 0)
 	p2 = PointGeom(g1_x, g1_y, 0)
@@ -61,11 +61,6 @@ def group_path_planning():
 	p4 = PointGeom(g3_x, g3_y, 0)
 	p5 = PointGeom(g4_x, g4_y, 0)
 	
-	areas_dist = p1.get_distance_to(p2) + p2.get_distance_to(p3) + p3.get_distance_to(p4) + p4.get_distance_to(p5)
-
-	#f = open(gc_const.MAP_DYNAMIC_COORDS_PATH, 'w+')
-	#f.close()
-
 	start = (s_x, s_y)
 	g1 = (g1_x, g1_y)
 	g2 = (g2_x, g2_y)
@@ -73,6 +68,23 @@ def group_path_planning():
 	g4 = (g4_x, g4_y)
 	
 	goal_regions = [g1, g2, g3, g4]
+	
+	areas_dist = p1.get_distance_to(p2) + p2.get_distance_to(p3) + p3.get_distance_to(p4) + p4.get_distance_to(p5)
+
+	testing = True
+	dynamic = True
+	
+	if testing:
+
+		if dynamic:
+	
+			f = open(gc_const.MAP_DYNAMIC_COORDS_PATH, 'w+')
+			f.close()
+			
+		else:
+		
+			f = open(gc_const.MAP_STATIC_COORDS_PATH, 'w+')
+			f.close()
 		
 	print('Distance between areas centers: ' + str(areas_dist))
 	
@@ -116,6 +128,7 @@ def group_path_planning():
 			
 			if whole_path:
 
+				print('Path for ' + name + ' was found!')
 				orca.add_agent(name, whole_path)
 					
 			else:

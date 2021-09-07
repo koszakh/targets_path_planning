@@ -58,7 +58,7 @@ def make_pose_msg(state, orient):
 
 rospy.init_node('ros_node')
 sleep(1)
-flag = True
+flag = False
 
 if flag:
 
@@ -78,7 +78,7 @@ else:
 	g_1.set_z(0)
 	gc.spawn_sdf_model(g, gc_const.BLUE_VERTICE_PATH, 'g')
 	gc.spawn_sdf_model(g_1, gc_const.BLUE_VERTICE_PATH, 'g_1')
-	name = 'p3at1'
+	name = 'sim_p3at1'
 	vect = p.get_angle_between_points(g)
 	rot = pp.Rotation.from_euler('xyz', [0, 0, vect], degrees=True)
 	quat = rot.as_quat()
@@ -90,7 +90,7 @@ else:
 	vect1 = p1.get_angle_between_points(g1)
 	gc.spawn_sdf_model(g1, gc_const.GREEN_VERTICE_PATH, 'g1')
 	gc.spawn_sdf_model(g1_1, gc_const.GREEN_VERTICE_PATH, 'g1_1')
-	name1 = 'p3at2'
+	name1 = 'sim_p3at2'
 	rot1 = pp.Rotation.from_euler('xyz', [0, 0, vect1], degrees=True)
 	quat1 = rot1.as_quat()
 	gc.spawn_target(name1, p1, quat1)
@@ -100,7 +100,7 @@ else:
 	g2_1.set_z(0)
 	gc.spawn_sdf_model(g2, gc_const.RED_VERTICE_PATH, 'g2')
 	gc.spawn_sdf_model(g2_1, gc_const.RED_VERTICE_PATH, 'g2_1')
-	name2 = 'p3at3'
+	name2 = 'sim_p3at3'
 	vect2 = p2.get_angle_between_points(g2)
 	rot2 = pp.Rotation.from_euler('xyz', [0, 0, vect2], degrees=True)
 	quat2 = rot2.as_quat()
@@ -120,7 +120,7 @@ else:
 	for key in paths.keys():
 
 		path = paths[key]
-		path = delete_intermediate_points(path, 6)
+		path = delete_intermediate_points(path, 20)
 		
 		gc.visualise_path(path, random.choice(gc_const.PATH_COLORS), str(key) + '_')
 	

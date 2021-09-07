@@ -38,7 +38,18 @@ def paths_callback(msg_data):
 		robot.waypoints_publisher(final_path)
 		robots.append(robot)	
 	
-	sleep(1)
+	cont_flag = False
+	
+	while not cont_flag:
+	
+		cont_flag = True
+	
+		for robot in robots:
+	
+			if not robot.path:
+			
+				cont_flag = False
+
 	print('Robot movement has begun!')
 	for robot in robots:
 	

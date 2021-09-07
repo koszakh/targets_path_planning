@@ -25,12 +25,12 @@ class Heightmap:
 		self.sdf_path = sdf_path
 		self.png_path = self.get_png_path()
 		self.image = cv2.imread(self.png_path, 0)
-		cv2.line(self.image, (0, 100), (1024, 100), (255, 0, 255), 1)
-		viewImage(self.image, 'Map')
+		#self.image_copy = cv2.imread(self.png_path, cv2.IMREAD_COLOR)
+		#viewImage(self.image, 'Map')
 		print(self.image.shape[0], self.image.shape[1])
 		self.length_scale, self.width_scale, self.height_scale = self.get_map_size()
 		self.get_map_pos()
-		
+		#self.p_count = 0
 
 	def get_map_size(self):
 		
@@ -151,13 +151,14 @@ class Heightmap:
 		self.min_y = float('inf')
 		self.max_y = -float('inf')
 		self.max_z = 0
-		self.image_copy = copy.copy(self.image)
 		hmap = {(str(float(i)), str(float(j))): self.get_heightmap_point(i, j) for i in \
 		 range(self.min_col, self.max_col + 1) for j in range(self.min_row, self.max_row + 1)}
 		print('max_z: ' + str(self.max_z))
 		print('\np_min = (' + str(self.min_x) + ', ' + str(self.min_y) + ')')
 		print('p_max = (' + str(self.max_x) + ', ' + str(self.max_y) + ')\n')
-		viewImage(self.image_copy, 'Map with desired areas.')
+		#print('p_count: ' + str(self.p_count))
+		#cv2.imwrite("/root/catkin_ws/src/targets_path_planning/test_pic.png", self.image_copy)
+		#viewImage(self.image_copy, 'Des map')
 		return hmap
 
 	def get_heightmap_point(self, col, row):
@@ -192,13 +193,14 @@ class Heightmap:
 		if z < 400:
 
 			pass
-			#cv2.line(self.image_copy, (col, row), (col, row), (0, 255, 255), 1)
+			#self.p_count += 1
 			#gc.spawn_sdf_model(p, gc_const.GREEN_VERTICE_PATH, 'p' + str(p_id))
+			#cv2.line(self.image_copy, (col, row), (col, row), (255, 0, 0), 1)
 				
 		if (col == self.min_col and row == self.min_row) or (col == self.max_col and row == self.min_row) or (col == self.min_col and row == self.max_row) or (col == self.max_col and row == self.max_row):
 		
 			pass
-			#gc.spawn_sdf_model(p, gc_const.BIG_RED_VERTICE_PATH, 'v' + str(p_id))
+			gc.spawn_sdf_model(p, gc_const.BIG_RED_VERTICE_PATH, 'v' + str(p_id))
 		
 		return p
 

@@ -48,9 +48,8 @@ class Robot(thr.Thread):
 		self.longitude = None
 		self.total_damage = 0
 		self.path_p_count = 0
-		self.local_path_dir = const.PATHS_DIR + const.LOCAL_PATH_DIRS[0] + self.name + '.txt'
-		f = open(self.local_path_dir, 'w+')
-		f.close()
+		self.local_path_dir = const.PATHS_DIR + const.LOCAL_PATH_DIRS[5] + self.name + '.txt'
+		self.real_error_sum = 0
 		#self.get_wheel_distance()
 	
 	def get_wheel_distance(self):
@@ -103,17 +102,6 @@ class Robot(thr.Thread):
 		else:
 		
 			print(self.name + ' current def prob value: ' + str(self.total_damage))
-		
-	def set_movespeed(self, ms):
-	
-		self.ms = ms
-		
-		self.kp = 0.125 * self.ms
-		self.ki = 0.045 * self.ms
-		self.kd = 0.0125 * self.ms
-
-		self.i_min = -(5 + self.ms * 15)
-		self.i_max = 5 + self.ms * 15
 
 
 # Getting the position of the robot in 3D space in the Gazebo environment
@@ -157,7 +145,6 @@ class Robot(thr.Thread):
 	
 		old_error = 0
 		error_sum = 0
-		real_error_sum = 0
 		robot_pos = self.get_robot_position()
 		
 		while robot_pos.get_distance_to(goal) > const.DISTANCE_ERROR:
@@ -165,7 +152,7 @@ class Robot(thr.Thread):
 			robot_pos = self.get_robot_position()
 			error = self.get_angle_difference(goal)
 			error_sum += error
-			real_error_sum += fabs(error)
+			#self.real_error_sum += fabs(error)
 			
 			if error_sum < self.i_min:
 			
@@ -174,7 +161,7 @@ class Robot(thr.Thread):
 			elif error_sum > self.i_max:
 			
 				error_sum = self.i_max
-			
+
 			up = self.kp * error
 			ui = self.ki * error_sum
 			ud = self.kd * (error - old_error)
@@ -246,32 +233,68 @@ class Robot(thr.Thread):
 	def set_path(self, msg_data):
 	
 		path = convert_to_path(msg_data.path)
+		print(self.name + ' path curvature: ' + str(get_path_curvature(path)))
 		self.path = path
+		self.write_path()
+
+	def follow_the_route(self):
+	
+		for state in self.path:
+		
+			self.move_with_PID(state)
+	
+		self.stop()
+
+	def get_end_gps_coords(self):
+	
+		pos = self.path[len(self.path) - 1]
+		name = self.name + '_1'
+		spawn_target(name, pos, (0, 0, 0, 0))
+		sub_robot = Robot(name)
+		delay = rospy.Duration(1, 0)
+		rospy.sleep(delay)
+		sr_coords = sub_robot.get_gps_coords()
+		return sr_coords
+		
+	def set_movespeed(self, ms):
+	
+		self.ms = ms
+		
+		self.kp = 0.0625 * self.ms
+		self.ki = 0.00625 * self.ms
+		self.kd = 0.02 * self.ms
+
+		self.i_min = -(10 + self.ms * 15)
+		self.i_max = 10 + self.ms * 15
+
+	def write_path(self):
+	
+		if self.path:
+
+			for state in self.path:
+
+				self.add_path_local_coords(state)
 
 # The movement of the robot along a given final route
 # Start of thread
 	def run(self):
-	
+
+		f = open(self.local_path_dir, 'w+')
+		f.close()
 		start_coords = self.get_gps_coords()
 		#self.write_start_coords(start_coords)
 		#self.add_path_gps('w+')
+		
 		if len(self.path) > 0:
-		
-			for state in self.path:
+
+			#self.follow_the_route()
 			
-				pass
-				self.add_path_local_coords(state)
+			#print('Real error sum: ' + str(self.real_error_sum))
 				
-			print(self.name + ' path curvature: ' + str(get_path_curvature(self.path)))
-		
-			for state in self.path:
-		
-				self.move_with_PID(state)
-		
-			self.stop()
+			end_coords = self.get_end_gps_coords()#self.get_gps_coords()
 			
-			end_coords = self.get_gps_coords()
 			self.write_coords(start_coords, end_coords)
+			
 			
 			print(self.name + ' end GPS coordinates: ' + self.get_gps_coords())
 			print('The robot ' + str(self.name) + ' has finished!')
