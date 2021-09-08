@@ -19,51 +19,71 @@ import io
 from scipy.spatial.transform import Rotation
 from time import sleep
 
-def group_movement():
+def group_movement(paths, targets_count):
 
-	root_path = gc_const.PATHS_DIR
-	height_offset = 997
-
-	robot_names = ['sim_p3at' + str(i) for i in range(1, const.ROBOTS_COUNT + 1)]
-	rootDir = pathlib.Path(root_path)
-	local_dirs = [rootItem.stem + '/' for rootItem in rootDir.iterdir()]
-	print(len(local_dirs))
-	print(const.ROBOTS_COUNT / len(local_dirs))
-	start_index = 10
-	robots = {}
+	robots = []
+	target_names = ['sim_p3at' + str(i) for i in range(1, targets_count + 1)]
 	
-	for folder in local_dirs:
+	if len(target_names) < len(paths):
 	
-		current_dir = root_path + folder
-		currentDirectory = pathlib.Path(current_dir)
-		dir_items = [currentFile.stem for currentFile in currentDirectory.iterdir()]
-		
-		
-		for i in range(const.ROBOTS_COUNT / len(local_dirs)):
-		
-			name = random.choice(robot_names)
-			robot_names.remove(name)
-			rnd_path = random.choice(dir_items)
-			dir_items.remove(rnd_path)
-			file_path = current_dir + rnd_path + ".txt"
-			print(file_path)
-			path = txt_path_parser(file_path, height_offset)[start_index:]
-			start_p = path[0]
-			next_p = path[1]
-			angle = start_p.get_dir_vector_between_points(next_p).vector_to_angle()
-			rot = Rotation.from_euler('xyz', [0, 0, angle], degrees=True)
-			quat = rot.as_quat()
-			gc.spawn_target(name, start_p, quat)
-			robot = gc.Robot(name)
-			robot.waypoints_publisher(path)
-			robots[name] = robot
+		for name in target_names:
 
-	sleep(1)
+			path = random.choice(paths)
+			paths.remove(path)
+			short_path = delete_intermediate_points(path, 30)
+			gc.visualise_path(short_path, random.choice(gc_const.PATH_COLORS), 'v_')
+			robot = spawn_target(name, path)
+			robots.append(robot)
 			
-	for key in robots.keys():
+		cont_flag = False
+		
+		while not cont_flag:
 	
-		robot = robots[key]
-		robot.start()
+			cont_flag = True
+		
+			for robot in robots:
+		
+				if not robot.path:
+				
+					cont_flag = False
+			
+		for robot in robots:
+
+			robot.start()
+	else:
+	
+		print('The number of targets is more than the number of paths!')
+
+def get_paths_from_dir(folder_path):
+
+	current_dir = folder_path
+	currentDirectory = pathlib.Path(current_dir)
+	dir_items = [currentFile.stem for currentFile in currentDirectory.iterdir()]
+	paths = []
+	
+	for item in dir_items:
+
+		dir_items.remove(item)
+		file_path = current_dir + item + ".txt"
+		path = txt_path_parser(file_path)
+		
+		if len(path) > 0:
+
+			paths.append(path)
+		
+	return paths
+			
+def spawn_target(name, path):
+
+	start_p = path[0]
+	next_p = path[1]
+	angle = start_p.get_dir_vector_between_points(next_p).vector_to_angle()
+	rot = Rotation.from_euler('xyz', [0, 0, angle], degrees=True)
+	quat = rot.as_quat()
+	gc.spawn_target(name, start_p, quat)
+	robot = gc.Robot(name)
+	robot.waypoints_publisher(path)
+	return robot
 		
 
 def prepare_paths_msg(names, paths):
@@ -109,7 +129,7 @@ def convert_to_point(msg_data):
 	point = PointGeom(x, y, z)
 	return point
 	
-def txt_path_parser(file_path, height_offset):
+def txt_path_parser(file_path):
 
 	#print('File path: ' + str(file_path))
 	#print('Type: ' + str(type(file_path)))
@@ -118,17 +138,48 @@ def txt_path_parser(file_path, height_offset):
 	with io.open(file_path, encoding='utf-8') as file:
 			
 		for line in file:
-		
+
 			point = line[line.find('(') + 1:line.rfind(')')]
 			coords = point.split(', ')
 			x = float(coords[0])
 			y = float(coords[1])
-			z = float(coords[2]) + height_offset
+			z = float(coords[2])
 			p = PointGeom(x, y, z)
 			path.append(p)
 			
 	return path
 
+def delete_intermediate_points(path, cut_step):
+
+	path_copy = copy.copy(path)
+
+	for i in range(len(path) - 1):
+
+		if (i % cut_step > 0):
+
+			if path[i] in path_copy:
+
+				path_copy.remove(path[i])
+
+	return path_copy
+
 rospy.init_node('path_planner')
-group_movement()
+
+targets_count = 1
+
+root_path = gc_const.PATHS_DIR
+rootDir = pathlib.Path(root_path)
+local_dirs = ['paths6_local/']#[rootItem.stem + '/' for rootItem in rootDir.iterdir()]
+all_paths = []
+
+for folder in local_dirs:
+
+	folder_path = root_path + folder
+	paths = get_paths_from_dir(folder_path)
+	all_paths.extend(paths)
+	
+print('All paths count: ' + str(len(all_paths)))
+print('Targets count: ' + str(targets_count))
+
+group_movement(all_paths, targets_count)
 rospy.spin()

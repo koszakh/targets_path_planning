@@ -17,6 +17,7 @@ import threading as thr
 from scipy.spatial.transform import Rotation
 from sensor_msgs.msg import NavSatFix
 import copy
+import random
 
 # The class of the control object of the ground target in the Gazebo simulation environment
 
@@ -48,7 +49,7 @@ class Robot(thr.Thread):
 		self.longitude = None
 		self.total_damage = 0
 		self.path_p_count = 0
-		self.local_path_dir = const.PATHS_DIR + const.LOCAL_PATH_DIRS[5] + self.name + '.txt'
+		self.local_path_dir = const.PATHS_DIR + '/paths4_local/' + self.name + '.txt'
 		self.real_error_sum = 0
 		#self.get_wheel_distance()
 	
@@ -244,6 +245,7 @@ class Robot(thr.Thread):
 			self.move_with_PID(state)
 	
 		self.stop()
+		print('The robot ' + str(self.name) + ' has finished!')
 
 	def get_end_gps_coords(self):
 	
@@ -269,6 +271,9 @@ class Robot(thr.Thread):
 
 	def write_path(self):
 	
+		f = open(self.local_path_dir, 'w+')
+		f.close()
+	
 		if self.path:
 
 			for state in self.path:
@@ -279,25 +284,16 @@ class Robot(thr.Thread):
 # Start of thread
 	def run(self):
 
-		f = open(self.local_path_dir, 'w+')
-		f.close()
 		start_coords = self.get_gps_coords()
 		#self.write_start_coords(start_coords)
 		#self.add_path_gps('w+')
 		
 		if len(self.path) > 0:
-
-			#self.follow_the_route()
-			
-			#print('Real error sum: ' + str(self.real_error_sum))
 				
-			end_coords = self.get_end_gps_coords()#self.get_gps_coords()
-			
+			end_coords = self.get_end_gps_coords()
 			self.write_coords(start_coords, end_coords)
 			
-			
-			print(self.name + ' end GPS coordinates: ' + self.get_gps_coords())
-			print('The robot ' + str(self.name) + ' has finished!')
+			self.follow_the_route()
 			
 		else:
 		
@@ -325,6 +321,7 @@ class Robot(thr.Thread):
 		f = open(const.MAP_DYNAMIC_COORDS_PATH, 'a+')
 		f.write(self.name[8:] + ': (' + str(start_coords) + ', ' + str(end_coords) + ')\n\n')
 		f.close()
+		#print(self.name + ' end GPS coordinates: ' + self.get_gps_coords())
 		
 	def add_path_gps(self, open_mode):
 	
@@ -453,6 +450,7 @@ def get_model_properties(model_name):
 # Output
 # pose: position of an object in 3D space
 def get_model_position(model_name):
+
 	object_state = get_model_state(model_name)
 	
 	if object_state:
@@ -473,6 +471,7 @@ def get_model_position(model_name):
 # Output
 # pose: position of an object in 3D space
 def get_model_orientation(model_name):
+
 	object_state = get_model_state(model_name)
 	
 	if object_state:
@@ -495,6 +494,7 @@ def get_model_orientation(model_name):
 #  bool success
 #  string status_message 
 def get_link_position(link_name):
+
 	rospy.wait_for_service('/gazebo/get_link_state')
 	
 	try:
@@ -531,6 +531,7 @@ def get_robot_orientation_vector(robot_name):
 #  bool success
 #  string status_message
 def get_model_state(model_name):
+
 	rospy.wait_for_service('/gazebo/get_model_state')
 	
 	try:
@@ -565,6 +566,7 @@ def delete_model(model_name):
 # model_directory: path to the folder where the model is stored
 # state: the position at which the object will be spawned
 def spawn_sdf_model(state, model_directory, model_name):
+
 	rospy.wait_for_service('/gazebo/spawn_sdf_model')
 	
 	try:
@@ -820,6 +822,7 @@ def get_path_length(path):
 	return path_len
 	
 def delete_doubled_vertices(path):
+
 	new_path = copy.copy(path)
 	i = 1
 	goal = path[len(path) - 1]
@@ -850,6 +853,7 @@ def delete_doubled_vertices(path):
 	return new_path
 
 def path_loops_deleting(path):
+
 	new_path = copy.copy(path)
 	i = len(path) - 1
 	goal = path[0]

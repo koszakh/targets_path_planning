@@ -408,6 +408,7 @@ def path_loops_deleting(path):
 		return path
 	
 def get_path_curvature(path):
+
 	max_curvature = 0
 
 	for i in range(0, len(path) - 2):

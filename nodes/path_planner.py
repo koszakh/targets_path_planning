@@ -40,7 +40,7 @@ def group_path_planning():
 	avg_x = numpy.mean([min_x, max_x])
 	avg_y = numpy.mean([min_y, max_y])
 	
-	s_x = max_x - offset * 2
+	s_x = max_x - offset * 3
 	s_y = min_y + offset * 1.5#avg_y - 30
 	
 	g1_x = max_x - offset * 1.5
