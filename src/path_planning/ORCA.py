@@ -220,7 +220,7 @@ const.ROBOT_RADIUS, self.ms)
 			goal_dist = last_p.get_distance_to(current_goal)
 			n_goal_dist = n_last_point.get_distance_to(n_cur_goal)
 			
-			if fabs(det_angle) > const.ORCA_MAX_ANGLE or next_dist > dist or (s_next_dist > dist and closest_am.finished_planning) or (p_count == 1 and dist - goal_dist > const.ROBOT_RADIUS) or (det_targets_vect < gc_const.ANGLE_ERROR * 2 and not closest_am.finished_planning):
+			if fabs(det_angle) > const.ORCA_MAX_ANGLE or next_dist > dist or (s_next_dist > dist and closest_am.finished_planning) or (p_count == 1 and dist - goal_dist > const.ROBOT_RADIUS) or (det_targets_vect < 3 and not closest_am.finished_planning) or det_targets_vect > 90:
 			
 				vect = self.calc_new_vel_direction(last_p, last_vect, current_goal)
 			
@@ -324,7 +324,7 @@ const.ROBOT_RADIUS, self.ms)
 					if not z == None:
 
 						robot_pos = Point(pos[0], pos[1], z)	
-						#gc.spawn_sdf_model(robot_pos, gc_const.GREEN_VERTICE_PATH, 'v_' + str(key) + '_' + str(len(self.final_paths[key])))			
+						#gc.spawn_sdf_model(robot_pos, gc_const.GREEN_VERTICE_PATH, 'v_' + str(key) + '_' + str(len(self.final_paths[key])))		
 						self.final_paths[key].append(robot_pos)
 						self.goal_achievement_check(key, robot_pos)
 						self.amanager[key].last_point = robot_pos

@@ -236,7 +236,7 @@ class Robot(thr.Thread):
 		path = convert_to_path(msg_data.path)
 		print(self.name + ' path curvature: ' + str(get_path_curvature(path)))
 		self.path = path
-		self.write_path()
+		#self.write_path()
 
 	def follow_the_route(self):
 	

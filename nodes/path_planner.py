@@ -71,7 +71,7 @@ def group_path_planning():
 	
 	areas_dist = p1.get_distance_to(p2) + p2.get_distance_to(p3) + p3.get_distance_to(p4) + p4.get_distance_to(p5)
 
-	testing = True
+	testing = False
 	dynamic = True
 	
 	if testing:
