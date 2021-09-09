@@ -202,8 +202,11 @@ const.ROBOT_RADIUS, self.ms)
 			n_last_point = closest_am.last_point
 			n_cur_goal = closest_am.current_goal
 			n_des_vect = n_last_point.get_dir_vector_between_points(n_cur_goal)#closest_am.last_vect
-			vect_to_neighbor = robot_pos.get_dir_vector_between_points(n_last_point)
+			vect_to_neighbor = last_p.get_dir_vector_between_points(n_last_point)
 			angle_to_neighbor = last_vect.get_angle_between_vectors(vect_to_neighbor)
+			p_count = len(self.init_paths[robot_name])
+			
+			des_and_n_vect_angle = vect_to_goal.get_angle_between_vectors(vect_to_neighbor)
 			
 			det_targets_vect = fabs(vect_to_goal.get_angle_between_vectors(n_des_vect))
 			next_p = last_p.get_point_in_direction(vect_to_goal, self.ms * const.ORCA_TIME_STEP)
@@ -212,11 +215,16 @@ const.ROBOT_RADIUS, self.ms)
 			dist = last_p.get_distance_to(n_last_point)
 			next_dist = next_p.get_distance_to(next_n_p)
 			
-			if fabs(det_angle) > const.ORCA_MAX_ANGLE or next_dist > dist or (det_targets_vect < gc_const.ANGLE_ERROR * 2 and not closest_am.finished_planning):# or next_n_dist > dist:
+			s_next_dist = next_p.get_distance_to(n_last_point)
+
+			goal_dist = last_p.get_distance_to(current_goal)
+			n_goal_dist = n_last_point.get_distance_to(n_cur_goal)
+			
+			if fabs(det_angle) > const.ORCA_MAX_ANGLE or next_dist > dist or (s_next_dist > dist and closest_am.finished_planning) or (p_count == 1 and dist - goal_dist > const.ROBOT_RADIUS) or (det_targets_vect < gc_const.ANGLE_ERROR * 2 and not closest_am.finished_planning):
 			
 				vect = self.calc_new_vel_direction(last_p, last_vect, current_goal)
 			
-			elif angle_to_neighbor < 0 and closest_am.finished_planning:
+			elif des_and_n_vect_angle < 0 and closest_am.finished_planning:
 			
 				vect = last_vect.get_rotated_vector(gc_const.ANGLE_ERROR)
 				
@@ -264,12 +272,7 @@ const.ROBOT_RADIUS, self.ms)
 		goal_dist = current_goal.get_distance_to(am.goal_point)
 		p_count = len(self.init_paths[robot_name])
 		
-		if ((dist_2d < gc_const.DISTANCE_ERROR * 2 or (dist_2d < const.ORCA_NEIGHBOR_DIST and angle > const.ORCA_MAX_ANGLE)) and p_count > 1) or (dist_2d < gc_const.DISTANCE_ERROR and p_count <= 1):
-		
-		#if dist_2d < gc_const.DISTANCE_ERROR * 2 or (dist_2d < const.ROBOT_RADIUS + gc_const.DISTANCE_ERROR and angle > const.ORCA_MAX_ANGLE):
-		
-			#goal_dist = robot_pos.get_distance_to(am.goal_point)
-			#print(robot_name + ' dist to goal: ' + str(goal_dist))
+		if ((dist_2d < gc_const.DISTANCE_ERROR * 2 or (dist_2d < const.ORCA_NEIGHBOR_DIST and angle > 90)) and p_count > 1) or (dist_2d < gc_const.DISTANCE_ERROR and p_count <= 1):
 		
 			if len(self.init_paths[robot_name]) > 1:
 			
@@ -320,7 +323,8 @@ const.ROBOT_RADIUS, self.ms)
 					
 					if not z == None:
 
-						robot_pos = Point(pos[0], pos[1], z)						
+						robot_pos = Point(pos[0], pos[1], z)	
+						#gc.spawn_sdf_model(robot_pos, gc_const.GREEN_VERTICE_PATH, 'v_' + str(key) + '_' + str(len(self.final_paths[key])))			
 						self.final_paths[key].append(robot_pos)
 						self.goal_achievement_check(key, robot_pos)
 						self.amanager[key].last_point = robot_pos

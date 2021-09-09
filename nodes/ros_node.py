@@ -30,31 +30,31 @@ def delete_intermediate_points(path, cut_step):
 				path_copy.remove(path[i])
 
 	return path_copy
-     
+	 
 def convert_to_path(msg):
-    path = []
-    for point_msg in msg.path:
-        p = convert_to_point(point_msg)
-        path.append(p)
-    return path
+	path = []
+	for point_msg in msg.path:
+		p = convert_to_point(point_msg)
+		path.append(p)
+	return path
 
 def convert_to_point(msg):
-    x = msg.x
-    y = msg.y
-    z = msg.z
-    point = Point(x, y, z)
-    return point
+	x = msg.x
+	y = msg.y
+	z = msg.z
+	point = Point(x, y, z)
+	return point
 
 def make_pose_msg(state, orient):
-    msg = Pose()
-    msg.position.x = state.x
-    msg.position.y = state.y
-    msg.position.z = state.z
-    if orient:
-        msg.orientation.x = orient[0]
-        msg.orientation.y = orient[1]
-        msg.orientation.z = orient[2]
-    return msg        
+	msg = Pose()
+	msg.position.x = state.x
+	msg.position.y = state.y
+	msg.position.z = state.z
+	if orient:
+		msg.orientation.x = orient[0]
+		msg.orientation.y = orient[1]
+		msg.orientation.z = orient[2]
+	return msg
 
 rospy.init_node('ros_node')
 sleep(1)
@@ -72,8 +72,8 @@ if flag:
 	
 else:
 
-	p = Point(-5, -2, 0.2)
-	g = Point(5, -2, 0)
+	p = Point(4, -3, 0.2)
+	g = Point(-4, -3, 0)
 	g_1 = p.get_point_at_distance_and_angle(g, p.get_distance_to(g) / 2)
 	g_1.set_z(0)
 	gc.spawn_sdf_model(g, gc_const.BLUE_VERTICE_PATH, 'g')
@@ -83,8 +83,8 @@ else:
 	rot = pp.Rotation.from_euler('xyz', [0, 0, vect], degrees=True)
 	quat = rot.as_quat()
 	gc.spawn_target(name, p, quat)
-	p1 = Point(-4, 0, 0.2)
-	g1 = Point(4, 0, 0)
+	p1 = Point(1, 5, 0.2)
+	g1 = Point(-1, -5, 0)
 	g1_1 = p1.get_point_at_distance_and_angle(g1, p1.get_distance_to(g1) / 2)
 	g1_1.set_z(0)
 	vect1 = p1.get_angle_between_points(g1)
@@ -94,8 +94,8 @@ else:
 	rot1 = pp.Rotation.from_euler('xyz', [0, 0, vect1], degrees=True)
 	quat1 = rot1.as_quat()
 	gc.spawn_target(name1, p1, quat1)
-	p2 = Point(-3, 2, 0)
-	g2 = Point(3, -2, 0)
+	p2 = Point(4, 1, 0.2)
+	g2 = Point(-4, 1, 0)
 	g2_1 = p2.get_point_at_distance_and_angle(g2, p2.get_distance_to(g2) / 2)
 	g2_1.set_z(0)
 	gc.spawn_sdf_model(g2, gc_const.RED_VERTICE_PATH, 'g2')
@@ -116,13 +116,15 @@ else:
 	robot.path = paths[robot.name]
 	robot1.path = paths[robot1.name]
 	robot2.path = paths[robot2.name]
+	colors = copy.copy(gc_const.PATH_COLORS)
 
 	for key in paths.keys():
 
 		path = paths[key]
-		path = delete_intermediate_points(path, 20)
-		
-		gc.visualise_path(path, random.choice(gc_const.PATH_COLORS), str(key) + '_')
+		path = delete_intermediate_points(path, 12)
+		color = random.choice(colors)
+		colors.remove(color)
+		gc.visualise_path(path, color, str(key) + '_')
 	
 	robot.start()
 	robot1.start()

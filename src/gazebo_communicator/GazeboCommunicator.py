@@ -290,8 +290,8 @@ class Robot(thr.Thread):
 		
 		if len(self.path) > 0:
 				
-			end_coords = self.get_end_gps_coords()
-			self.write_coords(start_coords, end_coords)
+			#end_coords = self.get_end_gps_coords()
+			#self.write_coords(start_coords, end_coords)
 			
 			self.follow_the_route()
 			
