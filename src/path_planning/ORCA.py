@@ -74,7 +74,7 @@ const.ROBOT_RADIUS, self.ms)
 		self.path_subs = {}
 		self.grid_size = rospy.get_param('real_grid_size')
 		#self.grid_size = const.DES_GRID_SIZE
-		
+
 # Finding the height value of an adjacent point on a height map
 # Input
 # x: point x-coordinate value 
@@ -131,7 +131,7 @@ const.ROBOT_RADIUS, self.ms)
 			am.set_init_path(path)
 			goal_p = am.goal_point
 			am.current_goal = path[0]
-			gc.spawn_sdf_model(goal_p, gc_const.BIG_GREEN_VERTICE_PATH, 'goal_' + robot_name)
+			gc.spawn_sdf_model(goal_p, gc_const.BIG_GREEN_VERTICE_PATH, 'goal_' + robot_name[8:])
 			self.init_paths[robot_name] = copy.copy(path)
 		
 		am.last_goal = robot_pos
