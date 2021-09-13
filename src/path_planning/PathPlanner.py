@@ -105,7 +105,6 @@ class Plane:
 		self.a, self.b, self.c, self.d = points[0].get_plane_equation_coeffs(points[1].x, points[1].y, points[1].z, points[2].x, points[2].y, points[2].z)
 		z = self.find_z(avg_x, avg_y)
 		self.center = Point(avg_x, avg_y, z)
-		#gc.spawn_sdf_model(self.center, gc_const.GREEN_VERTICE_PATH, 'center_' + self.id)
 		
 	def find_z(self, x, y):
 		z = float((-self.a * x - self.b * y - self.d) / self.c)
@@ -877,8 +876,7 @@ v1.get_distance_to(v2) #+ fabs(v1.riskiness - v2.riskiness)
 	
 		v = self.heightmap[v_id]
 		self.closed_start_points.append(v_id)
-		close_radius = const.UB_NEIGHBOR_DIST + self.real_grid_size
-		ids = self.get_close_points_list(v_id, close_radius)
+		ids = self.get_close_points_list(v_id, const.CLOSE_RADIUS)
 		
 		for n_id in ids:
 		
@@ -926,8 +924,6 @@ v1.get_distance_to(v2) #+ fabs(v1.riskiness - v2.riskiness)
 			p2_id = points[i + 2]
 			p1 = self.heightmap[p1_id]
 			p2 = self.heightmap[p2_id]
-			#gc.spawn_sdf_model(new_p1, gc_const.GREEN_VERTICE_PATH, 'p' + str(new_p1))
-			#gc.spawn_sdf_model(new_p2, gc_const.GREEN_VERTICE_PATH, 'p' + str(new_p2))
 			angle = self.calc_surf_angle(p1, p2)
 			sum_angle += angle
 			line_count += 1
@@ -1263,8 +1259,7 @@ v1.get_distance_to(v2) #+ fabs(v1.riskiness - v2.riskiness)
 	
 		v = self.heightmap[v_id]
 		self.closed_start_points.append(v_id)
-		close_radius = const.UB_NEIGHBOR_DIST + self.real_grid_size
-		ids = self.get_close_points_list(v_id, close_radius)
+		ids = self.get_close_points_list(v_id, const.CLOSE_RADIUS)
 		
 		for n_id in ids:
 		
@@ -1284,13 +1279,10 @@ v1.get_distance_to(v2) #+ fabs(v1.riskiness - v2.riskiness)
 		else:
 		
 			start_v = self.heightmap[start_id]
-			#print('Start V local roughness: ' + str(start_v.local_roughness))
-			#print('Start V max height difference: ' + str(start_v.max_height_diff))
 			self.closed_start_points.append(start_id)
 			roll, pitch = self.get_start_orientation(start_id)
 			rot = Rotation.from_euler('xyz', [roll, pitch, 0], degrees=True)
 			quat = rot.as_quat()
-			#gc.spawn_sdf_model(start_v, gc_const.GREEN_VERTICE_PATH, 'v' + str(start_id))
 			
 			return start_v, quat
 

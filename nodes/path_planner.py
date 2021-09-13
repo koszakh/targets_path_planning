@@ -40,11 +40,11 @@ def group_path_planning():
 	avg_x = numpy.mean([min_x, max_x])
 	avg_y = numpy.mean([min_y, max_y])
 	
-	s_x = max_x - offset * 3
-	s_y = min_y + offset * 2#avg_y - 30
+	s_x = max_x - offset * 4.5
+	s_y = min_y + offset * 1.5#avg_y - 30
 	
-	g1_x = max_x - offset * 2
-	g1_y = max_y - offset * 2#max_y - offset * 3
+	g1_x = max_x - offset * 1.5
+	g1_y = avg_y#max_y - offset * 1.5
 	
 	g2_x = min_x + offset * 1.5
 	g2_y = max_y - offset * 1.5
@@ -67,7 +67,7 @@ def group_path_planning():
 	g3 = (g3_x, g3_y)
 	g4 = (g4_x, g4_y)
 	
-	goal_regions = [g1, g2, g3, g4]
+	goal_regions = [g1]#, g2, g3, g4]
 	
 	areas_dist = p1.get_distance_to(p2) + p2.get_distance_to(p3) + p3.get_distance_to(p4) + p4.get_distance_to(p5)
 

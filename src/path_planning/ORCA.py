@@ -17,6 +17,7 @@ class AgentManager:
 	
 		self.name = agent_name
 		self.last_point = None
+		self.last_vect = None
 		self.last_goal = None
 		self.current_goal = None
 		self.goal_point = None
@@ -131,6 +132,7 @@ const.ROBOT_RADIUS, self.ms)
 			am.set_init_path(path)
 			goal_p = am.goal_point
 			am.current_goal = path[0]
+			#gc.visualise_path(path, gc_const.GOAL_VERTICE_PATH, 'path_' + robot_name[8:])
 			gc.spawn_sdf_model(goal_p, gc_const.BIG_GREEN_VERTICE_PATH, 'goal_' + robot_name[8:])
 			self.init_paths[robot_name] = copy.copy(path)
 		
@@ -156,6 +158,7 @@ const.ROBOT_RADIUS, self.ms)
 	
 		agents_copy = copy.copy(self.agents)
 		current_agent = self.agents[robot_name]
+		current_mngr = self.amanager[robot_name]
 		current_agent_pos_2d = self.sim.getAgentPosition(current_agent)
 		current_agent_pos = Point(current_agent_pos_2d[0], current_agent_pos_2d[1], 0)
 		agents_copy.pop(robot_name)
@@ -172,6 +175,10 @@ const.ROBOT_RADIUS, self.ms)
 		
 				min_dist = dist
 				closest_agent = agent_name
+				
+		if min_dist < current_mngr.min_n_dist:
+		
+			current_mngr.min_n_dist = min_dist
 		
 		return min_dist, closest_agent
 
@@ -200,6 +207,7 @@ const.ROBOT_RADIUS, self.ms)
 		   	vect_to_goal = last_p.get_dir_vector_between_points(current_goal)
 		   	det_angle = last_vect.get_angle_between_vectors(vect_to_goal)
 			n_last_point = closest_am.last_point
+			n_last_vect = closest_am.last_vect
 			n_cur_goal = closest_am.current_goal
 			n_des_vect = n_last_point.get_dir_vector_between_points(n_cur_goal)#closest_am.last_vect
 			vect_to_neighbor = last_p.get_dir_vector_between_points(n_last_point)
@@ -208,19 +216,25 @@ const.ROBOT_RADIUS, self.ms)
 			
 			des_and_n_vect_angle = vect_to_goal.get_angle_between_vectors(vect_to_neighbor)
 			
-			det_targets_vect = fabs(vect_to_goal.get_angle_between_vectors(n_des_vect))
+			det_targets_angle = fabs(vect_to_goal.get_angle_between_vectors(n_des_vect))
+			real_targets_angle = fabs(last_vect.get_angle_between_vectors(n_last_vect))
+			
 			next_p = last_p.get_point_in_direction(vect_to_goal, self.ms * const.ORCA_TIME_STEP)
 			next_n_p = n_last_point.get_point_in_direction(n_des_vect, self.ms * const.ORCA_TIME_STEP)
 			
 			dist = last_p.get_distance_to(n_last_point)
 			next_dist = next_p.get_distance_to(next_n_p)
 			
+			n_next_dist = next_n_p.get_distance_to(last_p)
 			s_next_dist = next_p.get_distance_to(n_last_point)
 
 			goal_dist = last_p.get_distance_to(current_goal)
 			n_goal_dist = n_last_point.get_distance_to(n_cur_goal)
 			
-			if fabs(det_angle) > const.ORCA_MAX_ANGLE or next_dist > dist or (s_next_dist > dist and closest_am.finished_planning) or (p_count == 1 and dist - goal_dist > const.ROBOT_RADIUS) or (det_targets_vect < 3 and not closest_am.finished_planning) or det_targets_vect > 90:
+			if fabs(det_angle) > const.ORCA_MAX_ANGLE \
+			or next_dist > dist \
+			or ((det_targets_angle < gc_const.ANGLE_ERROR or ((s_next_dist > dist or n_next_dist > dist) and real_targets_angle > 90)) and min_neighbor_dist > const.ORCA_NEIGHBOR_DIST * 1.5) \
+			or (s_next_dist > dist and closest_am.finished_planning):
 			
 				vect = self.calc_new_vel_direction(last_p, last_vect, current_goal)
 			
@@ -272,7 +286,9 @@ const.ROBOT_RADIUS, self.ms)
 		goal_dist = current_goal.get_distance_to(am.goal_point)
 		p_count = len(self.init_paths[robot_name])
 		
-		if ((dist_2d < gc_const.DISTANCE_ERROR * 2 or (dist_2d < const.ORCA_NEIGHBOR_DIST and angle > 90)) and p_count > 1) or (dist_2d < gc_const.DISTANCE_ERROR and p_count <= 1):
+		if ((dist_2d < gc_const.DISTANCE_ERROR * 2 \
+		or (dist_2d < self.grid_size * 2 and angle > const.ORCA_MAX_ANGLE)) and p_count > 1) \
+		or (dist_2d < gc_const.DISTANCE_ERROR and p_count <= 1):
 		
 			if len(self.init_paths[robot_name]) > 1:
 			
@@ -299,7 +315,7 @@ const.ROBOT_RADIUS, self.ms)
 	
 		self.sim.setAgentPrefVelocity(agent, (0, 0))
 		self.sim.setAgentVelocity(agent, (0, 0))
-		print(' >>> ' + robot_name + ' has finished! <<<')
+		print(' >>> ' + robot_name + ' has finished! Min neighbor dist: ' + str(am.min_n_dist) + ' <<<')
 		am.finished_planning = True
 
 # Running a simulation of the movement of a group of targets
@@ -324,7 +340,13 @@ const.ROBOT_RADIUS, self.ms)
 					if not z == None:
 
 						robot_pos = Point(pos[0], pos[1], z)	
-						#gc.spawn_sdf_model(robot_pos, gc_const.GREEN_VERTICE_PATH, 'v_' + str(key) + '_' + str(len(self.final_paths[key])))		
+						p_count = len(self.final_paths[key])
+						
+						#if p_count % 25 < 1:
+
+							#c_id = int(key[8:]) % 3
+							#gc.spawn_sdf_model(robot_pos, gc_const.PATH_COLORS[c_id], 'v_' + str(key) + '_' + str(p_count))		
+
 						self.final_paths[key].append(robot_pos)
 						self.goal_achievement_check(key, robot_pos)
 						self.amanager[key].last_point = robot_pos
