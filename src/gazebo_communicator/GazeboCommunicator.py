@@ -49,7 +49,7 @@ class Robot(thr.Thread):
 		self.longitude = None
 		self.total_damage = 0
 		self.path_p_count = 0
-		self.local_path_dir = const.PATHS_DIR + '/paths4_local/' + self.name + '.txt'
+		self.local_path_dir = const.PATHS_DIR + '/paths6_local/' + self.name + '.txt'
 		self.real_error_sum = 0
 		#self.get_wheel_distance()
 	
@@ -319,9 +319,9 @@ class Robot(thr.Thread):
 	def write_coords(self, start_coords, end_coords):
 		
 		f = open(const.MAP_DYNAMIC_COORDS_PATH, 'a+')
-		f.write(self.name[8:] + ': (' + str(start_coords) + ', ' + str(end_coords) + ')\n\n')
+		f.write(self.name[8:] + ': (' + str(start_coords) + ', ' + end_coords + ')\n\n')
 		f.close()
-		#print(self.name + ' end GPS coordinates: ' + self.get_gps_coords())
+		print(self.name + ' end GPS coordinates: ' + end_coords)
 		
 	def add_path_gps(self, open_mode):
 	

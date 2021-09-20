@@ -233,7 +233,10 @@ const.ROBOT_RADIUS, self.ms)
 			
 			if fabs(det_angle) > const.ORCA_MAX_ANGLE \
 			or next_dist > dist \
-			or ((det_targets_angle < gc_const.ANGLE_ERROR or ((s_next_dist > dist or n_next_dist > dist) and real_targets_angle > 90)) and min_neighbor_dist > const.ORCA_NEIGHBOR_DIST * 1.5) \
+			or ((det_targets_angle < gc_const.ANGLE_ERROR or ((s_next_dist > dist \
+			or n_next_dist > dist) and real_targets_angle > 90)) \
+			and min_neighbor_dist > const.ORCA_NEIGHBOR_DIST * 1.5) \
+			or p_count == 1 \
 			or (s_next_dist > dist and closest_am.finished_planning):
 			
 				vect = self.calc_new_vel_direction(last_p, last_vect, current_goal)

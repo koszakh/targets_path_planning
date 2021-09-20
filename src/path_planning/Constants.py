@@ -1,6 +1,6 @@
 import random
 
-ROBOTS_COUNT = 6
+ROBOTS_COUNT = 10
 ROOT_PATH = "/root/.gazebo/models"
 CURRENT_MAP = 'hmap2'
 HEIGHTMAP_SDF_PATH = ROOT_PATH + '/' + CURRENT_MAP + '/model.sdf'
@@ -30,11 +30,11 @@ CLOSE_RADIUS = UB_NEIGHBOR_DIST + DES_GRID_SIZE
 
 # HEIGHTMAP BOUNDARY INDICES
 
-COL = 568#random.randint(450, 600)
-ROW = 648#random.randint(500, 750)
+COL = 423#random.randint(450, 600)
+ROW = 584#random.randint(500, 750)
 
-COL_RANGE = [COL, COL + 4]
-ROW_RANGE = [ROW, ROW + 4]
+COL_RANGE = [COL, COL + 7]
+ROW_RANGE = [ROW, ROW + 7]
 
 # hmap2
 
@@ -51,8 +51,8 @@ ROW_RANGE = [ROW, ROW + 4]
 #ROW_RANGE = [728, 743]
 
 # 4
-#COL_RANGE = [568, 582]
-#ROW_RANGE = [648, 662]
+#COL_RANGE = [568, 583]
+#ROW_RANGE = [648, 663]
 
 # 5
 #COL_RANGE = [416, 434]
