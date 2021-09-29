@@ -19,6 +19,34 @@ from sensor_msgs.msg import NavSatFix
 import copy
 import random
 
+class BatteryTracker:
+
+	def __init__(self, name):
+	
+		self.name = name
+		self.dir_point = self.name + const.DIR_POINT_SUFFIX
+		self.b_charge = random.uniform(const.LOW_CHARGE_BOUND, const.HIGH_CHARGE_BOUND)
+		self.est_energy_cost = 0
+		self.last_p_id = None
+		self.last_vect = self.get_robot_orientation_vector()
+		self.tasks_count = 0
+		self.path_costs = {}
+		
+	def add_task_cost(self, value):
+	
+		self.est_energy_cost += value
+		self.tasks_count += 1
+		#print(self.name + ' current tasks count: ' + str(self.tasks_count))
+		
+# Getting the position of the robot in 3D space in the Gazebo environment
+
+# Output
+# robot_pose: coordinates of the robot in 3D space
+	def get_robot_position(self):
+	
+		robot_pose = get_model_position(self.name)
+		return robot_pose
+
 # The class of the control object of the ground target in the Gazebo simulation environment
 
 # threading is used to control multiple targets in parallel
@@ -38,10 +66,10 @@ class Robot(thr.Thread):
 		self.name = robot_name
 		self.id = self.name[self.name.find('t') + 1:]
 		self.init_topics()
-		self.pid_delay = rospy.Duration(0, const.PID_NSEC_DELAY)
+		self.pid_delay = rospy.Duration(0, const.PID_NSEC_DELAY * 2)
 		msg = Twist()
-		self.vel_publisher.publish(msg)
 		rospy.sleep(self.pid_delay)
+		self.vel_publisher.publish(msg)
 		self.set_movespeed(const.MOVEMENT_SPEED)
 		self.dir_point = robot_name + const.DIR_POINT_SUFFIX
 		self.path = []
@@ -50,8 +78,8 @@ class Robot(thr.Thread):
 		self.total_damage = 0
 		self.path_p_count = 0
 		self.local_path_dir = const.PATHS_DIR + '/paths6_local/' + self.name + '.txt'
-		self.real_error_sum = 0
-		#self.get_wheel_distance()
+		self.partner_name = None
+		self.mode = None
 	
 	def get_wheel_distance(self):
 	
@@ -120,9 +148,7 @@ class Robot(thr.Thread):
 # dir_vector: robot direction vector
 	def get_robot_orientation_vector(self):
 	
-		robot_pos = self.get_robot_position()
-		dir_point_pos = get_link_position(self.dir_point)
-		dir_vector = robot_pos.get_dir_vector_between_points(dir_point_pos)
+		dir_vector = get_robot_orientation_vector(self.name)
 		return dir_vector
 
 # Getting the angle difference between the direction vector of the robot and the vector directed towards the point
@@ -151,27 +177,29 @@ class Robot(thr.Thread):
 		while robot_pos.get_distance_to(goal) > const.DISTANCE_ERROR:
 		
 			robot_pos = self.get_robot_position()
-			error = self.get_angle_difference(goal)
-			error_sum += error
-			#self.real_error_sum += fabs(error)
-			
-			if error_sum < self.i_min:
-			
-				error_sum = self.i_min
-				
-			elif error_sum > self.i_max:
-			
-				error_sum = self.i_max
-
-			up = self.kp * error
-			ui = self.ki * error_sum
-			ud = self.kd * (error - old_error)
-			old_error = error
-			u = up + ui + ud
+			u, old_error, error_sum = self.calc_control_action(goal, old_error, error_sum)
 			self.movement(self.ms, u)
 			#self.add_path_gps('a+')
 			rospy.sleep(self.pid_delay)
 
+	def calc_control_action(self, goal, old_error, error_sum):
+		error = self.get_angle_difference(goal)
+		error_sum += error
+		
+		if error_sum < self.i_min:
+		
+			error_sum = self.i_min
+			
+		elif error_sum > self.i_max:
+		
+			error_sum = self.i_max
+
+		up = self.kp * error
+		ui = self.ki * error_sum
+		ud = self.kd * (error - old_error)
+		old_error = error
+		u = up + ui + ud
+		return u, old_error, error_sum
 
 # Rotate the robot towards a point
 # Input
@@ -280,6 +308,45 @@ class Robot(thr.Thread):
 
 				self.add_path_local_coords(state)
 
+	def get_distance_to_partner(self):
+	
+		self_pos = self.get_robot_position()
+		partner_pos = get_model_position(self.partner_name)
+		dist = self_pos.get_distance_to(partner_pos)
+		return dist
+		
+	def get_angle_difference_with_parther(self):
+	
+		partner_orient = get_robot_orientation_vector(self.partner_name)
+		self_orient = self.get_robot_orientation_vector()
+		angle_difference = self_orient.get_angle_between_vectors(partner_orient)
+
+	def docking(self):
+	
+		self.set_movespeed(const.DOCKING_SPEED)
+		dist = self.get_distance_to_partner()
+		partner_pos = get_model_position(self.partner_name)
+		self.turn_to_point(partner_pos)
+		old_error = 0
+		error_sum = 0
+		
+		while dist > const.DOCKING_THRESHOLD:
+		
+			angle_difference = self.get_angle_difference_with_parther()
+			
+			dist = self.get_distance_to_partner()
+			
+			u, old_error, error_sum = self.calc_control_action(partner_pos, old_error, error_sum)
+			self.movement(self.ms, u)
+
+		self.stop()
+		print(self.name + ' successfully connected to ' + str(self.partner_name) + '.')
+
+	def set_docking_mode(self, partner_name):
+	
+		self.partner_name = partner_name
+		self.mode = "docking"
+
 # The movement of the robot along a given final route
 # Start of thread
 	def run(self):
@@ -294,6 +361,10 @@ class Robot(thr.Thread):
 			#self.write_coords(start_coords, end_coords)
 			
 			self.follow_the_route()
+			
+			if self.mode == "docking":
+			
+				self.docking()
 			
 		else:
 		
@@ -463,7 +534,15 @@ def get_model_position(model_name):
 	
 	else:
 		return None
-		
+	
+def get_robot_orientation_vector(robot_name):
+
+	robot_pos = get_model_position(robot_name)
+	dir_point = robot_name + const.DIR_POINT_SUFFIX
+	dir_point_pos = get_link_position(dir_point)
+	dir_vector = robot_pos.get_dir_vector_between_points(dir_point_pos)
+	return dir_vector
+	
 # Getting orientation of an object in the Gazebo environment
 # Input
 # model_name: model name in Gazebo environment
@@ -515,10 +594,10 @@ def get_link_position(link_name):
 
 def get_robot_orientation_vector(robot_name):
 	
-		robot_pos = get_model_position(robot_name)
-		dir_point_pos = get_link_position(robot_name + const.DIR_POINT_SUFFIX)
-		dir_vector = robot_pos.get_dir_vector_between_points(dir_point_pos)
-		return dir_vector
+	robot_pos = get_model_position(robot_name)
+	dir_point_pos = get_link_position(robot_name + const.DIR_POINT_SUFFIX)
+	dir_vector = robot_pos.get_dir_vector_between_points(dir_point_pos)
+	return dir_vector
 
 # Getting the state of a model in the Gazebo environment (including model orientation)
 # Input

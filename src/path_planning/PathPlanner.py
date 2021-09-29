@@ -321,6 +321,21 @@ v1.get_distance_to(v2) #+ fabs(v1.riskiness - v2.riskiness)
 					riskiness = self.calc_riskiness(v_id)
 					v.set_riskiness(riskiness)
 
+	def get_random_ids_in_area(self, x, y, offset, count):
+	
+		v_id = self.get_nearest_vertice_id(x, y)
+		grid_range = int(offset / self.real_grid_size) + 1
+		all_ids = self.get_close_points_list(v_id, offset)
+		ids = []
+		
+		for i in range(count):
+		
+			p_id = random.choice(all_ids)
+			all_ids.remove(p_id)
+			ids.append(p_id)
+			
+		return ids
+
 # Finding a list of keys for vertices that are in the desired range
 # Input
 # vertice_id: starting vertex number
@@ -379,6 +394,7 @@ v1.get_distance_to(v2) #+ fabs(v1.riskiness - v2.riskiness)
 # Output
 # roughness: local roughness parameter value
 	def calc_local_roughness(self, vertice_id):
+	
 		vertice = self.heightmap[vertice_id]
 		ln_count = len(vertice.neighbors_list)
 		sum_angles = 0
@@ -475,13 +491,13 @@ v1.get_distance_to(v2) #+ fabs(v1.riskiness - v2.riskiness)
 			v = self.heightmap[v_id]
 
 			dist = v.get_distance_to(goal)
-			#total_path_cost = v.path_cost + dist
+			total_path_cost = v.path_cost + dist
 
-			#if total_path_cost < min_path_cost:
-			if dist < min_dist:
+			if total_path_cost < min_path_cost:
+			#if dist < min_dist:
 
-				min_dist = dist
-				#min_path_cost = total_path_cost
+				#min_dist = dist
+				min_path_cost = total_path_cost
 				closest_id = v_id
 
 		self.closed.append(closest_id)
@@ -705,13 +721,13 @@ v1.get_distance_to(v2) #+ fabs(v1.riskiness - v2.riskiness)
 		
 		if start_id:
 			
-			path = self.find_path_in_area(start_id, x, y, offset, orient)
+			path, path_cost = self.find_path_in_area(start_id, x, y, offset, orient)
 			
 		else:
 
 			return None
 			
-		return path
+		return path, path_cost
 
 		
 
@@ -733,15 +749,17 @@ v1.get_distance_to(v2) #+ fabs(v1.riskiness - v2.riskiness)
 		iter_count = 0
 		current_v.dir_vect = start_orient
 
-		while not current_v.id == goal_id and iter_count < len(self.heightmap) / 3:
+		while not current_v.id == goal_id and iter_count < len(self.heightmap) / 2:
 
 			iter_count += 1
+			#print(current_v.id)
 
 			for v_id in current_neighbors:
 				
 				v = self.heightmap[v_id]
 				vect = current_v.get_dir_vector_between_points(v)
 				angle_difference = fabs(current_v.dir_vect.get_angle_between_vectors(vect))
+				#print(v_id, angle_difference)
 				
 				if not v.obstacle and angle_difference < const.ORIENT_BOUND:
 
@@ -771,8 +789,8 @@ v1.get_distance_to(v2) #+ fabs(v1.riskiness - v2.riskiness)
 			current_v = self.heightmap[current_v_id]
 			current_neighbors = copy.copy(current_v.neighbors_list.values())
 			
-		#print('Iter count: ' + str(iter_count))
-		#print('Len Open: ' + str(len(self.open)))
+		print('Iter count: ' + str(iter_count))
+		print('Len Open: ' + str(len(self.open)))
 
 		if not goal_v.get_predecessor() == None:
 
@@ -812,8 +830,7 @@ v1.get_distance_to(v2) #+ fabs(v1.riskiness - v2.riskiness)
 			x = random.uniform(self.min_x, self.max_x)
 			y = random.uniform(self.min_y, self.max_y)
 			z = self.find_z(x, y)
-			p = Point(x, y, z)
-			new_p_id = self.get_nearest_vertice_id(p)
+			new_p_id = self.get_nearest_vertice_id(x, y)
 			new_p = self.heightmap[new_p_id]
 
 			if not new_p.obstacle and not self.closed_start_points.__contains__(new_p_id):
@@ -1161,7 +1178,7 @@ v1.get_distance_to(v2) #+ fabs(v1.riskiness - v2.riskiness)
 				return None
 				break
 
-		return path
+		return path, path_cost
 
 	def get_start_id(self, x, y, offset):
 			

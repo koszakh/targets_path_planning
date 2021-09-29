@@ -1,6 +1,6 @@
 import random
 
-ROBOTS_COUNT = 10
+ROBOTS_COUNT = 8
 ROOT_PATH = "/root/.gazebo/models"
 CURRENT_MAP = 'hmap2'
 HEIGHTMAP_SDF_PATH = ROOT_PATH + '/' + CURRENT_MAP + '/model.sdf'
@@ -14,8 +14,8 @@ MAP_PATH_WORDS = ['<collision', '<heightmap', '<uri']
 MAP_POS_WORDS = ['<collision', '<heightmap', '<pos']
 ORIENT_BOUND = 50
 MAX_ITER_COUNT = 500
-DES_GRID_SIZE = ROBOT_RADIUS * 4
-DIST_OFFSET = ROBOT_RADIUS * ROBOTS_COUNT * 3
+DES_GRID_SIZE = ROBOT_RADIUS * 2
+DIST_OFFSET = ROBOT_RADIUS * ROBOTS_COUNT * 10
 
 ORCA_TIME_STEP = 0.1
 ORCA_NEIGHBOR_DIST = ROBOT_RADIUS * 4

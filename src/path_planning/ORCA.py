@@ -233,7 +233,7 @@ const.ROBOT_RADIUS, self.ms)
 			
 			if fabs(det_angle) > const.ORCA_MAX_ANGLE \
 			or next_dist > dist \
-			or ((det_targets_angle < gc_const.ANGLE_ERROR or ((s_next_dist > dist \
+			or ((det_targets_angle < gc_const.ORCA_ANGLE_SHIFT or ((s_next_dist > dist \
 			or n_next_dist > dist) and real_targets_angle > 90)) \
 			and min_neighbor_dist > const.ORCA_NEIGHBOR_DIST * 1.5) \
 			or p_count == 1 \
@@ -243,11 +243,11 @@ const.ROBOT_RADIUS, self.ms)
 			
 			elif des_and_n_vect_angle < 0 and closest_am.finished_planning:
 			
-				vect = last_vect.get_rotated_vector(gc_const.ANGLE_ERROR)
+				vect = last_vect.get_rotated_vector(gc_const.ORCA_ANGLE_SHIFT)
 				
 			else:
 			
-				vect = last_vect.get_rotated_vector(-gc_const.ANGLE_ERROR)
+				vect = last_vect.get_rotated_vector(-gc_const.ORCA_ANGLE_SHIFT)
 			
 		goal_dist = current_goal.get_distance_to(robot_pos)
 		goal_dist_2d = current_goal.get_2d_distance(robot_pos)
@@ -260,13 +260,13 @@ const.ROBOT_RADIUS, self.ms)
 		new_vect = last_p.get_dir_vector_between_points(current_goal)
 		angle_difference = last_vect.get_angle_between_vectors(new_vect)
 		
-		if angle_difference > gc_const.ANGLE_ERROR:
+		if angle_difference > gc_const.ORCA_ANGLE_SHIFT:
 		
-			vect = last_vect.get_rotated_vector(gc_const.ANGLE_ERROR)
+			vect = last_vect.get_rotated_vector(gc_const.ORCA_ANGLE_SHIFT)
 		
-		elif angle_difference < -gc_const.ANGLE_ERROR:
+		elif angle_difference < -gc_const.ORCA_ANGLE_SHIFT:
 		
-			vect = last_vect.get_rotated_vector(-gc_const.ANGLE_ERROR)
+			vect = last_vect.get_rotated_vector(-gc_const.ORCA_ANGLE_SHIFT)
 		
 		else:
 		

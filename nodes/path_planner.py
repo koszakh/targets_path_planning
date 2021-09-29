@@ -25,8 +25,7 @@ def group_path_planning():
 	min_row = const.ROW_RANGE[0]
 	max_row = const.ROW_RANGE[1]
 
-	hmap, l_scale, w_scale, x_step, y_step, step_count = \
-		hm.prepare_heightmap()
+	hmap, l_scale, w_scale, x_step, y_step, step_count = hm.prepare_heightmap()
 		
 	mh = pp.PathPlanner(hmap, l_scale, w_scale, x_step, y_step, step_count)
 
