@@ -12,6 +12,7 @@ from path_planning.Heightmap import Heightmap
 import path_planning.Constants as const
 import gazebo_communicator.GazeboCommunicator as gc
 import gazebo_communicator.GazeboConstants as gc_const
+from gazebo_communicator.BatteryTracker import BatteryTracker
 from path_planning.ORCA import ORCAsolver
 import random
 import itertools
@@ -100,7 +101,7 @@ def prep_targets():
 		name = 'sim_p3at' + str(i)
 		robot_pos, orient = mh.get_start_pos(start[0], start[1], offset)
 		gc.spawn_target(name, robot_pos, orient)
-		bt = gc.BatteryTracker(name)
+		bt = BatteryTracker(name)
 		start_id, start_pos = mh.get_start_vertice_id(robot_pos, bt.last_vect)
 		bt.last_p_id = start_id
 		trackers[name] = bt
@@ -120,18 +121,13 @@ def target_assignment(mh, trackers, target_ids):
 		chargers_num = int((len(names) * quota) / 100 )
 		worker_names = names[:len(names) - chargers_num]
 		charger_names = names[len(names) - chargers_num:]
-#		print('Worker names: ' + str([item[item.find('t') + 1:] for item in worker_names]))
-#		print('Chargers names: ' + str([item[item.find('t') + 1:] for item in charger_names]))
 		
 		print('Workers count: ' + str(len(worker_names)) + ' | Chargers count: ' + str(len(charger_names)) + ' | Number of tasks: ' + str(len(target_ids)))
 		
 		combs = get_sequence_of_des_len(worker_names, len(target_ids))
-		print(combs)
-		#combs = list(itertools.permutations(worker_names))
 
 		for item in combs:
-		
-			#print('\n>>> NEW ITER')
+
 			print('\n' + str(item))
 			cur_path_cost_sum = 0
 			iter_count += 1

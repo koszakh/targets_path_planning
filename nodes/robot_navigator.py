@@ -8,6 +8,7 @@ from targets_path_planning.msg import AllPaths, Vector2d
 from path_planning.Point import Point
 import gazebo_communicator.GazeboConstants as const
 import gazebo_communicator.GazeboCommunicator as gc
+from gazebo_communicator.Robot import Robot
 from time import sleep
 import copy
 
@@ -34,7 +35,7 @@ def paths_callback(msg_data):
 	
 		final_path = convert_to_path(path_msg.path)	
 		name = path_msg.robot_name
-		robot = gc.Robot(path_msg.robot_name)
+		robot = Robot(path_msg.robot_name)
 		robot.waypoints_publisher(final_path)
 		robots.append(robot)	
 	
