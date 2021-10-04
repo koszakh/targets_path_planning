@@ -721,13 +721,13 @@ v1.get_distance_to(v2) #+ fabs(v1.riskiness - v2.riskiness)
 		
 		if start_id:
 			
-			path, path_cost = self.find_path_in_area(start_id, x, y, offset, orient)
+			path = self.find_path_in_area(start_id, x, y, offset, orient)
 			
 		else:
 
 			return None
 			
-		return path, path_cost
+		return path
 
 		
 
@@ -1179,7 +1179,7 @@ v1.get_distance_to(v2) #+ fabs(v1.riskiness - v2.riskiness)
 				return None
 				break
 
-		return path, path_cost
+		return path
 
 	def get_start_id(self, x, y, offset):
 			

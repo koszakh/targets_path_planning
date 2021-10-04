@@ -109,7 +109,7 @@ def group_path_planning():
 			
 			for g in goal_regions:
 			
-				path, path_cost = mh.get_path(robot_pos, last_vect, g[0], g[1], offset)
+				path = mh.get_path(robot_pos, last_vect, g[0], g[1], offset)
 				
 				if path:
 
