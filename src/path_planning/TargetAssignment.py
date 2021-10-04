@@ -177,6 +177,7 @@ def prepare_robots_and_targets(mh, robots_count, t_count):
 		b_tracker = trackers[name]
 		robot_pos, orient = mh.get_start_pos(start[0], start[1], offset)
 		gc.spawn_target(name, robot_pos, orient)
+		b_tracker.last_vect = b_tracker.get_robot_orientation_vector()
 		start_id, start_pos = mh.get_start_vertice_id(robot_pos, b_tracker.last_vect)
 		b_tracker.last_p_id = start_id
 		b_tracker.start_id = start_id
@@ -198,6 +199,7 @@ def target_assignment(mh, workers_count, chargets_count, trackers, target_ids):
 
 	for item in combs:
 
+		start_e_time = time.time()
 		cur_path_cost_sum = 0
 		iter_count += 1
 		cur_paths = {}
@@ -225,7 +227,7 @@ def target_assignment(mh, workers_count, chargets_count, trackers, target_ids):
 				
 			if not s_paths.get(path_id):
 
-				path, path_ids = mh.find_path(b_tracker.last_p_id, target_id, b_tracker.last_vect)	
+				path, path_cost = mh.find_path(b_tracker.last_p_id, target_id, b_tracker.last_vect)	
 				
 				if path:
 
@@ -234,12 +236,12 @@ def target_assignment(mh, workers_count, chargets_count, trackers, target_ids):
 						cur_worker_names.append(name)
 
 					goal = path[len(path) - 1]
-					b_tracker.last_vect = goal.path_cost
+					b_tracker.last_vect = get_end_vect(path)
 					b_tracker.last_p_id = target_id
-					cur_path_cost_sum += get_path_cost(path)
+					cur_path_cost_sum += path_cost
 					cur_paths[name].append(path)
 					cur_workpoints[name].append(goal)
-					s_paths[path_id] = path_cost
+					s_paths[path_id] = (path, path_cost)
 					names_cp.pop(0)
 				
 				else:
@@ -249,16 +251,17 @@ def target_assignment(mh, workers_count, chargets_count, trackers, target_ids):
 					break
 					
 			else:
-			
+
 					if not cur_worker_names.__contains__(name):
 					
 						cur_worker_names.append(name)
 
-					path = s_paths[path_id]
+					path = s_paths[path_id][0]
+					path_cost = s_paths[path_id][1]
 					b_tracker.last_vect = get_end_vect(path)
 					b_tracker.last_p_id = target_id
 					goal = path[len(path) - 1]
-					cur_path_cost_sum += goal.path_cost
+					cur_path_cost_sum += path_cost
 					cur_paths[name].append(path)
 					cur_workpoints[name].append(goal)
 					names_cp.pop(0)
@@ -270,11 +273,10 @@ def target_assignment(mh, workers_count, chargets_count, trackers, target_ids):
 
 				b_tracker = trackers_cp[name]
 			
-				path, path_ids = mh.find_path(b_tracker.last_p_id, b_tracker.start_id, b_tracker.last_vect)
+				path, path_cost = mh.find_path(b_tracker.last_p_id, b_tracker.start_id, b_tracker.last_vect)
 				
 				if path:
 
-					path_cost = get_path_cost(path)
 					cur_path_cost_sum += path_cost
 					cur_paths[name].extend(path)
 					
@@ -290,8 +292,10 @@ def target_assignment(mh, workers_count, chargets_count, trackers, target_ids):
 				worker_names = copy.copy(cur_worker_names)
 				workpoints = copy.copy(cur_workpoints)
 				
+		end_e_time = time.time()
+		det_time = end_e_time - start_e_time
 
-		print('Iter count: ' + str(iter_count) + ' | Current path cost sum: ' + str(cur_path_cost_sum) + ' | Path cost sum: ' + str(path_cost_sum))
+		print('Iter count: ' + str(iter_count) + ' | Current path cost sum: ' + str(cur_path_cost_sum) + ' | Path cost sum: ' + str(path_cost_sum) + ' | Iter time: ' + str(det_time))
 			
 	charger_names = subtraction_of_set(names, worker_names)
 	print('\nFinal path cost sum for ' + str(len(worker_names)) + ' workers: ' + str(path_cost_sum))
@@ -302,7 +306,7 @@ def target_assignment(mh, workers_count, chargets_count, trackers, target_ids):
 def start_target_assignment(w_count, c_count, t_count):
 	
 	mh = prepare_hmap()	
-	trackers, target_ids = prepare_robots_andtargets(mh, w_count + c_count, t_count)
+	trackers, target_ids = prepare_robots_and_targets(mh, w_count + c_count, t_count)
 	s_exec_time = time.time()
 	paths, workpoints, w_names, c_names = target_assignment(mh, w_count, c_count, trackers, target_ids)
 	return paths, workpoints, w_names, c_names

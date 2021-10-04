@@ -12,7 +12,7 @@ class BatteryTracker:
 		self.battery = random.uniform(const.LOW_CHARGE_BOUND, const.HIGH_CHARGE_BOUND)
 		self.est_energy_cost = 0
 		self.last_p_id = None
-		self.last_vect = self.get_robot_orientation_vector()
+		self.last_vect = None
 		self.tasks_count = 0
 		self.path_costs = {}
 		
