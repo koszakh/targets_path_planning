@@ -5,7 +5,7 @@ import path_planning.PathPlanner as pp
 import rospy
 import copy
 import numpy
-from targets_path_planning.msg import AllPaths, Path
+from targets_path_planning.msg import Paths, Path
 from geometry_msgs.msg import Point
 from path_planning.Point import Point as PointGeom, Vector2d
 from path_planning.Heightmap import Heightmap
@@ -17,7 +17,7 @@ import random
 
 def group_path_planning():
 
-	paths_pub = rospy.Publisher('all_paths_data', AllPaths, queue_size=10)
+	paths_pub = rospy.Publisher('all_paths_data', Paths, queue_size=10)
 	hm = Heightmap(const.HEIGHTMAP_SDF_PATH)
 
 	min_col = const.COL_RANGE[0]
@@ -142,12 +142,16 @@ def group_path_planning():
 	paths_pub.publish(msg)
 
 def prepare_paths_msg(names, paths):
-	msg = AllPaths()
-	msg.path_list = []
+
+	msg = Paths()
+	msg.paths = []
+
 	for name in names:
+
 		path = paths[name]
 		path_msg = prepare_path_msg(name, path)
-		msg.path_list.append(path_msg)
+		msg.paths.append(path_msg)
+
 	return msg
 
 def prepare_path_msg(name, path):
