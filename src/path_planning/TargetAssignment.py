@@ -309,7 +309,7 @@ def start_target_assignment(w_count, c_count, t_count):
 	trackers, target_ids = prepare_robots_and_targets(mh, w_count + c_count, t_count)
 	s_exec_time = time.time()
 	paths, workpoints, w_names, c_names = target_assignment(mh, w_count, c_count, trackers, target_ids)
-	return paths, workpoints, w_names, c_names
+	return paths, workpoints, w_names, c_names, trackers
 	
 def get_end_vect(path):
 

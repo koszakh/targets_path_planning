@@ -36,7 +36,7 @@ class Robot(thr.Thread):
 		self.vel_publisher.publish(msg)
 		self.set_movespeed(const.MOVEMENT_SPEED)
 		self.dir_point = robot_name + const.DIR_POINT_SUFFIX
-		self.path = []
+		self.paths = []
 		self.workpoints = []
 		self.partner_name = None
 		self.mode = None
@@ -315,8 +315,17 @@ class Robot(thr.Thread):
 		print('\n>>> ' + self.name + ' <<<')
 		for name in self.b_trackers:
 		
-			bt = self.b_trackers[name]
-			print(name + ' battery level: ' + str(bt.battery))
+			self.get_robot_battery_level(name)
+
+	def get_robot_battery_level(self, name)
+	
+		bt = self.b_trackers[name]
+		battery = int(bt.battery)
+		print(name + ' battery level: ' + str(battery) + '%')
+
+	def get_battery_level(self):
+
+		self.get_robot_battery_level(self.name)
 		
 	def set_movespeed(self, ms):
 	

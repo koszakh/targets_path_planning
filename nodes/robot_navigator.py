@@ -51,7 +51,7 @@ def paths_callback(msg_data):
 	
 		for robot in robots:
 	
-			if not robot.path:
+			if not robot.paths:
 			
 				cont_flag = False
 
