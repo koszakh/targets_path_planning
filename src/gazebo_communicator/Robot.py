@@ -1,5 +1,5 @@
 import rospy
-from targets_path_planning.msg import Path, TargetDamage
+from targets_path_planning.msg import Path, Charge
 import path_planning.Point as PointGeom
 import GazeboConstants as const
 import GazeboCommunicator as gc
@@ -22,10 +22,12 @@ from geometry_msgs.msg import Point, Twist
 # last_goal: previous point of the robot route
 class Robot(thr.Thread):
 	
-	def __init__(self, robot_name):
+	def __init__(self, robot_name, role, b_trackers):
 	
 		thr.Thread.__init__(self)
 		self.name = robot_name
+		self.b_trackers = b_trackers
+		self.bt = self.b_trackers[self.name]
 		self.id = self.name[self.name.find('t') + 1:]
 		self.init_topics()
 		self.pid_delay = rospy.Duration(0, const.PID_NSEC_DELAY * 2)
@@ -35,39 +37,27 @@ class Robot(thr.Thread):
 		self.set_movespeed(const.MOVEMENT_SPEED)
 		self.dir_point = robot_name + const.DIR_POINT_SUFFIX
 		self.path = []
-		self.latitude = None
-		self.longitude = None
-		self.total_damage = 0
-		self.path_p_count = 0
-		self.local_path_dir = const.PATHS_DIR + '/paths6_local/' + self.name + '.txt'
+		self.workpoints = []
 		self.partner_name = None
 		self.mode = None
-	
-	def get_wheel_distance(self):
-	
-		fl_name = self.name + "::p3at_front_left_wheel"
-		fr_name = self.name + "::p3at_front_right_wheel"
-		bl_name = self.name + "::p3at_back_left_wheel"
-		br_name = self.name + "::p3at_back_right_wheel"
-		fl_pos = gc.get_link_position(fl_name)
-		fr_pos = gc.get_link_position(fr_name)
-		bl_pos = gc.get_link_position(bl_name)
-		br_pos = gc.get_link_position(br_name)
-		f_dist = fl_pos.get_distance_to(fr_pos)
-		b_dist = bl_pos.get_distance_to(br_pos)
-		print('Front dist: ' + str(f_dist))
-		print('Back dist: ' + str(b_dist))
+		self.role = role
+		self.charging = False
 		
 	def init_topics(self):
 		
 		topic_subname = '/' + self.name
+		
 		self.vel_publisher = rospy.Publisher(topic_subname + '/cmd_vel', Twist, queue_size=10)
+		
 		self.waypoint_pub = rospy.Publisher(topic_subname + '/waypoint', Point, queue_size=10)
 		self.waypoint_sub = rospy.Subscriber(topic_subname + '/waypoint', Point, self.waypoint_callback)
+		
 		self.waypoints_pub = rospy.Publisher(topic_subname + '/waypoints_array', Path, queue_size=10)
 		self.waypoints_sub = rospy.Subscriber(topic_subname + '/waypoints_array', Path, self.set_path)
-		self.gps_listener = rospy.Subscriber(topic_subname + '/fix', NavSatFix, self.gps_callback)
-		self.def_prob_sub = rospy.Subscriber(topic_subname + '/damage', TargetDamage, self.damage_callback)
+		
+		self.workpoints_pub = rospy.Publisher(topic_subname + '/workpoints_array', Path, queue_size=10)
+		self.workpoints_sub = rospy.Subscriber(topic_subname + '/workpoints_array', Path, self.set_work_points_path)
+		
 		
 	def unregister_subs(self):
 	
@@ -145,6 +135,7 @@ class Robot(thr.Thread):
 			rospy.sleep(self.pid_delay)
 
 	def calc_control_action(self, goal, old_error, error_sum):
+
 		error = self.get_angle_difference(goal)
 		error_sum += error
 		
@@ -218,6 +209,11 @@ class Robot(thr.Thread):
 		msg = prepare_path_msg(self.name, path)
 		self.waypoints_pub.publish(msg)
 
+	def set_work_points_path(self, msg_data):
+	
+		workpoints = convert_to_path(msg_data.path)
+		self.workpoints = workpoints
+
 # Setting the final path for the robot
 # Input
 # path: list of path points
@@ -226,27 +222,85 @@ class Robot(thr.Thread):
 		path = convert_to_path(msg_data.path)
 		print(self.name + ' path curvature: ' + str(get_path_curvature(path)))
 		self.path = path
-		#self.write_path()
 
-	def follow_the_route(self):
+	def follow_the_route(self, path):
 	
-		for state in self.path:
+		self.mode = "movement"
+		self.set_movespeed(const.MOVEMENT_SPEED)
+		prev_past_cost = 0
+
+		for state in path:
 		
 			self.move_with_PID(state)
+			charge_loss = -((state.path_cost - prev_past_cost) * const.gc_const.PATH_COST_CHARGE_COEF)
+			prev_past_cost = state.path_cost
+			self.bt.power_change(charge_loss)
 	
 		self.stop()
-		print('The robot ' + str(self.name) + ' has finished!')
 
-	def get_end_gps_coords(self):
+	def follow_the_working_route(self, path):
 	
-		pos = self.path[len(self.path) - 1]
-		name = self.name + '_1'
-		spawn_target(name, pos, (0, 0, 0, 0))
-		sub_robot = Robot(name)
-		delay = rospy.Duration(1, 0)
-		rospy.sleep(delay)
-		sr_coords = sub_robot.get_gps_coords()
-		return sr_coords
+		self.follow_the_route(path)
+		self.perform_the_task()
+		
+	def perform_the_task(self):
+	
+		task_completion = 0
+		s_b_charge = self.bt.battery
+		start_time = rospy.get_time()
+		exec_duration = const.TASK_EXEC_SPEED
+		
+		while task_completion < 100:
+		
+			cur_time = rospy.get_time()
+			all_time = cur_time - start_time
+			task_completion = float((all_time / exec_duration) * 100)
+			
+			step_time = cur_time - last_step_time
+			last_step_time = cur_time
+			power_consupmtion = float((step_time / exec_duration) * 100)
+			self.bt.power_change(-power_consumption)
+
+		
+	def follow_the_charger_route(self, path):
+	
+		self.follow_the_route(path)
+		dock_point = self.dock_points[0]
+		self.dock_points.pop(0)
+		
+		dock_path = self.plan_path_to_dock_point(dock_point)
+		self.follow_the_route(dock_path)
+		partner = self.rechargeable_robots[0]
+		self.rechargeable_robots.pop(0)
+		self.set_docking_mode(partner)
+		self.docking()
+		self.start_charging
+		
+	def plan_path_to_dock_point(self, dock_point):
+	
+		pass
+		return None
+		
+	def start_charging():
+
+		self.mode = "charging"
+		s_ch_time = rospy.get_time()
+		rechargeable_bt = self.b_trackers[self.partner]
+		
+		while self.mode == "charging":
+			
+			cur_ch_time = rospy.get_time()
+			time_diff = cur_ch_time - s_ch_time
+			s_ch_time = cur_ch_time
+			charge_received = const.CHARGING_SPEED * time_diff
+			rechargeable_bt.power_change(charge_received)
+			self.bt.power_change(-charge_received)
+			
+			if self.battery == const.DES_CHARGE_LEVEL:
+			
+				self.mode = None
+
+		
 		
 	def set_movespeed(self, ms):
 	
@@ -259,17 +313,6 @@ class Robot(thr.Thread):
 		self.i_min = -(10 + self.ms * 15)
 		self.i_max = 10 + self.ms * 15
 
-	def write_path(self):
-	
-		f = open(self.local_path_dir, 'w+')
-		f.close()
-	
-		if self.path:
-
-			for state in self.path:
-
-				self.add_path_local_coords(state)
-
 	def get_distance_to_partner(self):
 	
 		self_pos = self.get_robot_position()
@@ -279,7 +322,7 @@ class Robot(thr.Thread):
 		
 	def get_angle_difference_with_parther(self):
 	
-		partner_orient = get_robot_orientation_vector(self.partner_name)
+		partner_orient = gc.get_robot_orientation_vector(self.partner_name)
 		self_orient = self.get_robot_orientation_vector()
 		angle_difference = self_orient.get_angle_between_vectors(partner_orient)
 
@@ -302,6 +345,7 @@ class Robot(thr.Thread):
 			self.movement(self.ms, u)
 
 		self.stop()
+		self.mode = None
 		print(self.name + ' successfully connected to ' + str(self.partner_name) + '.')
 
 	def set_docking_mode(self, partner_name):
@@ -312,67 +356,29 @@ class Robot(thr.Thread):
 # The movement of the robot along a given final route
 # Start of thread
 	def run(self):
-
-		start_coords = self.get_gps_coords()
-		#self.write_start_coords(start_coords)
-		#self.add_path_gps('w+')
 		
-		if len(self.path) > 0:
+		if role == "charger":
+
+			for path in self.paths:
+			
+				self.follow_the_working_route(path)
 				
-			#end_coords = self.get_end_gps_coords()
-			#self.write_coords(start_coords, end_coords)
+			print('The working robot ' + str(self.name) + ' has finished!')
+				
+
+		elif role == "worker":
+		
+			for path in self.paths:
 			
-			self.follow_the_route()
-			
-			if self.mode == "docking":
-			
-				self.docking()
+				self.follow_the_charger_route(path)
+				
+			print('The charging robot ' + str(self.name) + ' has finished!')
 			
 		else:
 		
-			print('Path is empty!')
+			print(self.name + ' role is unknown.')
 		
 		del self
-		
-	def gps_callback(self, msg_data):
-	
-		self.latitude = msg_data.latitude
-		self.longitude = msg_data.longitude
-
-	def get_gps_coords(self):
-	
-		return '(' + str(self.longitude) + ', ' + str(self.latitude) + ')'
-		
-	def write_start_coords(self, coords):
-		
-		f = open(const.MAP_STATIC_COORDS_PATH, 'a+')
-		f.write(self.name[8:] + ': ' + str(coords) + '\n\n')
-		f.close()
-	
-	def write_coords(self, start_coords, end_coords):
-		
-		f = open(const.MAP_DYNAMIC_COORDS_PATH, 'a+')
-		f.write(self.name[8:] + ': (' + str(start_coords) + ', ' + end_coords + ')\n\n')
-		f.close()
-		print(self.name + ' end GPS coordinates: ' + end_coords)
-		
-	def add_path_gps(self, open_mode):
-	
-		self.path_p_count += 1
-		gps_coords = self.get_gps_coords()
-		f = open(const.PATHS_DIR_PATH + self.name + '.txt', open_mode)
-		f.write(str(self.path_p_count) + ': ' + gps_coords + '\n')
-		f.close()
-		
-	def add_path_local_coords(self, state):
-
-		x = state.x
-		y = state.y
-		z = state.z
-		pos = '(' + str(x) + ', ' + str(y) + ', ' + str(z) + ')'
-		f = open(self.local_path_dir, 'a+')
-		f.write(pos + '\n')
-		f.close()
 		
 # Converting msg to Point object
 # Input

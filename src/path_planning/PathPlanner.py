@@ -491,13 +491,13 @@ v1.get_distance_to(v2) #+ fabs(v1.riskiness - v2.riskiness)
 			v = self.heightmap[v_id]
 
 			dist = v.get_distance_to(goal)
-			total_path_cost = v.path_cost + dist
+			#total_path_cost = v.path_cost + dist
 
-			if total_path_cost < min_path_cost:
-			#if dist < min_dist:
+			#if total_path_cost < min_path_cost:
+			if dist < min_dist:
 
-				#min_dist = dist
-				min_path_cost = total_path_cost
+				min_dist = dist
+				#min_path_cost = total_path_cost
 				closest_id = v_id
 
 		self.closed.append(closest_id)
@@ -789,24 +789,25 @@ v1.get_distance_to(v2) #+ fabs(v1.riskiness - v2.riskiness)
 			current_v = self.heightmap[current_v_id]
 			current_neighbors = copy.copy(current_v.neighbors_list.values())
 			
-		print('Iter count: ' + str(iter_count))
-		print('Len Open: ' + str(len(self.open)))
+		#print('Iter count: ' + str(iter_count))
+		#print('Len Open: ' + str(len(self.open)))
 
 		if not goal_v.get_predecessor() == None:
 
 			current_v = goal_v
-			path = []
+			tmp_path = []
 			path_ids = []
-			path.insert(0, current_v)
+			tmp_path.insert(0, current_v)
 			path_ids.insert(0, current_v.id)
 
 			while not current_v == start_v:
 
 				predecessor_id = current_v.get_predecessor()
 				current_v = self.heightmap[predecessor_id]
-				path.insert(0, current_v)
+				tmp_path.insert(0, current_v)
 				path_ids.insert(0, predecessor_id)
 
+			path = copy.deepcopy(tmp_path)
 			path_length = get_path_length(path)
 			path_cost = goal_v.path_cost
 			path_curvature = self.get_path_curvature_ids(path_ids)
@@ -815,13 +816,13 @@ v1.get_distance_to(v2) #+ fabs(v1.riskiness - v2.riskiness)
 			#print('Path curvature: ' + str(path_curvature))
 			#print('Number of vertices = ' + str(len(path)))
 			self.clear_path_costs()
-			return path, path_ids, path_cost
+			return path, path_ids
 
 		else:
 
 			self.clear_path_costs()
 			#print('Path from ' + str(start_id) + ' to ' + str(goal_id) + ' vertex cannot be found.')
-			return None, None, None
+			return None, None
 
 	def get_random_start_pos(self, x, y):
 	
@@ -1132,7 +1133,7 @@ v1.get_distance_to(v2) #+ fabs(v1.riskiness - v2.riskiness)
 			if not(start_v.obstacle or goal_v.obstacle or goal_id == start_id or self.closed_goals.__contains__(goal_id)):
 
 				iter_count += 1
-				path, path_ids, path_cost = self.find_path(start_id, goal_id, start_orient)
+				path, path_ids = self.find_path(start_id, goal_id, start_orient)
 
 				if path:
 
@@ -1162,7 +1163,7 @@ v1.get_distance_to(v2) #+ fabs(v1.riskiness - v2.riskiness)
 			if not(goal_id == start_id or current_goals.__contains__(goal_id)):
 
 				start_time = time.time()
-				path, path_ids, path_cost = self.find_path(start_id, goal_id, start_orient)
+				path, path_ids = self.find_path(start_id, goal_id, start_orient)
 				finish_time = time.time()
 				#print('Path planning time: ' + str(finish_time - start_time))
 				current_goals.append(goal_id)

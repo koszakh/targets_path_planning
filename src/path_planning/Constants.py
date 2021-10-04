@@ -1,6 +1,6 @@
 import random
 
-ROBOTS_COUNT = 8
+ROBOTS_COUNT = 6
 ROOT_PATH = "/root/.gazebo/models"
 CURRENT_MAP = 'hmap2'
 HEIGHTMAP_SDF_PATH = ROOT_PATH + '/' + CURRENT_MAP + '/model.sdf'
