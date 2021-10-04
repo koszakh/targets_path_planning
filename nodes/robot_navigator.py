@@ -32,7 +32,7 @@ def paths_callback(msg_data):
 	print('Paths received.')
 	paths_list = msg_data.paths
 	robots = []
-	names = [name for name in msg_data.paths.robot_name]
+	names = [path.robot_name for path in paths_list]
 	trackers = bt.get_battery_trackers(names)
 
 	for path_msg in paths_list:
@@ -40,7 +40,7 @@ def paths_callback(msg_data):
 		final_path = convert_to_path(path_msg.path)	
 		name = path_msg.robot_name
 		robot = Robot(path_msg.robot_name, "worker", trackers)
-		robot.waypoints_publisher(final_path)
+		robot.waypoints_publisher([final_path])
 		robots.append(robot)	
 	
 	cont_flag = False
