@@ -52,7 +52,7 @@ find_package(
 add_message_files(
   FILES
   Path.msg
-  AllPaths.msg
+  Paths.msg
   Vector2d.msg
   Charge.msg
 )

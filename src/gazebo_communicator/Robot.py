@@ -1,5 +1,5 @@
 import rospy
-from targets_path_planning.msg import Path, Charge
+from targets_path_planning.msg import Path, Paths, Charge
 import path_planning.Point as PointGeom
 import GazeboConstants as const
 import GazeboCommunicator as gc
@@ -52,8 +52,8 @@ class Robot(thr.Thread):
 		self.waypoint_pub = rospy.Publisher(topic_subname + '/waypoint', Point, queue_size=10)
 		self.waypoint_sub = rospy.Subscriber(topic_subname + '/waypoint', Point, self.waypoint_callback)
 		
-		self.waypoints_pub = rospy.Publisher(topic_subname + '/waypoints_array', Path, queue_size=10)
-		self.waypoints_sub = rospy.Subscriber(topic_subname + '/waypoints_array', Path, self.set_path)
+		self.paths_pub = rospy.Publisher(topic_subname + '/waypoints_array', Paths, queue_size=10)
+		self.paths_sub = rospy.Subscriber(topic_subname + '/waypoints_array', Paths, self.set_path)
 		
 		self.workpoints_pub = rospy.Publisher(topic_subname + '/workpoints_array', Path, queue_size=10)
 		self.workpoints_sub = rospy.Subscriber(topic_subname + '/workpoints_array', Path, self.set_work_points_path)
@@ -206,8 +206,13 @@ class Robot(thr.Thread):
 
 	def waypoints_publisher(self, path):
 	
-		msg = prepare_path_msg(self.name, path)
-		self.waypoints_pub.publish(msg)
+		msg = prepare_paths_msg(path)
+		self.paths_pub.publish(msg)
+		
+	def workpoints_publisher(self, path):
+	
+		msg = prepare_path_msg(path)
+		self.workpoints_pub.publish(msg)
 
 	def set_work_points_path(self, msg_data):
 	
@@ -219,21 +224,26 @@ class Robot(thr.Thread):
 # path: list of path points
 	def set_path(self, msg_data):
 	
-		path = convert_to_path(msg_data.path)
-		print(self.name + ' path curvature: ' + str(get_path_curvature(path)))
-		self.path = path
+		self.paths = []
+		
+		for path_msg in msg_data.paths:
+				
+			path = convert_to_path(path_msg)
+			self.paths.append(path)
+
 
 	def follow_the_route(self, path):
 	
 		self.mode = "movement"
 		self.set_movespeed(const.MOVEMENT_SPEED)
-		prev_past_cost = 0
+		last_pos = self.get_robot_position()
 
 		for state in path:
 		
 			self.move_with_PID(state)
-			charge_loss = -((state.path_cost - prev_past_cost) * const.gc_const.PATH_COST_CHARGE_COEF)
-			prev_past_cost = state.path_cost
+			dist = last_pos.get_distance_to(state)
+			charge_loss = -(dist * const.MOVE_CHARGE_LOSS_COEF)
+			last_pos = state
 			self.bt.power_change(charge_loss)
 	
 		self.stop()
@@ -241,7 +251,7 @@ class Robot(thr.Thread):
 	def follow_the_working_route(self, path):
 	
 		self.follow_the_route(path)
-		self.perform_the_task()
+		#self.perform_the_task()
 		
 	def perform_the_task(self):
 	
@@ -300,7 +310,12 @@ class Robot(thr.Thread):
 			
 				self.mode = None
 
+	def print_bt_charges(self):
+	
+		for name in self.b_trackers:
 		
+			bt = self.b_trackers[name]
+			print(name + ' battery level: ' + str(bt.battery))
 		
 	def set_movespeed(self, ms):
 	
@@ -357,22 +372,22 @@ class Robot(thr.Thread):
 # Start of thread
 	def run(self):
 		
-		if role == "charger":
+		if self.role == "charger":
 
 			for path in self.paths:
 			
 				self.follow_the_working_route(path)
 				
-			print('The working robot ' + str(self.name) + ' has finished!')
+			print('Charger ' + str(self.name) + ' has finished!')
 				
 
-		elif role == "worker":
+		elif self.role == "worker":
 		
 			for path in self.paths:
 			
 				self.follow_the_charger_route(path)
 				
-			print('The charging robot ' + str(self.name) + ' has finished!')
+			print('Worker ' + str(self.name) + ' has finished!')
 			
 		else:
 		
@@ -405,8 +420,9 @@ def prepare_point_msg(p):
 def convert_to_path(msg):
 	
 	path = []
+	msg_path = msg.path
 	
-	for state in msg:
+	for state in msg_path:
 	
 		x = state.x
 		y = state.y
@@ -416,10 +432,9 @@ def convert_to_path(msg):
 	
 	return path
 	
-def prepare_path_msg(name, path):
+def prepare_path_msg(path):
 	msg = Path()
 	msg.path = []
-	msg.robot_name = name
 	
 	for state in path:
 	
@@ -429,6 +444,18 @@ def prepare_path_msg(name, path):
 		point.z = state.z
 		msg.path.append(point)
 	
+	return msg
+	
+def prepare_paths_msg(paths):
+
+	msg = Paths()
+	msg.paths = []
+	
+	for path in paths:
+	
+		path_msg = prepare_path_msg(path)
+		msg.paths.append(path_msg)
+		
 	return msg
 	
 # Output

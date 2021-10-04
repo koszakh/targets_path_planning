@@ -1,1 +1,0 @@
-RobotPos[] pos_list
