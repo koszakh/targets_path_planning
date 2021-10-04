@@ -1,0 +1,18 @@
+<?xml version='1.0'?>
+<sdf version='1.6'>
+  <model name='green vertice'>
+    <static>true</static>
+    <link name='link'>
+      <visual name='visual'>
+        <material>
+          <ambient>0 1 0 1</ambient>
+        </material>
+        <geometry>
+          <sphere>
+            <radius>0.25</radius>
+          </sphere>
+        </geometry>
+      </visual>
+    </link>
+  </model>
+</sdf>

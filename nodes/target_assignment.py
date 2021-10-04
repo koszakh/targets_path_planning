@@ -9,7 +9,7 @@ import time
 
 		
 rospy.init_node('target_assignment')
-paths, workpoints, w_names, c_names, b_trackers = start_target_assignment(const.WORKERS_COUNT, const.CHARGERS_COUNT, const.TARGETS_COUNT)
+paths, workpoints, w_names, c_names, b_trackers = ta.start_target_assignment(const.WORKERS_COUNT, const.CHARGERS_COUNT, const.TARGETS_COUNT)
 workers = {}
 chargers = {}
 

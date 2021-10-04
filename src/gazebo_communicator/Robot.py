@@ -248,7 +248,7 @@ class Robot(thr.Thread):
 	
 		self.stop()
 
-	def follow_the_working_route(self, path):
+	def follow_the_worker_route(self, path):
 	
 		self.follow_the_route(path)
 		#self.perform_the_task()
@@ -312,6 +312,7 @@ class Robot(thr.Thread):
 
 	def print_bt_charges(self):
 	
+		print('\n>>> ' + self.name + ' <<<')
 		for name in self.b_trackers:
 		
 			bt = self.b_trackers[name]
@@ -372,11 +373,12 @@ class Robot(thr.Thread):
 # Start of thread
 	def run(self):
 		
+		self.print_bt_charges()
 		if self.role == "charger":
 
 			for path in self.paths:
 			
-				self.follow_the_working_route(path)
+				self.follow_the_charger_route(path)
 				
 			print('Charger ' + str(self.name) + ' has finished!')
 				
@@ -385,13 +387,15 @@ class Robot(thr.Thread):
 		
 			for path in self.paths:
 			
-				self.follow_the_charger_route(path)
+				self.follow_the_worker_route(path)
 				
 			print('Worker ' + str(self.name) + ' has finished!')
 			
 		else:
 		
 			print(self.name + ' role is unknown.')
+			
+		self.print_bt_charges()
 		
 		del self
 		

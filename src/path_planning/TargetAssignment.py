@@ -3,13 +3,13 @@ import PathPlanner as pp
 import rospy
 import copy
 import numpy as np
-from targets_path_planning.msg import AllPaths, Path
+from targets_path_planning.msg import Path
 from geometry_msgs.msg import Point
 from Heightmap import Heightmap
 import Constants as const
 import gazebo_communicator.GazeboCommunicator as gc
 import gazebo_communicator.GazeboConstants as gc_const
-from gazebo_communicator.BatteryTracker import BatteryTracker
+import gazebo_communicator.BatteryTracker as bt
 from ORCA import ORCAsolver
 import random
 import itertools
@@ -153,10 +153,9 @@ def prepare_hmap():
 	mh.gridmap_preparing()
 	return mh
 
-def prep_targets(t_count):
-
-	mh = prepare_hmap()
 	
+def prepare_robots_and_targets(mh, robots_count, t_count):
+
 	offset = const.DIST_OFFSET
 	
 	avg_x = np.mean([mh.min_x, mh.max_x])
@@ -169,22 +168,20 @@ def prep_targets(t_count):
 	
 	targets = [mh.heightmap[v_id] for v_id in target_ids]
 	gc.visualise_path(targets, gc_const.BIG_GREEN_VERTICE_PATH, 'target')
+
+	names = ['sim_p3at' + str(i) for i in range(1, robots_count + 1)]
+	trackers = bt.get_battery_trackers(names)
 	
-	paths = {}
-	trackers = {}
+	for name in trackers.keys():
 	
-	for i in range(1, const.ROBOTS_COUNT + 1):
-	
-		name = 'sim_p3at' + str(i)
+		b_tracker = trackers[name]
 		robot_pos, orient = mh.get_start_pos(start[0], start[1], offset)
 		gc.spawn_target(name, robot_pos, orient)
-		bt = BatteryTracker(name)
-		start_id, start_pos = mh.get_start_vertice_id(robot_pos, bt.last_vect)
-		bt.last_p_id = start_id
-		bt.start_id = start_id
-		trackers[name] = bt
+		start_id, start_pos = mh.get_start_vertice_id(robot_pos, b_tracker.last_vect)
+		b_tracker.last_p_id = start_id
+		b_tracker.start_id = start_id
 		
-	return mh, trackers, target_ids
+	return trackers, target_ids
 	
 def target_assignment(mh, workers_count, chargets_count, trackers, target_ids):
 
@@ -213,7 +210,7 @@ def target_assignment(mh, workers_count, chargets_count, trackers, target_ids):
 
 			name = names_cp[0]
 			orig_bt = trackers[name]
-			bt = trackers_cp[name]
+			b_tracker = trackers_cp[name]
 			break_flag = False
 			
 			if not cur_paths.get(name):
@@ -224,11 +221,11 @@ def target_assignment(mh, workers_count, chargets_count, trackers, target_ids):
 			
 				cur_workpoints[name] = []
 				
-			path_id = (str(name), str(bt.last_p_id), str(target_id))
+			path_id = (str(name), str(b_tracker.last_p_id), str(target_id))
 				
 			if not s_paths.get(path_id):
 
-				path, path_ids = mh.find_path(bt.last_p_id, target_id, bt.last_vect)	
+				path, path_ids = mh.find_path(b_tracker.last_p_id, target_id, b_tracker.last_vect)	
 				
 				if path:
 
@@ -237,8 +234,8 @@ def target_assignment(mh, workers_count, chargets_count, trackers, target_ids):
 						cur_worker_names.append(name)
 
 					goal = path[len(path) - 1]
-					bt.last_vect = goal.path_cost
-					bt.last_p_id = target_id
+					b_tracker.last_vect = goal.path_cost
+					b_tracker.last_p_id = target_id
 					cur_path_cost_sum += get_path_cost(path)
 					cur_paths[name].append(path)
 					cur_workpoints[name].append(goal)
@@ -258,8 +255,8 @@ def target_assignment(mh, workers_count, chargets_count, trackers, target_ids):
 						cur_worker_names.append(name)
 
 					path = s_paths[path_id]
-					bt.last_vect = get_end_vect(path)
-					bt.last_p_id = target_id
+					b_tracker.last_vect = get_end_vect(path)
+					b_tracker.last_p_id = target_id
 					goal = path[len(path) - 1]
 					cur_path_cost_sum += goal.path_cost
 					cur_paths[name].append(path)
@@ -271,9 +268,9 @@ def target_assignment(mh, workers_count, chargets_count, trackers, target_ids):
 		
 			for name in cur_worker_names:
 
-				bt = trackers_cp[name]
+				b_tracker = trackers_cp[name]
 			
-				path, path_ids = mh.find_path(bt.last_p_id, bt.start_id, bt.last_vect)
+				path, path_ids = mh.find_path(b_tracker.last_p_id, b_tracker.start_id, b_tracker.last_vect)
 				
 				if path:
 
@@ -303,8 +300,9 @@ def target_assignment(mh, workers_count, chargets_count, trackers, target_ids):
 	return paths, workpoints, worker_names, charger_names
 	
 def start_target_assignment(w_count, c_count, t_count):
-
-	mh, trackers, target_ids = prep_targets(t_count)
+	
+	mh = prepare_hmap()	
+	trackers, target_ids = prepare_robots_andtargets(mh, w_count + c_count, t_count)
 	s_exec_time = time.time()
 	paths, workpoints, w_names, c_names = target_assignment(mh, w_count, c_count, trackers, target_ids)
 	return paths, workpoints, w_names, c_names

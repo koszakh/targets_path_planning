@@ -38,3 +38,14 @@ class BatteryTracker:
 
 		vect = gc.get_robot_orientation_vector(self.name)
 		return vect
+		
+def get_battery_trackers(names):
+
+	b_trackers = {}
+	
+	for name in names:
+	
+		bt = BatteryTracker(name)
+		b_trackers[name] = bt
+		
+	return b_trackers
