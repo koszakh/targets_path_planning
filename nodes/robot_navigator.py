@@ -4,7 +4,7 @@
 
 import rospy
 import rvo2
-from targets_path_planning.msg import Paths, Vector2d
+from targets_path_planning.msg import AllPaths, Vector2d
 from path_planning.Point import Point
 import gazebo_communicator.BatteryTracker as bt
 import gazebo_communicator.GazeboConstants as const
@@ -12,6 +12,17 @@ import gazebo_communicator.GazeboCommunicator as gc
 from gazebo_communicator.Robot import Robot
 from time import sleep
 import copy
+
+def convert_to_paths(msg):
+
+	paths = []
+	
+	for path_msg in msg.paths:
+	
+		path = convert_to_path(path_msg)
+		paths.append(path)
+		
+	return paths
 
 def convert_to_path(msg):
 
@@ -27,21 +38,22 @@ def convert_to_path(msg):
 
 	return path
 
+
 def paths_callback(msg_data):
 	
-	print('Paths received.')
-	paths_list = msg_data.paths
-	robots = []
-	names = [path.robot_name for path in paths_list]
-	trackers = bt.get_battery_trackers(names)
+	workers = {}
+	chargers = {}
+	paths_list = msg_data.all_paths
 
-	for path_msg in paths_list:
+	for paths_list in paths_list:
 	
-		final_path = convert_to_path(path_msg.path)	
-		name = path_msg.robot_name
-		robot = Robot(path_msg.robot_name, "worker", trackers)
-		robot.waypoints_publisher([final_path])
-		robots.append(robot)	
+		name = paths_list.robot_name
+		robot = Robot(name, "worker", b_trackers)
+		w_points = convert_to_path(workpoints[name])
+		path = convert_to_paths(paths[name])
+		robot.workpoints_publisher(w_points)
+		robot.waypoints_publisher(path)
+		workers[name] = robot	
 	
 	cont_flag = False
 	
@@ -49,17 +61,17 @@ def paths_callback(msg_data):
 	
 		cont_flag = True
 	
-		for robot in robots:
+		for key in workers.keys():
 	
-			if not robot.paths:
+			if not workers[key].paths:
 			
 				cont_flag = False
 
 	print('Robot movement has begun!')
-	for robot in robots:
+	for key in workers.keys():
 	
-		robot.start()
+		workers[key].start()
 
 rospy.init_node('robot_navigator')
-paths_sub = rospy.Subscriber('all_paths_data', Paths, paths_callback)
+paths_sub = rospy.Subscriber('all_paths_data', AllPaths, paths_callback)
 rospy.spin()

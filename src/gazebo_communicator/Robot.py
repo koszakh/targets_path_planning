@@ -49,41 +49,19 @@ class Robot(thr.Thread):
 		
 		self.vel_publisher = rospy.Publisher(topic_subname + '/cmd_vel', Twist, queue_size=10)
 		
-		self.waypoint_pub = rospy.Publisher(topic_subname + '/waypoint', Point, queue_size=10)
-		self.waypoint_sub = rospy.Subscriber(topic_subname + '/waypoint', Point, self.waypoint_callback)
-		
 		self.paths_pub = rospy.Publisher(topic_subname + '/waypoints_array', Paths, queue_size=10)
 		self.paths_sub = rospy.Subscriber(topic_subname + '/waypoints_array', Paths, self.set_path)
 		
 		self.workpoints_pub = rospy.Publisher(topic_subname + '/workpoints_array', Path, queue_size=10)
 		self.workpoints_sub = rospy.Subscriber(topic_subname + '/workpoints_array', Path, self.set_work_points_path)
-		
-		
+
 	def unregister_subs(self):
 	
 		self.waypoint_sub.unregister()
 		self.waypoints_sub.unregister()
 		self.gps_listener.unregister()
 		self.def_prob_sub.unregister()
-		
-	def damage_callback(self, msg_data):
-	
-		damage = msg_data.damage
-		self.total_damage += damage
-		
-		if self.total_damage >= const.UPPER_DAMAGE_LIMIT:
-		
-			print(self.name + ' was exploded!')
-			self.stop()
-			pos = self.get_robot_position()
-			gc.set_model_state(self.name, Point(pos.x + 100000, pos.y + 100000, pos.z + 10000), (0, 180, 0, 0))
-			self.unregister_subs()
-			del self
-			
-		else:
-		
-			print(self.name + ' current def prob value: ' + str(self.total_damage))
-
+		self.workpoints_sub.unregister()
 
 # Getting the position of the robot in 3D space in the Gazebo environment
 
