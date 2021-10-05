@@ -216,7 +216,7 @@ class Robot(thr.Thread):
 
 	def set_work_points_path(self, msg_data):
 	
-		workpoints = convert_to_path(msg_data.path)
+		workpoints = convert_to_path(msg_data)
 		self.workpoints = workpoints
 
 # Setting the final path for the robot
@@ -317,7 +317,7 @@ class Robot(thr.Thread):
 		
 			self.get_robot_battery_level(name)
 
-	def get_robot_battery_level(self, name)
+	def get_robot_battery_level(self, name):
 	
 		bt = self.b_trackers[name]
 		battery = int(bt.battery)
@@ -382,7 +382,7 @@ class Robot(thr.Thread):
 # Start of thread
 	def run(self):
 		
-		self.print_bt_charges()
+		#self.print_bt_charges()
 		if self.role == "charger":
 
 			for path in self.paths:
@@ -404,7 +404,7 @@ class Robot(thr.Thread):
 		
 			print(self.name + ' role is unknown.')
 			
-		self.print_bt_charges()
+		#self.print_bt_charges()
 		
 		del self
 		
@@ -433,9 +433,7 @@ def prepare_point_msg(p):
 def convert_to_path(msg):
 	
 	path = []
-	msg_path = msg.path
-	
-	for state in msg_path:
+	for state in msg.path:
 	
 		x = state.x
 		y = state.y

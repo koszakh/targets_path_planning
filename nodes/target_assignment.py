@@ -9,7 +9,9 @@ import time
 
 		
 rospy.init_node('target_assignment')
-paths, workpoints, w_names, c_names, b_trackers = ta.start_target_assignment(const.WORKERS_COUNT, const.CHARGERS_COUNT, const.TARGETS_COUNT)
+t_as = ta.TargetAssignment(const.WORKERS_COUNT, const.CHARGERS_COUNT, const.TARGETS_COUNT)
+s_exec_time = time.time()
+paths, workpoints, w_names, c_names, b_trackers = t_as.target_assignment()
 workers = {}
 chargers = {}
 
@@ -25,7 +27,3 @@ for name in w_names:
 f_exec_time = time.time()
 exec_time = f_exec_time - s_exec_time
 print('Target assignment execution time: ' + str(exec_time))
-
-				
-	
-	
