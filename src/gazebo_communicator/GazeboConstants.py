@@ -1,8 +1,8 @@
 # Gazebo constants
 import path_planning.Constants as const
 
-GAZEBO_ROOT_PATH = '/root'
-WS_ROOT_PATH = '/home/admin'
+GAZEBO_ROOT_PATH = '/home/const'
+WS_ROOT_PATH = '/home/const'
 CURRENT_MAP = 'hmap2'
 ROBOT_MODEL_PATH = WS_ROOT_PATH + '/catkin_ws/src/targets_path_planning/urdf/' + CURRENT_MAP + '/pioneer3at.urdf'
 DIR_POINT_SUFFIX = '::dir_point'
