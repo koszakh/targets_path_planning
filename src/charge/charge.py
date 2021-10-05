@@ -7,7 +7,7 @@ from path_planning.Point import Point as pt
 import random
 from numpy import absolute, arctan, pi, sqrt
 
-
+CAPACITY_THRESHOLD = 0.15  # 0 -> robot can't move; 1 -> can overcome full path
 ANGLE_THRESHOLD = 30  # Angle threshold for charge possibility
 SQUARE_RESERVE = 1  # (SQUARE_RESERVE*2)^2 == square of charging region
 
@@ -15,16 +15,16 @@ MAX_COORDINATE = 1024
 MAX_X, MAX_Y = 30000, 30000
 k = MAX_X/MAX_COORDINATE  # Коэффициент преобразования из hmap в point и наоборот
 
-ENERGY_THRESHOLD = 15
 ENERGY_CONSUME = 1
 ENERGY_RESOURCE = 100#4 * (60*60)  # seconds  # TODO: добавить в поле класса Robot
 MAX_ENERGY_RESOURCE = ENERGY_RESOURCE #4 * (60*60)
+# MAX_SPEED = gc_const.MOVEMENT_SPEED  # m/s
 
 # Point: x, y, z
 # Hmap: y, x
 
 
-def eval_charge_points(path, workpoints, energy_resource):
+def eval_charge_points(path, hmap):
     # Evaluating charging points on the path
     # Input:
     #       path - trajectory of robot
@@ -36,16 +36,20 @@ def eval_charge_points(path, workpoints, energy_resource):
     ch_p = []
 
     path_full = len(path)
+
+    # Starting vertex for defining charging point.
+    # If 'i' less than 'path_full', robot do not come to the target point yet.
+    # List of already calculated charging points (indexes of vertexes on the path)
     i_mem = []
-    #energy_resource = (ENERGY_RESOURCE/MAX_ENERGY_RESOURCE)
+    energy_resource = (ENERGY_RESOURCE/MAX_ENERGY_RESOURCE)
     i = 1
     while i < path_full:
         point = path[i]
         last_point = path[i-1]
 
         distance = eval_distance(point, last_point)  # m
-        energy_resource -= distance/gc_const.MOVEMENT_SPEED
-        if energy_resource < ENERGY_THRESHOLD:
+        energy_resource -= ((distance/gc_const.MOVEMENT_SPEED)/MAX_ENERGY_RESOURCE)
+        if energy_resource < CAPACITY_THRESHOLD:
             # rectangle = make_rectangle(point, hmap)
             # angle = angle_with_ground(rectangle, hmap)
             angle = 1
@@ -54,9 +58,12 @@ def eval_charge_points(path, workpoints, energy_resource):
                 charging_points += [str(point).split()]
                 i_mem.append(i)
                 gc.spawn_sdf_model(point, gc_const.GREEN_VERTICE_PATH, str(i) + str(random.random()))
+
                 # draw_charging_region(rectangle, hmap)
-                energy_resource = MAX_ENERGY_RESOURCE
+
+                energy_resource = (ENERGY_RESOURCE/MAX_ENERGY_RESOURCE)
                 i += 1
+            # If angle is too big, take step back and calc points again
             else:
                 if i == 1:
                     return 0
@@ -67,18 +74,10 @@ def eval_charge_points(path, workpoints, energy_resource):
                     print('Path cannot be overcome!')
                     return 0
             continue
-
-        if point in workpoints:
-            energy_resource -= gc_const.TASK_ENERGY_COST
-            if energy_resource < ENERGY_THRESHOLD:
-                while True:
-                    energy_resource += MAX_ENERGY_RESOURCE - ENERGY_THRESHOLD
-                    if energy_resource >= ENERGY_THRESHOLD:
-                        break
-                    ch_p.append(point)
         i += 1
 
-    return ch_p, energy_resource
+    print("Charging points has been evaluated!")
+    return ch_p
 
 
 # def calc_charge_points(path, hmap):
@@ -94,7 +93,7 @@ def eval_charge_points(path, workpoints, energy_resource):
 #
 #     path_full = len(path)
 #     # Number of vertexes, that robot can overcome with own capacity
-#     path_part = int(ENERGY_THRESHOLD * path_full)
+#     path_part = int(CAPACITY_THRESHOLD * path_full)
 #
 #     # Starting vertex for defining charging point
 #     # If 'i' less than 'path_full', robot do not come to the target point yet.s

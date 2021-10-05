@@ -4,12 +4,6 @@
 from targets_path_planning.msg import AllPaths, Vector2d, Path
 from geometry_msgs.msg import Point
 
-def convert_to_point(msg):
-    x = state.x
-    y = state.y
-    z = state.z
-    p = Point(x, y, z)
-    return p
 
 def convert_to_path(msg):
     path = []
