@@ -2,10 +2,7 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="d9c1b2a3-638d-4b88-bbc2-16d9d38258af" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/nodes/energy_check.py" beforeDir="false" afterPath="$PROJECT_DIR$/nodes/energy_check.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/charge/charge.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/charge/charge.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/charge/utils.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/charge/utils.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />

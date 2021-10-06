@@ -59,7 +59,6 @@ def charge_alloc(charging_pts, charging_robot_names, hmap):
 
 	return allocation
 
-
 def define_charging_points(workers_data):
 	ch_pts = dict()
 	for w_name in workers_data.keys():
@@ -73,11 +72,11 @@ def define_charging_points(workers_data):
 		for path_msg in paths_msg:
 			path = convert_to_path(path_msg)
 			ch_pts, energy_resource = eval_charge_points(path, workpoints, energy_resource)
-			
-			for ch_pt in ch_pts:
-				ch_p[w_name].append(ch_pt)
 
-	return ch_p
+			for ch_pt in ch_pts:
+				ch_pts[w_name].append(ch_pt)
+
+	return ch_pts
 
 
 if __name__ == "__main__":
