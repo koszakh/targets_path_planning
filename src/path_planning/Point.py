@@ -20,6 +20,11 @@ class Vector2d:
 			self.x = x / vector_mod
 			self.y = y / vector_mod
 
+
+	def __str__(self):
+
+		return '(' + str(self.x) + ', ' + str(self.y) + ')'
+
 # Convert vector to angle
 
 # Output

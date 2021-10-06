@@ -16,6 +16,25 @@ import itertools
 import functools
 import time
 
+class RobotTracker():
+
+	def __init__(self, name):
+	
+		self.name = name
+		self.last_p_id = None
+		self.last_vect = None
+		self.start_id = None
+		
+	def get_robot_position(self):
+	
+		robot_pose = gc.get_model_position(self.name)
+		return robot_pose
+
+	def get_robot_orientation_vector(self):
+
+		vect = gc.get_robot_orientation_vector(self.name)
+		return vect
+
 class TargetAssignment():
 
 	def __init__(self, w_count, c_count, t_count):
@@ -30,6 +49,19 @@ class TargetAssignment():
 		self.target_ids = self.prepare_targets()
 		self.trackers = self.prepare_trackers()
 		
+		
+	def get_robots_pos_orient(self, names):
+	
+		poses = {}
+		orients = {}
+		for name in names:
+		
+			rt = self.trackers[name]
+			poses[name] = rt.get_robot_position()
+			orients[name] = rt.get_robot_orientation_vector()
+			
+		return poses, orients
+	
 	def calc_start_and_goal_centers(self):
 	
 		offset = const.DIST_OFFSET
@@ -53,99 +85,87 @@ class TargetAssignment():
 
 	def prepare_trackers(self):
 
-		trackers = bt.get_battery_trackers(self.names)
+		trackers = get_robot_trackers(self.names)
 		
 		for name in trackers.keys():
 		
-			b_tracker = trackers[name]
+			r_tracker = trackers[name]
 			robot_pos, orient = self.mh.get_start_pos(self.start_r[0], self.start_r[1], const.DIST_OFFSET)
 			gc.spawn_target(name, robot_pos, orient)
-			b_tracker.last_vect = b_tracker.get_robot_orientation_vector()
-			start_id, start_pos = self.mh.get_start_vertice_id(robot_pos, b_tracker.last_vect)
-			b_tracker.last_p_id = start_id
-			b_tracker.start_id = start_id
+			r_tracker.last_vect = r_tracker.get_robot_orientation_vector()
+			start_id, start_pos = self.mh.get_start_vertice_id(robot_pos, r_tracker.last_vect)
+			r_tracker.last_p_id = start_id
+			r_tracker.start_id = start_id
 			
 		return trackers
 		
 	def target_assignment(self):
 
-		iter_count = 0
-		path_cost_sum = float('inf')
-		s_paths = {}
+		robot_per = {}
+		best_per = {}
+		combs = get_permutations(self.names, len(self.names), self.w_count, 0)
+		best_paths_cost = float('inf')
+		for comb in combs:
 
-		print('Workers count: ' + str(self.w_count))
-		print('Targets count: ' + str(self.t_count))
-
-		combs = get_sequence_of_des_len(self.names, self.w_count, self.t_count)
-		print('Combs count: ' + str(len(combs)))
-
-		for item in combs:
-
-			cur_path_cost_sum = 0
-			iter_count += 1
-			cur_paths = {}
+			rem_workers_count = self.w_count
+			rem_targets = copy.copy(self.target_ids)
+			closed_targets = []
+			cur_best_per = {}
+			cur_paths_cost = 0
 			cur_workpoints = {}
-			cur_goals = {}
-			names_cp = copy.copy(list(item))
-			cur_worker_names = []
-			trackers_cp = copy.deepcopy(self.trackers)
-			
-			for target_id in self.target_ids:
+			for name in comb:
 
-				name = names_cp[0]
-				orig_bt = self.trackers[name]
-				b_tracker = trackers_cp[name]
-				break_flag = False
-					
-				if not cur_workpoints.get(name):
+				pers = get_task_permutations(rem_targets, self.t_count, self.w_count, rem_workers_count)
+				robot_per[name] = []
+				init_rt = self.trackers[name]
+				init_r_pos = self.mh.heightmap[init_rt.start_id]
+
+				for per in pers:
 				
-					cur_workpoints[name] = []
-					
-				if not cur_goals.get(name):
-				
-					cur_goals[name] = []
+					rt = copy.deepcopy(self.trackers[name])
+					robot_pos = init_r_pos
+					cur_cost = 0
+
+					for target_id in per:
+
+						target = self.mh.heightmap[target_id]
+						cost = robot_pos.get_distance_to(target)
+						robot_pos = target
+						cur_cost += cost
+
+					cost = robot_pos.get_distance_to(init_r_pos)
+					cur_cost += cost
+
+					robot_per[name].append((per, cur_cost))
+
+				new_mas = sort_tuple_mas(robot_per[name])
+				cur_best_per[name] = get_best_free_config(closed_targets, new_mas)
+				rem_targets = difference_of_sets(rem_targets, cur_best_per[name][0])
+				closed_targets.extend(cur_best_per[name][0])
+				cur_workpoints[name] = cur_best_per[name][0]
+				cur_paths_cost += cur_best_per[name][1]
+				rem_workers_count -= 1
 
 
-				if not cur_worker_names.__contains__(name):
-				
-					cur_worker_names.append(name)
+			if cur_paths_cost < best_paths_cost:
 
-				robot_pos = self.mh.heightmap[b_tracker.last_p_id]
-				goal = self.mh.heightmap[target_id]
-				path_cost = robot_pos.get_distance_to(goal)
-				b_tracker.last_p_id = target_id
-				cur_path_cost_sum += path_cost
-				cur_workpoints[name].append(goal)
-				cur_goals[name].append(goal)
-				names_cp.pop(0)
-			
-			for name in cur_worker_names:
-
-				b_tracker = trackers_cp[name]
-				
-				robot_pos = self.mh.heightmap[b_tracker.last_p_id]
-				goal = self.mh.heightmap[b_tracker.start_id]
-				path_cost = robot_pos.get_distance_to(goal)
-				cur_goals[name].append(goal)
-
-				cur_path_cost_sum += path_cost
-
-			if cur_path_cost_sum < path_cost_sum:
-
-				path_cost_sum = cur_path_cost_sum
-				worker_names = copy.copy(cur_worker_names)
+				best_per = copy.copy(cur_best_per)
+				best_paths_cost = cur_paths_cost
 				workpoints = copy.copy(cur_workpoints)
-				goals = copy.copy(cur_goals)
 
-			print('Iter count: ' + str(iter_count) + ' | Current path cost sum: ' + str(cur_path_cost_sum) + ' | Path cost sum: ' + str(path_cost_sum))
-			
-		paths = self.calc_task_paths(goals)
-				
-		charger_names = subtraction_of_set(self.names, worker_names)
-		print('\nFinal path cost sum for ' + str(len(worker_names)) + ' workers: ' + str(path_cost_sum))
-		print('Worker names: ' + str(worker_names))
-		print('Charger names: ' + str(charger_names))
-		return paths, workpoints, worker_names, charger_names, self.trackers
+			#print(comb, cur_paths_cost, best_paths_cost)
+
+		paths = self.calc_task_paths(best_per)
+		w_names = best_per.keys()
+		c_names = subtraction_of_set(self.names, w_names)
+		print('Worker names: ' + str(w_names))
+		print('Charger names: ' + str(c_names))
+
+		#print('\n>>> Best combination <<<\n')
+		# for key in best_per.keys():
+		#
+		#	 print(key, best_per[key])
+		return paths, workpoints, w_names, c_names
 		
 	def calc_task_paths(self, goals):
 
@@ -153,21 +173,60 @@ class TargetAssignment():
 			
 		for key in goals.keys():
 		
-			robot_goals = goals[key]
-			b_tracker = self.trackers[key]
-			last_id = b_tracker.start_id
+			robot_goals = goals[key][0]
+			r_tracker = self.trackers[key]
+			last_id = r_tracker.start_id
 			whole_path = []
 			
 			for goal in robot_goals:
 			
-				path, path_cost = self.mh.find_path(last_id, goal.id, b_tracker.last_vect)
-				last_id = goal.id
-				b_tracker.last_vect = get_end_vect(path)
+				path, path_cost = self.mh.find_path(last_id, goal, r_tracker.last_vect)
+				last_id = goal
+				r_tracker.last_vect = get_end_vect(path)
 				whole_path.append(path)
 				
 			paths[key] = copy.copy(whole_path)
 			
 		return paths
+		
+def get_best_free_config(closed_targets, pers):
+
+	per = None
+	while not per and len(pers) > 0:
+
+		copy_pers = copy.copy(pers)
+		cur_per = copy_pers[0]
+		#print(cur_per)
+		pers.pop(0)
+		cur_targets = cur_per[0]
+
+		if not mas_intersection(cur_targets, closed_targets):
+
+			per = cur_per
+
+	return per
+		
+def mas_intersection(m1, m2):
+
+	m = list(set(m1) & set(m2))
+	if m:
+
+		return True
+
+	else:
+
+		return False		
+
+def difference_of_sets(m1, m2):
+
+	m = list(set(m1) - set(m2))
+	if m:
+
+		return m
+
+	else:
+
+		return None
 	
 def get_end_vect(path):
 
@@ -246,7 +305,7 @@ def get_sequence_list(num_mas):
 
 	return prod
 
-def calc_current_seq_len(seq_len, mas_len, w_count, iter_num):
+def calc_current_seq_len(seq_len, w_count, iter_num):
 
 	cur_len = seq_len - (w_count * iter_num)
 	if cur_len > w_count:
@@ -255,9 +314,34 @@ def calc_current_seq_len(seq_len, mas_len, w_count, iter_num):
 
 	return cur_len
 
+def calc_task_seq_len(seq_len, w_count, rem_workers_num):
+
+	tasks_count = int(seq_len / w_count)
+	if rem_workers_num > 1:
+
+		cur_len = tasks_count
+
+	else:
+
+		cur_len = tasks_count + 1
+
+	return cur_len
+
 def get_permutations(mas, seq_len, w_count, i):
 
-	cur_len = calc_current_seq_len(seq_len, len(mas), w_count, i)
+	cur_len = calc_current_seq_len(seq_len, w_count, i)
+	init_per_list = itertools.permutations(mas, cur_len)
+	per_list = []
+
+	for item in init_per_list:
+
+		per_list.append(list(item))
+
+	return per_list
+	
+def get_task_permutations(mas, seq_len, w_count, rem_workers):
+
+	cur_len = calc_task_seq_len(seq_len, w_count, rem_workers)
 	init_per_list = itertools.permutations(mas, cur_len)
 	per_list = []
 
@@ -310,5 +394,38 @@ def subtraction_of_set(mas1, mas2):
 		if not mas2.__contains__(n):
 		
 			new_mas.append(n)
+
+	return new_mas
+	
+def get_robot_trackers(names):
+
+	r_trackers = {}
+	
+	for name in names:
+	
+		rt = RobotTracker(name)
+		r_trackers[name] = rt
+		
+	return r_trackers
+	
+def sort_tuple_mas(mas):
+
+	new_mas = []
+
+	while len(mas) > 0:
+
+		copy_mas = copy.copy(mas)
+		min_cost = float('inf')
+
+		for item in copy_mas:
+
+			cost = item[1]
+			if cost < min_cost:
+
+				min_cost = cost
+				cur_item = item
+
+		mas.remove(cur_item)
+		new_mas.append(cur_item)
 
 	return new_mas

@@ -25,20 +25,6 @@ class BatteryTracker:
 		self.est_energy_cost += value
 		self.tasks_count += 1
 		
-# Getting the position of the robot in 3D space in the Gazebo environment
-
-# Output
-# robot_pose: coordinates of the robot in 3D space
-	def get_robot_position(self):
-	
-		robot_pose = get_model_position(self.name)
-		return robot_pose
-
-	def get_robot_orientation_vector(self):
-
-		vect = gc.get_robot_orientation_vector(self.name)
-		return vect
-		
 def get_battery_trackers(names):
 
 	b_trackers = {}

@@ -1,1 +1,1 @@
-Paths[] all_paths
+WorkPath[] all_paths

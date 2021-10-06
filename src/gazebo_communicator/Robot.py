@@ -1,5 +1,5 @@
 import rospy
-from targets_path_planning.msg import Path, Paths, Charge
+from targets_path_planning.msg import Path, WorkPath, Charge
 import path_planning.Point as PointGeom
 import GazeboConstants as const
 import GazeboCommunicator as gc
@@ -49,8 +49,8 @@ class Robot(thr.Thread):
 		
 		self.vel_publisher = rospy.Publisher(topic_subname + '/cmd_vel', Twist, queue_size=10)
 		
-		self.paths_pub = rospy.Publisher(topic_subname + '/waypoints_array', Paths, queue_size=10)
-		self.paths_sub = rospy.Subscriber(topic_subname + '/waypoints_array', Paths, self.set_path)
+		self.paths_pub = rospy.Publisher(topic_subname + '/waypoints_array', WorkPath, queue_size=10)
+		self.paths_sub = rospy.Subscriber(topic_subname + '/waypoints_array', WorkPath, self.set_path)
 		
 		self.workpoints_pub = rospy.Publisher(topic_subname + '/workpoints_array', Path, queue_size=10)
 		self.workpoints_sub = rospy.Subscriber(topic_subname + '/workpoints_array', Path, self.set_work_points_path)
@@ -437,7 +437,7 @@ def prepare_path_msg(path):
 	
 def prepare_paths_msg(paths):
 
-	msg = Paths()
+	msg = WorkPath()
 	msg.paths = []
 	
 	for path in paths:
