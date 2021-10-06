@@ -59,7 +59,7 @@ def poses_callback(msg_data):
 		name = msg.robot_name
 		pose = convert_to_point(msg.pose)
 		orient = convert_to_vect(msg.orient)
-		print(name, pose, orient)
+		print(name, pose, orient.x, orient.y)
 
 
 rospy.init_node('poses_getter')

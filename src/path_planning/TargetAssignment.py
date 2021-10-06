@@ -69,8 +69,13 @@ class TargetAssignment():
 		avg_x = np.mean([self.mh.min_x, self.mh.max_x])
 		avg_y = np.mean([self.mh.min_y, self.mh.max_y])
 		
-		start = (avg_x - 30, avg_y - 30)
-		goal = (avg_x + 30, avg_y + 30)
+		s_x = const.S_X_OFFSET
+		s_y = const.S_Y_OFFSET
+		g_x = const.G_X_OFFSET
+		g_y = const.G_Y_OFFSET
+		
+		start = (avg_x - s_x, avg_y - s_y)
+		goal = (avg_x + g_x, avg_y + g_y)
 		
 		return start, goal
 	
