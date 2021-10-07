@@ -88,6 +88,14 @@ def paths_callback(msg_data):
 
 		workers[key].start()
 
+	flag = False
+
+	for charger in chargers:
+
+		if charger.point_achiveability(ch_point):
+
+			flag = True
+
 def c_names_callback(msg_data):
 
 	print('CHARGERS NAMES RECEIVED: ' + str(msg_data.names))

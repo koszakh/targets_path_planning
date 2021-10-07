@@ -168,12 +168,32 @@ class TargetAssignment():
 		for key in best_per.keys():
 
 			print(key, best_per[key])
-		
+			new_per = self.sort_tasks(workpoints[key], key)
+			workpoints[key] = new_per
+
 		return paths, workpoints, self.names, w_names, c_names
 	
-	def sort_tasks(self, per):
+	def sort_tasks(self, per, robot_name):
 	
-		pass
+		robot_pos = self.trackers[robot_name].get_robot_position()
+		new_per = []
+		
+		while len(per) > 0:
+		
+			min_dist = float('inf')
+		
+			for target in per:
+			
+				dist = robot_pos.get_distance_to(target)
+				if dist < min_dist:
+				
+					cur_target = target
+					min_dist = dist
+					
+			new_per.append(cur_target)
+			per.remove(cur_target)
+			
+		return new_per
 	
 	def calc_task_paths(self, goals):
 
@@ -181,25 +201,29 @@ class TargetAssignment():
 			
 		for key in goals.keys():
 		
-			robot_goals = goals[key][0]
-			r_tracker = self.trackers[key]
-			last_vect = r_tracker.last_vect
-			last_id = r_tracker.start_id
-			whole_path = []
-			
-			for goal in robot_goals:
-			
-				path, path_cost = self.mh.find_path(last_id, goal, last_vect)
-				last_id = goal
-				last_vect = get_end_vect(path)
-				whole_path.append(path)
-				
-			path, path_cost = self.mh.find_path(last_id, r_tracker.start_id, last_vect)
-			whole_path.append(path)
-				
-			paths[key] = copy.copy(whole_path)
-			
+			robot_goals = [self.mh.heightmap[ind] for ind in goals[key][0]]	
+			paths[key] = self.calc_task_path(key, robot_goals)
+
 		return paths
+		
+	def calc_task_path(self, name, robot_goals):
+		
+		r_tracker = self.trackers[name]
+		last_vect = r_tracker.last_vect
+		last_id = r_tracker.start_id
+		whole_path = []
+		
+		for goal in robot_goals:
+		
+			goal_id = self.mh.get_nearest_vertice_id(goal.x, goal.y)
+			path, path_cost = self.mh.find_path(last_id, goal_id, last_vect)
+			last_id = goal_id
+			last_vect = get_end_vect(path)
+			whole_path.append(path)
+			
+		path, path_cost = self.mh.find_path(last_id, r_tracker.start_id, last_vect)
+		whole_path.append(path)
+		return whole_path
 		
 def get_best_free_config(closed_targets, pers):
 
@@ -254,68 +278,6 @@ def prepare_hmap():
 	mh = pp.PathPlanner(hmap, l_scale, w_scale, x_step, y_step, step_count)
 	mh.gridmap_preparing()
 	return mh
-	
-def get_sequence_of_des_len(mas, w_count, seq_len):
-
-	total_per_list = []
-	
-
-	count = int(seq_len / w_count)
-	
-	if seq_len % w_count > 0:
-
-		count += 1
-
-	sub_per_lists = [get_permutations(mas, seq_len, w_count, i) for i in range(0, count)]
-	indices_count = []
-	for sub_per_list in sub_per_lists:
-
-		indices_count.append(len(sub_per_list))
-
-	seq_list = get_sequence_list(indices_count)
-
-	for seq in seq_list:
-
-		ids_seq = []
-
-		for i in range(len(sub_per_lists)):
-
-			cur_per_ind = seq[i]
-			cur_seq_list = sub_per_lists[i]
-			cur_per = cur_seq_list[cur_per_ind]
-			ids_seq.extend(cur_per)
-
-		un_el_count = len(set(ids_seq))
-		
-		if un_el_count <= w_count:
-		
-			total_per_list.append(ids_seq)
-
-	return total_per_list
-
-def get_sequence_list(num_mas):
-
-	new_mas = []
-	m_mas = []
-
-	for i in range(len(num_mas)):
-
-		m = num_mas[i]
-		m_mas.append([])
-
-		for j in range(m):
-
-			m_mas[i].append(j)
-
-	prod = []
-	init_prod = itertools.product(*m_mas)
-	print([len(x) for x in m_mas])
-	for item in init_prod:
-
-		prod.append(list(item))
-		#print(item)
-
-	return prod
 
 def calc_current_seq_len(seq_len, w_count, iter_num):
 
@@ -363,39 +325,6 @@ def get_task_permutations(mas, seq_len, w_count, rem_workers):
 
 	return per_list
 
-def remove_mas_repeats(mas):
-
-	copy_mas = copy.copy(mas)
-
-	for i in range(len(mas)):
-
-		per1 = mas[i]
-
-		for j in range(i, len(mas)):
-
-			per2 = mas[j]
-			if compare_lists(per1, per2):
-
-				if per2 in copy_mas and copy_mas.count(per2) > 1:
-
-					copy_mas.remove(per2)
-
-	return copy_mas
-
-def remove_repeats(mas):
-
-	new_mas = new_x = [el for el, _ in itertools.groupby(mas)]
-	return new_mas
-
-def compare_lists(mas1, mas2):
-
-	if functools.reduce(lambda x, y: x and y, map(lambda p, q: p == q, mas1, mas2), True):
-
-		return True
-
-	else:
-
-		return False
 		
 def subtraction_of_set(mas1, mas2):
 
