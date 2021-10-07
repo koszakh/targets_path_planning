@@ -5,6 +5,7 @@
     <arg name="paused" value="false"/>
   </include>
   <node name="target_assignment" pkg="targets_path_planning" type="target_assignment.py" output="screen" />
+  <node name="energy_check" pkg="targets_path_planning" type="energy_check.py" output="screen" />
   <node name="paths_getter" pkg="targets_path_planning" type="paths_getter.py" output="screen" />
   <node name="poses_getter" pkg="targets_path_planning" type="poses_getter.py" output="screen" />
 </launch>
