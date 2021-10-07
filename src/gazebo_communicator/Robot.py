@@ -30,7 +30,7 @@ class Robot(thr.Thread):
 		self.bt = self.b_trackers[self.name]
 		self.id = self.name[self.name.find('t') + 1:]
 		self.init_topics()
-		self.pid_delay = rospy.Duration(0, const.PID_NSEC_DELAY * 2)
+		self.pid_delay = rospy.Duration(0, const.PID_NSEC_DELAY)
 		msg = Twist()
 		rospy.sleep(self.pid_delay)
 		self.vel_publisher.publish(msg)
@@ -41,7 +41,9 @@ class Robot(thr.Thread):
 		self.partner_name = None
 		self.mode = None
 		self.role = role
+		self.finished = False
 		self.charging = False
+		self.waiting = False
 		
 	def init_topics(self):
 		
@@ -110,6 +112,7 @@ class Robot(thr.Thread):
 			u, old_error, error_sum = self.calc_control_action(goal, old_error, error_sum)
 			self.movement(self.ms, u)
 			#self.add_path_gps('a+')
+			self.robot_waiting()
 			rospy.sleep(self.pid_delay)
 
 	def calc_control_action(self, goal, old_error, error_sum):
@@ -226,6 +229,23 @@ class Robot(thr.Thread):
 			self.check_battery()
 	
 		self.stop()
+	
+	def robot_waiting(self):
+	
+		while self.waiting:
+		
+			print(self.name + ' fucked up')
+			pass
+	
+	def wait(self):
+	
+		#print(self.name + ' is waiting.')
+		self.waiting = True
+		self.stop()
+		
+	def stop_waiting(self):
+	
+		self.waiting = False
 
 	def perform_worker_mission(self, path):
 
@@ -270,14 +290,14 @@ class Robot(thr.Thread):
 		self.rechargeable_robots.pop(0)
 		self.set_docking_mode(partner)
 		self.docking()
-		self.start_charging
+		self.start_charging()
 		
 	def plan_path_to_dock_point(self, dock_point):
 	
 		pass
 		return None
 		
-	def start_charging():
+	def start_charging(self):
 
 		self.mode = "charging"
 		s_ch_time = rospy.get_time()
@@ -290,9 +310,10 @@ class Robot(thr.Thread):
 			s_ch_time = cur_ch_time
 			charge_received = const.CHARGING_SPEED * time_diff
 			rechargeable_bt.power_change(charge_received)
-			self.bt.power_change(-charge_received)
+			self.bt.recharge_power_change(-charge_received)
+			rech_b_level = rechargeable_bt.battery
 			
-			if self.battery == const.DES_CHARGE_LEVEL:
+			if rech_b_level >= const.HIGH_LIMIT_BATTERY and self.check_recharge_battery():
 			
 				self.mode = None
 
@@ -306,18 +327,19 @@ class Robot(thr.Thread):
 	def get_robot_battery_level(self, name):
 	
 		bt = self.b_trackers[name]
-		b_level = int(bt.battery)
+		b_level = bt.battery
+		re_b_level = bt.recharge_battery
 		#print(name + ' move battery level: ' + str(m_level) + '% | task battery level: ' + str(t_level) + '%')
-		return b_level
+		return b_level, re_b_level
 
 	def get_battery_level(self):
 
-		b_level = self.get_robot_battery_level(self.name)
-		return b_level
+		b_level, re_b_level = self.get_robot_battery_level(self.name)
+		return b_level, re_b_level
 
 	def check_battery(self):
 
-		b_level = self.get_battery_level()
+		b_level, re_b_level = self.get_battery_level()
 		
 		if b_level < const.LOWER_LIMIT_BATTERY:
 		
@@ -325,8 +347,19 @@ class Robot(thr.Thread):
 			
 			while b_level < const.HIGH_LIMIT_BATTERY:
 			
-				b_level = self.get_battery_level()
+				b_level, re_b_level = self.get_battery_level()
 				
+	def check_recharge_battery(self):
+
+		b_level, re_b_level = self.get_battery_level()
+		
+		if re_b_level < const.LOWER_LIMIT_RECHARGE_BATTERY:
+			
+			return False
+			
+		else:
+		
+			return True
 
 	def set_movespeed(self, ms):
 	
@@ -411,9 +444,8 @@ class Robot(thr.Thread):
 		
 			print(self.name + ' role is unknown.')
 			
-		#self.print_bt_charges()
+		self.finished = True
 		
-		del self
 		
 # Converting msg to Point object
 # Input
@@ -475,45 +507,3 @@ def prepare_paths_msg(paths):
 		msg.paths.append(path_msg)
 		
 	return msg
-	
-# Output
-# max_curvature: path curvature
-def get_path_curvature(path):
-	
-	max_curvature = 0
-	
-	for i in range(0, len(path) - 2):
-	
-		p1 = path[i]
-		p2 = path[i + 1]
-		p3 = path[i + 2]
-		v1 = p1.get_dir_vector_between_points(p2)
-		v2 = p2.get_dir_vector_between_points(p3)
-		if not((v1.x == 0 and v1.y == 0) or (v2.x == 0 and v2.y == 0)):
-		
-			angle_difference = fabs(v1.get_angle_between_vectors(v2))
-		
-			if angle_difference > max_curvature:
-		
-				max_curvature = angle_difference
-	
-	return max_curvature
-	
-# Calculating path length
-# Input
-# path: path vertex array
-
-# Output
-# path_len: path length
-def get_path_length(path):
-
-	path_len = 0
-
-	for i in range(0, len(path) - 1):
-
-		current_v = path[i]
-		next_v = path[i + 1]
-		dist = current_v.get_distance_to(next_v)
-		path_len += dist
-
-	return path_len

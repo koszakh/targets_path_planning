@@ -24,30 +24,19 @@ CHARGING_SPEED = 2
 TASK_EXEC_SPEED = 1
 
 ANGLE_ERROR = 1.5
-ORCA_ANGLE_SHIFT = float(60 * const.ORCA_TIME_STEP)
 DISTANCE_ERROR = 0.25
-PID_NSEC_DELAY = 100000000
+PID_NSEC_DELAY = 200000000
 
 DOCKING_THRESHOLD = 0.5
 
 SPAWN_HEIGHT_OFFSET = 0.1
-UPPER_DAMAGE_LIMIT = 0.9
 
 WORKERS_COUNT = 4
 CHARGERS_COUNT = 2
 TARGETS_COUNT = 5
 
-#LOW_CHARGE_BOUND = 45
-#HIGH_CHARGE_BOUND = 95
+LOWER_LIMIT_RECHARGE_BATTERY = 0
 LOWER_LIMIT_BATTERY = 15
 HIGH_LIMIT_BATTERY = 100
 MOVE_CHARGE_LOSS_COEF = 0.5
 TASK_ENERGY_COST = 10
-DES_CHARGE_LEVEL = 100
-
-#------------------------------------------
-
-MAP_DYNAMIC_COORDS_PATH = WS_ROOT_PATH + '/catkin_ws/src/targets_path_planning/map_logs/' + CURRENT_MAP + '/dynamic/dyn_scen_6.txt'
-MAP_STATIC_COORDS_PATH = WS_ROOT_PATH + '/catkin_ws/src/targets_path_planning/map_logs/' + CURRENT_MAP + '/static/stat_scen_1.txt'
-GPS_PATHS_DIR_PATH = WS_ROOT_PATH + '/catkin_ws/src/targets_path_planning/map_logs/' + CURRENT_MAP + '/paths/paths1/'
-PATHS_DIR = WS_ROOT_PATH + '/catkin_ws/src/targets_path_planning/path_logs/' + CURRENT_MAP + '/'

@@ -6,11 +6,11 @@ from path_planning.Point import Point, Vector2d
 from geometry_msgs.msg import Pose, Twist
 import gazebo_communicator.GazeboCommunicator as gc
 from gazebo_communicator.Robot import Robot
-from gazebo_communicator.BatteryTracker import BatteryTracker
+import gazebo_communicator.BatteryTracker as bt
 import gazebo_communicator.GazeboConstants as gc_const
 import path_planning.PathPlanner as pp
 import path_planning.Constants as const
-from path_planning.ORCA import ORCAsolver
+from path_planning.DynamicPlanner import DynamicPlanner
 from path_planning.Heightmap import Heightmap
 import copy
 from math import sqrt, asin, fabs, pi
@@ -75,20 +75,19 @@ def make_pose_msg(state, orient):
 rospy.init_node('ros_node')
 sleep(1)
 flag = True
+
 name1 = 'sim_p3at1'
 name2 = 'sim_p3at2'
-p1 = Point(0, 0, 0)
-p2 = Point(5, 0, 0)
+names = [name1, name2]
+p1 = Point(5, 0, 0)
+p2 = Point(4, -2, 0)
 gc.spawn_target(name1, p1, (0, 0, 0, 0))
 gc.spawn_target(name2, p2, (0, 0, 0, 0))
-bt1 = BatteryTracker(name1)
-bt2 = BatteryTracker(name2)
-bts = {}
-bts[name1] = bt1
-bts[name2] = bt2
+bts = bt.get_battery_trackers(names)
 
-g1 = Point(4, 0, 0)
-g2 = Point(10, 0, 0)
+
+g1 = Point(-5, 0, 0)
+g2 = Point(-4, 2, 0)
 path1 = [p1, g1]
 path2 = [p2, g2]
 
@@ -96,9 +95,11 @@ robot1 = Robot(name1, "worker", bts)
 robot2 = Robot(name2, "worker", bts)
 robot1.waypoints_publisher([path1])
 robot2.waypoints_publisher([path2])
-sleep(3)
-robot1.start()
-robot2.start()
+robots = {}
+robots[name1] = robot1
+robots[name2] = robot2
+dp = DynamicPlanner(None, robots)
+dp.start()
 print('Finish!')
 rospy.spin()
 

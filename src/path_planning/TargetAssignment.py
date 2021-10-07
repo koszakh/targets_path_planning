@@ -37,11 +37,11 @@ class RobotTracker():
 
 class TargetAssignment():
 
-	def __init__(self, w_count, c_count, t_count):
+	def __init__(self, w_names, c_names, t_count):
 	
-		self.w_count = w_count
-		self.c_count = c_count
-		self.robots_count = w_count + c_count
+		self.w_names = w_names
+		self.c_names = c_names
+		self.robots_count = len(self.w_names) + len(self.c_names)
 		self.t_count = t_count
 		self.mh = prepare_hmap()
 		self.start_r, self.goal_r = self.calc_start_and_goal_centers()
@@ -72,7 +72,7 @@ class TargetAssignment():
 		g_x = const.G_X_OFFSET
 		g_y = const.G_Y_OFFSET
 		
-		start = (avg_x - s_x, avg_y - s_y)
+		start = (avg_x + s_x, avg_y + s_y)
 		goal = (avg_x + g_x, avg_y + g_y)
 		
 		return start, goal
@@ -106,11 +106,11 @@ class TargetAssignment():
 
 		robot_per = {}
 		best_per = {}
-		combs = get_permutations(self.names, len(self.names), self.w_count, 0)
+		combs = get_permutations(self.w_names, len(self.w_names), len(self.w_names), 0)
 		best_paths_cost = float('inf')
 		for comb in combs:
 
-			rem_workers_count = self.w_count
+			rem_workers_count = len(self.w_names)
 			rem_targets = copy.copy(self.target_ids)
 			closed_targets = []
 			cur_best_per = {}
@@ -118,7 +118,7 @@ class TargetAssignment():
 			cur_workpoints = {}
 			for name in comb:
 
-				pers = get_task_permutations(rem_targets, self.t_count, self.w_count, rem_workers_count)
+				pers = get_task_permutations(rem_targets, self.t_count, len(self.w_names), rem_workers_count)
 				robot_per[name] = []
 				init_rt = self.trackers[name]
 				init_r_pos = self.mh.heightmap[init_rt.start_id]
@@ -160,9 +160,6 @@ class TargetAssignment():
 			#print(comb, cur_paths_cost, best_paths_cost)
 
 		paths = self.calc_task_paths(best_per)
-		w_names = best_per.keys()
-		c_names = subtraction_of_set(self.names, w_names)
-		print('Worker names: ' + str(w_names))
 
 		print('\n>>> Best combination <<<\n')
 		for key in best_per.keys():
@@ -171,7 +168,7 @@ class TargetAssignment():
 			new_per = self.sort_tasks(workpoints[key], key)
 			workpoints[key] = new_per
 
-		return paths, workpoints, self.names, w_names, c_names
+		return paths, workpoints
 	
 	def sort_tasks(self, per, robot_name):
 	

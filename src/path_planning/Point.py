@@ -46,7 +46,6 @@ class Vector2d:
 	def get_angle_between_vectors(self, v):
 		v_angle = v.vector_to_angle()
 		self_angle = self.vector_to_angle()
-		#print('v2_angle: ' + str(v_angle) + ' | v1_angle: ' + str(self_angle))
 		angle = v_angle - self_angle
 		if angle > 180:
 			angle = -(360 - angle)

@@ -5,11 +5,20 @@ import random
 
 class BatteryTracker:
 
-	def __init__(self, name):
+	def __init__(self, name, role):
 	
 		self.name = name
 		self.dir_point = self.name + const.DIR_POINT_SUFFIX
-		self.battery = 100#random.uniform(const.LOW_CHARGE_BOUND, const.HIGH_CHARGE_BOUND)
+		self.battery = 100
+		
+		if role == "charger":
+		
+			self.recharge_battery = 100
+		
+		else:
+		
+			self.recharge_battery = None
+			
 		self.est_energy_cost = 0
 		self.last_p_id = None
 		self.last_vect = None
@@ -28,18 +37,28 @@ class BatteryTracker:
 
 			self.battery = 0
 
+	def recharge_power_change(self, charge):
+
+		if self.role == "charger":
+		
+			self.recharge_battery += charge
+
+			if self.recharge_battery > 100:
+
+				self.recharge_battery = 100
+
+			if self.recharge_battery < 0:
+
+				self.recharge_battery = 0
+
 	def add_task_cost(self, value):
 	
 		self.est_energy_cost += value
 		self.tasks_count += 1
 		
-def get_battery_trackers(names):
-
-	b_trackers = {}
+def get_battery_trackers(w_names, c_names):
 	
-	for name in names:
-	
-		bt = BatteryTracker(name)
-		b_trackers[name] = bt
-		
+	w_trackers = {name: BatteryTracker(name, "worker") for name in w_names}
+	c_trackers = {name: BatteryTracker(name, "charger") for name in c_names}
+	b_trackers = w_trackers + c_trackers
 	return b_trackers
