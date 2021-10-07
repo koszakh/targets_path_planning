@@ -222,8 +222,8 @@ class Robot(thr.Thread):
 			dist = last_pos.get_distance_to(state)
 			charge_loss = -(dist * const.MOVE_CHARGE_LOSS_COEF)
 			last_pos = state
-			self.bt.move_power_change(charge_loss)
-			self.check_move_battery()
+			self.bt.power_change(charge_loss)
+			self.check_battery()
 	
 		self.stop()
 
@@ -252,8 +252,8 @@ class Robot(thr.Thread):
 			last_step_time = cur_time
 			power_consumption = (step_time / exec_duration) * const.TASK_ENERGY_COST
 			total_consumption += power_consumption
-			self.bt.move_power_change(-power_consumption)
-			self.check_move_battery()
+			self.bt.power_change(-power_consumption)
+			self.check_battery()
 			
 		print(self.name + ' task energy consumption: ' + str(total_consumption))
 			
@@ -289,8 +289,8 @@ class Robot(thr.Thread):
 			time_diff = cur_ch_time - s_ch_time
 			s_ch_time = cur_ch_time
 			charge_received = const.CHARGING_SPEED * time_diff
-			rechargeable_bt.move_power_change(charge_received)
-			self.bt.task_power_change(-charge_received)
+			rechargeable_bt.power_change(charge_received)
+			self.bt.power_change(-charge_received)
 			
 			if self.battery == const.DES_CHARGE_LEVEL:
 			
@@ -306,40 +306,28 @@ class Robot(thr.Thread):
 	def get_robot_battery_level(self, name):
 	
 		bt = self.b_trackers[name]
-		m_level = int(bt.move_battery)
-		t_level = int(bt.task_battery)
+		b_level = int(bt.battery)
 		#print(name + ' move battery level: ' + str(m_level) + '% | task battery level: ' + str(t_level) + '%')
-		return m_level, t_level
+		return b_level
 
 	def get_battery_level(self):
 
-		m_level, t_level = self.get_robot_battery_level(self.name)
-		return m_level, t_level
+		b_level = self.get_robot_battery_level(self.name)
+		return b_level
 
-	def check_move_battery(self):
+	def check_battery(self):
 
-		m_level, t_level = self.get_battery_level()
+		b_level = self.get_battery_level()
 		
-		if m_level < const.LOWER_LIMIT_BATTERY:
+		if b_level < const.LOWER_LIMIT_BATTERY:
 		
 			self.stop
 			
-			while m_level < const.HIGH_LIMIT_BATTERY:
+			while b_level < const.HIGH_LIMIT_BATTERY:
 			
-				m_level, t_level = self.get_battery_level()
+				b_level = self.get_battery_level()
 				
-	def check_task_battery(self):
 
-		m_level, t_level = self.get_battery_level()
-		
-		if t_level < const.LOWER_LIMIT_BATTERY:
-		
-			self.stop
-			
-			while t_level < const.HIGH_LIMIT_BATTERY:
-			
-				m_level, t_level = self.get_battery_level()
-		
 	def set_movespeed(self, ms):
 	
 		self.ms = ms
