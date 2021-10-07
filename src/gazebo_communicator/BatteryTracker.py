@@ -9,16 +9,37 @@ class BatteryTracker:
 	
 		self.name = name
 		self.dir_point = self.name + const.DIR_POINT_SUFFIX
-		self.battery = random.uniform(const.LOW_CHARGE_BOUND, const.HIGH_CHARGE_BOUND)
+		self.move_battery = 100#random.uniform(const.LOW_CHARGE_BOUND, const.HIGH_CHARGE_BOUND)
+		self.task_battery = 100
 		self.est_energy_cost = 0
 		self.last_p_id = None
 		self.last_vect = None
 		self.tasks_count = 0
 		self.path_costs = {}
 		
-	def power_change(self, charge):
+	def move_power_change(self, charge):
 
-		self.battery += charge
+		self.move_battery += charge
+
+		if self.move_battery > 100:
+
+			self.move_battery = 100
+
+		if self.move_battery < 0:
+
+			self.move_battery = 0
+			
+	def task_power_change(self, charge):
+
+		self.task_battery += charge
+
+		if self.task_battery > 100:
+
+			self.task_battery = 100
+
+		if self.task_battery < 0:
+
+			self.task_battery = 0
 
 	def add_task_cost(self, value):
 	

@@ -63,5 +63,5 @@ def poses_callback(msg_data):
 
 
 rospy.init_node('poses_getter')
-paths_sub = rospy.Subscriber('worker_poses', Poses, poses_callback)
+paths_sub = rospy.Subscriber('robot_poses', Poses, poses_callback)
 rospy.spin()

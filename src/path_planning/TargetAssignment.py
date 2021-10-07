@@ -48,7 +48,7 @@ class TargetAssignment():
 		self.names = ['sim_p3at' + str(i) for i in range(1, self.robots_count + 1)]
 		self.target_ids = self.prepare_targets()
 		self.trackers = self.prepare_trackers()
-		
+
 		
 	def get_robots_pos_orient(self, names):
 	
@@ -63,8 +63,6 @@ class TargetAssignment():
 		return poses, orients
 	
 	def calc_start_and_goal_centers(self):
-	
-		offset = const.DIST_OFFSET
 		
 		avg_x = np.mean([self.mh.min_x, self.mh.max_x])
 		avg_y = np.mean([self.mh.min_y, self.mh.max_y])
@@ -81,10 +79,10 @@ class TargetAssignment():
 	
 	def prepare_targets(self):
 		
-		target_ids = self.mh.get_random_ids_in_area(self.goal_r[0], self.goal_r[1], const.DIST_OFFSET, self.t_count)
+		target_ids = self.mh.get_random_ids_in_area(self.goal_r[0], self.goal_r[1], const.GOAL_DIST_OFFSET, self.t_count)
 		
 		targets = [self.mh.heightmap[v_id] for v_id in target_ids]
-		gc.visualise_path(targets, gc_const.BIG_GREEN_VERTICE_PATH, 'target')
+		gc.visualise_path(targets, gc_const.GREEN_VERTICE_PATH, 'target')
 			
 		return target_ids
 
@@ -95,7 +93,7 @@ class TargetAssignment():
 		for name in trackers.keys():
 		
 			r_tracker = trackers[name]
-			robot_pos, orient = self.mh.get_start_pos(self.start_r[0], self.start_r[1], const.DIST_OFFSET)
+			robot_pos, orient = self.mh.get_start_pos(self.start_r[0], self.start_r[1], const.START_DIST_OFFSET)
 			gc.spawn_target(name, robot_pos, orient)
 			r_tracker.last_vect = r_tracker.get_robot_orientation_vector()
 			start_id, start_pos = self.mh.get_start_vertice_id(robot_pos, r_tracker.last_vect)
@@ -146,8 +144,9 @@ class TargetAssignment():
 				new_mas = sort_tuple_mas(robot_per[name])
 				cur_best_per[name] = get_best_free_config(closed_targets, new_mas)
 				rem_targets = difference_of_sets(rem_targets, cur_best_per[name][0])
-				closed_targets.extend(cur_best_per[name][0])
-				cur_workpoints[name] = cur_best_per[name][0]
+				cur_wp_ids = cur_best_per[name][0]
+				closed_targets.extend(cur_wp_ids)
+				cur_workpoints[name] = [self.mh.heightmap[cur_id] for cur_id in cur_wp_ids]
 				cur_paths_cost += cur_best_per[name][1]
 				rem_workers_count -= 1
 
@@ -164,14 +163,18 @@ class TargetAssignment():
 		w_names = best_per.keys()
 		c_names = subtraction_of_set(self.names, w_names)
 		print('Worker names: ' + str(w_names))
-		print('Charger names: ' + str(c_names))
 
-		#print('\n>>> Best combination <<<\n')
-		# for key in best_per.keys():
-		#
-		#	 print(key, best_per[key])
-		return paths, workpoints, w_names, c_names
+		print('\n>>> Best combination <<<\n')
+		for key in best_per.keys():
+
+			print(key, best_per[key])
 		
+		return paths, workpoints, self.names, w_names, c_names
+	
+	def sort_tasks(self, per):
+	
+		pass
+	
 	def calc_task_paths(self, goals):
 
 		paths = {}
@@ -180,15 +183,19 @@ class TargetAssignment():
 		
 			robot_goals = goals[key][0]
 			r_tracker = self.trackers[key]
+			last_vect = r_tracker.last_vect
 			last_id = r_tracker.start_id
 			whole_path = []
 			
 			for goal in robot_goals:
 			
-				path, path_cost = self.mh.find_path(last_id, goal, r_tracker.last_vect)
+				path, path_cost = self.mh.find_path(last_id, goal, last_vect)
 				last_id = goal
-				r_tracker.last_vect = get_end_vect(path)
+				last_vect = get_end_vect(path)
 				whole_path.append(path)
+				
+			path, path_cost = self.mh.find_path(last_id, r_tracker.start_id, last_vect)
+			whole_path.append(path)
 				
 			paths[key] = copy.copy(whole_path)
 			

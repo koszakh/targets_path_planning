@@ -4,7 +4,7 @@
 import path_planning.TargetAssignment as ta
 import gazebo_communicator.GazeboConstants as const
 from gazebo_communicator.Robot import Robot
-from targets_path_planning.msg import AllPaths, WorkPath, Path, Poses, RobotState, Vector2d
+from targets_path_planning.msg import AllPaths, WorkPath, Path, Poses, RobotState, Vector2d, NamesList
 from geometry_msgs.msg import Point
 import rospy
 import time
@@ -51,11 +51,13 @@ def prepare_path_msg(path):
 	
 def prepare_point_msg(point):
 
-	point = Point()
-	point.x = point.x
-	point.y = point.y
-	point.z = point.z
-	return point
+	#print('point: ' + str(point))
+	msg = Point()
+	msg.x = point.x
+	msg.y = point.y
+	msg.z = point.z
+	
+	return msg
 	
 def prepare_orient_msg(orient):
 
@@ -78,22 +80,35 @@ def prepare_poses_msg(poses, orients):
 		msg.robot_states.append(robot_msg)
 		
 	return msg
+
+def prepare_names_msg(names):
+
+	msg = NamesList()
+	msg.names = []
+	
+	for name in names:
+	
+		msg.names.append(name)
+		
+	return msg
 		
 rospy.init_node('target_assignment')
 paths_pub = rospy.Publisher('worker_paths', AllPaths, queue_size=10)
-poses_pub = rospy.Publisher('worker_poses', Poses, queue_size=10)
+poses_pub = rospy.Publisher('robot_poses', Poses, queue_size=10)
+c_names_pub = rospy.Publisher('chargers_names', NamesList, queue_size=10)
 t_as = ta.TargetAssignment(const.WORKERS_COUNT, const.CHARGERS_COUNT, const.TARGETS_COUNT)
 s_exec_time = time.time()
-paths, workpoints, w_names, c_names = t_as.target_assignment()
-poses, orients = t_as.get_robots_pos_orient(w_names)
+paths, workpoints, names, w_names, c_names = t_as.target_assignment()
+poses, orients = t_as.get_robots_pos_orient(names)
 
 poses_msg = prepare_poses_msg(poses, orients)
 poses_pub.publish(poses_msg)
 
+names_msg = prepare_names_msg(c_names)
+c_names_pub.publish(names_msg)
+
 paths_msg = prepare_all_paths_msg(w_names, paths, workpoints)
 paths_pub.publish(paths_msg)
-
-
 
 #msg = prepare_all_paths_msg(paths.keys(), paths, workpoints)
 #paths_pub.publish(msg)

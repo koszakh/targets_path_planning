@@ -61,6 +61,7 @@ add_message_files(
   ChargePoint.msg
   ChargePoints.msg
   AllChargePoints.msg
+  NamesList.msg
 )
 
 ## Generate services in the 'srv' folder

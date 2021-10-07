@@ -217,40 +217,48 @@ class Robot(thr.Thread):
 		last_pos = self.get_robot_position()
 
 		for state in path:
-		
+
 			self.move_with_PID(state)
 			dist = last_pos.get_distance_to(state)
 			charge_loss = -(dist * const.MOVE_CHARGE_LOSS_COEF)
 			last_pos = state
-			self.bt.power_change(charge_loss)
+			self.bt.move_power_change(charge_loss)
+			self.check_move_battery()
 	
 		self.stop()
 
-	def follow_the_worker_route(self, path):
-	
+	def perform_worker_mission(self, path):
+
 		self.follow_the_route(path)
-		#self.perform_the_task()
+		self.perform_the_task()
 		
 	def perform_the_task(self):
 	
+		print('\n>>> ' + self.name + ' started performing task!')
 		task_completion = 0
-		s_b_charge = self.bt.battery
 		start_time = rospy.get_time()
+		last_step_time = start_time
 		exec_duration = const.TASK_EXEC_SPEED
+		total_consumption = 0
 		
 		while task_completion < 100:
 		
 			cur_time = rospy.get_time()
 			all_time = cur_time - start_time
 			task_completion = float((all_time / exec_duration) * 100)
+			#print('Completion of the task by ' + self.name + ' :' + str(task_completion))
 			
 			step_time = cur_time - last_step_time
 			last_step_time = cur_time
-			power_consupmtion = float((step_time / exec_duration) * 100)
-			self.bt.power_change(-power_consumption)
-
+			power_consumption = (step_time / exec_duration) * const.TASK_ENERGY_COST
+			total_consumption += power_consumption
+			self.bt.move_power_change(-power_consumption)
+			self.check_move_battery()
+			
+		print(self.name + ' task energy consumption: ' + str(total_consumption))
+			
 		
-	def follow_the_charger_route(self, path):
+	def perform_charger_mission(self, path):
 	
 		self.follow_the_route(path)
 		dock_point = self.dock_points[0]
@@ -281,8 +289,8 @@ class Robot(thr.Thread):
 			time_diff = cur_ch_time - s_ch_time
 			s_ch_time = cur_ch_time
 			charge_received = const.CHARGING_SPEED * time_diff
-			rechargeable_bt.power_change(charge_received)
-			self.bt.power_change(-charge_received)
+			rechargeable_bt.move_power_change(charge_received)
+			self.bt.task_power_change(-charge_received)
 			
 			if self.battery == const.DES_CHARGE_LEVEL:
 			
@@ -298,12 +306,39 @@ class Robot(thr.Thread):
 	def get_robot_battery_level(self, name):
 	
 		bt = self.b_trackers[name]
-		battery = int(bt.battery)
-		print(name + ' battery level: ' + str(battery) + '%')
+		m_level = int(bt.move_battery)
+		t_level = int(bt.task_battery)
+		#print(name + ' move battery level: ' + str(m_level) + '% | task battery level: ' + str(t_level) + '%')
+		return m_level, t_level
 
 	def get_battery_level(self):
 
-		self.get_robot_battery_level(self.name)
+		m_level, t_level = self.get_robot_battery_level(self.name)
+		return m_level, t_level
+
+	def check_move_battery(self):
+
+		m_level, t_level = self.get_battery_level()
+		
+		if m_level < const.LOWER_LIMIT_BATTERY:
+		
+			self.stop
+			
+			while m_level < const.HIGH_LIMIT_BATTERY:
+			
+				m_level, t_level = self.get_battery_level()
+				
+	def check_task_battery(self):
+
+		m_level, t_level = self.get_battery_level()
+		
+		if t_level < const.LOWER_LIMIT_BATTERY:
+		
+			self.stop
+			
+			while t_level < const.HIGH_LIMIT_BATTERY:
+			
+				m_level, t_level = self.get_battery_level()
 		
 	def set_movespeed(self, ms):
 	
@@ -360,12 +395,18 @@ class Robot(thr.Thread):
 # Start of thread
 	def run(self):
 		
+		i = 0
+		for path in self.paths:
+		
+			i += 1
+			gc.visualise_path(path, const.RED_VERTICE_PATH, self.name + '_' + str(i) + '_')
+			
 		#self.print_bt_charges()
 		if self.role == "charger":
 
 			for path in self.paths:
 			
-				self.follow_the_charger_route(path)
+				self.perform_charger_mission(path)
 				
 			print('Charger ' + str(self.name) + ' has finished!')
 				
@@ -374,7 +415,7 @@ class Robot(thr.Thread):
 		
 			for path in self.paths:
 			
-				self.follow_the_worker_route(path)
+				self.perform_worker_mission(path)
 				
 			print('Worker ' + str(self.name) + ' has finished!')
 			
