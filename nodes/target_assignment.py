@@ -134,6 +134,75 @@ def calc_path_cost(path):
 	return path_cost
 
 
+def define_new_dict_of_workpoints(workpoints, poses, orients, workpoints_was_deleted):
+	copy_wpts = copy.copy(workpoints)
+	for c_name in c_names:
+		for w_name in w_names:
+			wpts = copy_wpts[w_name]
+			i = 0
+			while i < len(wpts):
+				workpoint = wpts[i]
+				start_id = t_as.mh.get_nearest_vertice_id(poses[c_name].x, poses[c_name].y)
+				goal_id = t_as.mh.get_nearest_vertice_id(workpoint.x, workpoint.y)
+
+				path, path_ids = t_as.mh.find_path(start_id, goal_id, orients[c_name])
+
+				path_cost = calc_path_cost(path) * 2
+				if path_cost > gc_const.HIGH_LIMIT_BATTERY - gc_const.LOWER_LIMIT_BATTERY:
+					copy_wpts[w_name].pop(i)
+					workpoints_was_deleted = True
+					continue
+				i += 1
+	return copy_wpts, workpoints_was_deleted
+
+
+def filter_dict_of_workpoints(workpoints):
+	# Delete keys where len(workpoints) = 0
+	new_dict = copy.copy(workpoints)
+	for w_name in new_dict.keys():
+		if len(new_dict[w_name]) == 0:
+			del new_dict[w_name]
+	return new_dict
+
+
+def calculate_new_paths(copy_wpts):
+	# Calculate new paths for reduced dict of workpoints
+	new_paths = dict()
+	for w_name in copy_wpts.keys():
+		paths_w_name = t_as.calc_task_path(w_name, copy_wpts[w_name])
+		new_paths[w_name] = paths_w_name
+	return new_paths
+
+
+def make_new_list_of_w_names(copy_wpts):
+	new_w_names = []
+	for w_name in copy_wpts.keys():
+		new_w_names.append(w_name)
+	return new_w_names
+
+
+def init_paths_dict():
+	paths_to_ch_p = dict()
+	paths_to_base = dict()
+	for c_name in robot_allocation.keys():
+		paths_to_ch_p[c_name] = []
+		paths_to_base[c_name] = []
+	return paths_to_ch_p, paths_to_base
+
+
+def fullfill_paths_dicts(paths_to_ch_p, paths_to_base):
+	paths_of_ch_robots_to_ch_p = copy.copy(paths_to_ch_p)
+	paths_of_ch_robots_to_base = copy.copy(paths_to_base)
+	for c_name in robot_allocation.keys():
+		start_id = t_as.mh.get_nearest_vertice_id(poses[c_name].x, poses[c_name].y)
+		ch_pts = robot_allocation[c_name]
+		for ch_pt in ch_pts:
+			goal_id = t_as.mh.get_nearest_vertice_id(ch_pt.x, ch_pt.y)
+			path, path_ids = t_as.mh.find_path(start_id, goal_id, orients[c_name])
+			paths_of_ch_robots_to_ch_p[c_name].append(path)
+			paths_of_ch_robots_to_base[c_name].append(path[::-1])
+	return paths_of_ch_robots_to_ch_p, paths_of_ch_robots_to_base
+
 rospy.init_node('target_assignment')
 
 paths_pub = rospy.Publisher('worker_paths', AllPaths, queue_size=10)
@@ -154,41 +223,12 @@ poses, orients = t_as.get_robots_pos_orient(names)
 
 
 workpoints_was_deleted = False
-copy_wpts = copy.copy(workpoints)
-for c_name in c_names:
-	for w_name in w_names:
-		wpts = copy_wpts[w_name]
-		i = 0
-		while i < len(wpts):
-			workpoint = wpts[i]
-			start_id = t_as.mh.get_nearest_vertice_id(poses[c_name].x, poses[c_name].y)
-			goal_id = t_as.mh.get_nearest_vertice_id(workpoint.x, workpoint.y)
-
-			path, path_ids = t_as.mh.find_path(start_id, goal_id, orients[c_name])
-
-			path_cost = calc_path_cost(path)*2
-			if path_cost > gc_const.HIGH_LIMIT_BATTERY - gc_const.LOWER_LIMIT_BATTERY:
-				copy_wpts[w_name].pop(i)
-				workpoints_was_deleted = True
-				continue
-			i += 1
+copy_wpts, workpoints_was_deleted = define_new_dict_of_workpoints(workpoints, poses, orients, workpoints_was_deleted)
 
 if workpoints_was_deleted:
-	# Filter dictionary (delete keys where len(workpoints) = 0)
-	for w_name in copy_wpts.keys():
-		if len(copy_wpts[w_name]) == 0:
-			del copy_wpts[w_name]
-
-	# Calculate new paths for reduced dict of workpoints
-	new_paths = dict()
-	for w_name in copy_wpts.keys():
-		paths_w_name = t_as.calc_task_path(w_name, copy_wpts[w_name])
-		new_paths[w_name] = paths_w_name
-
-	# Make a new list of w_names
-	new_w_names = []
-	for w_name in copy_wpts.keys():
-		new_w_names.append(w_name)
+	copy_wpts = filter_dict_of_workpoints(copy_wpts)
+	new_paths = calculate_new_paths(copy_wpts)
+	new_w_names = make_new_list_of_w_names(copy_wpts)
 
 	w_names = new_w_names
 	paths = new_paths
@@ -197,20 +237,8 @@ if workpoints_was_deleted:
 charging_points = define_charging_points(paths, workpoints)
 robot_allocation = charge_alloc(charging_points, c_names)
 
-paths_of_ch_robots_to_ch_p = dict()
-paths_of_ch_robots_to_base = dict()
-for c_name in robot_allocation.keys():
-	paths_of_ch_robots_to_ch_p[c_name] = []
-	paths_of_ch_robots_to_base[c_name] = []
-
-for c_name in robot_allocation.keys():
-	start_id = t_as.mh.get_nearest_vertice_id(poses[c_name].x, poses[c_name].y)
-	ch_pts = robot_allocation[c_name]
-	for ch_pt in ch_pts:
-		goal_id = t_as.mh.get_nearest_vertice_id(ch_pt.x, ch_pt.y)
-		path, path_ids = t_as.mh.find_path(start_id, goal_id, orients[c_name])
-		paths_of_ch_robots_to_ch_p[c_name].append(path)
-		paths_of_ch_robots_to_base[c_name].append(path[::-1])
+paths_to_ch_p, paths_to_base = init_paths_dict()
+paths_of_ch_robots_to_ch_p, paths_of_ch_robots_to_base = fullfill_paths_dicts(paths_to_ch_p, paths_to_base)
 
 
 
