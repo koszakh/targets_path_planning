@@ -18,6 +18,7 @@ from time import sleep
 from time import time
 import random
 from scipy.spatial.transform import Rotation
+import dubins
 
 def get_min_dist(p, points):
 
@@ -60,6 +61,17 @@ def convert_to_point(msg):
 	z = msg.z
 	point = Point(x, y, z)
 	return point
+	
+def convert_tup_to_point3d(tup_mas):
+
+	new_path = []
+
+	for state in tup_mas:
+
+		new_state = Point(state[0], state[1], 0)
+		new_path.append(new_state)
+
+	return new_path
 
 def make_pose_msg(state, orient):
 	msg = Pose()
@@ -72,34 +84,70 @@ def make_pose_msg(state, orient):
 		msg.orientation.z = orient[2]
 	return msg
 
+def calc_dock_point(pos, orient, offset):
+
+	rev_orient = orient.get_rotated_vector(180)
+	p = pos.get_point_in_direction(rev_orient, offset)
+	
+	return p
+
 rospy.init_node('ros_node')
 sleep(1)
 flag = True
 
-name1 = 'sim_p3at1'
-name2 = 'sim_p3at2'
-names = [name1, name2]
-p1 = Point(5, 0, 0)
-p2 = Point(4, -2, 0)
-gc.spawn_target(name1, p1, (0, 0, 0, 0))
-gc.spawn_target(name2, p2, (0, 0, 0, 0))
-bts = bt.get_battery_trackers(names)
+if not flag:
+
+	name1 = 'sim_p3at1'
+	name2 = 'sim_p3at2'
+	names = [name1, name2]
+	p1 = Point(5, 0, 0)
+	p2 = Point(4, -2, 0)
+	gc.spawn_target(name1, p1, (0, 0, 0, 0))
+	gc.spawn_target(name2, p2, (0, 0, 0, 0))
+	bts = bt.get_battery_trackers(names)
 
 
-g1 = Point(-5, 0, 0)
-g2 = Point(-4, 2, 0)
-path1 = [p1, g1]
-path2 = [p2, g2]
+	g1 = Point(-5, 0, 0)
+	g2 = Point(-4, 2, 0)
+	path1 = [p1, g1]
+	path2 = [p2, g2]
 
-robot1 = Robot(name1, "worker", bts)
-robot2 = Robot(name2, "worker", bts)
-robot1.waypoints_publisher([path1])
-robot2.waypoints_publisher([path2])
-robots = {}
-robots[name1] = robot1
-robots[name2] = robot2
-dp = DynamicPlanner(None, robots)
-dp.start()
+	robot1 = Robot(name1, "worker", bts)
+	robot2 = Robot(name2, "worker", bts)
+	robot1.waypoints_publisher([path1])
+	robot2.waypoints_publisher([path2])
+	robots = {}
+	robots[name1] = robot1
+	robots[name2] = robot2
+	dp = DynamicPlanner(None, robots)
+	dp.start()
+
+else:
+
+	name1 = "sim_p3at1"
+	name2 = "sim_p3at2"
+	p1 = Point(0, 0, 0)
+	p2 = Point(4, 4, 0)
+	gc.spawn_target(name1, p1, (0, 0, 0, 0))
+	gc.spawn_target(name2, p2, (0, 0, 0, 0))
+	bts = bt.get_battery_trackers([name1], [name2])
+	robot1 = Robot(name1, "worker", bts)
+	robot2 = Robot(name2, "charger", bts)
+	
+	step_size = gc_const.DISTANCE_ERROR
+
+	vect1 = robot1.get_robot_orientation_vector()
+	vect2 = robot2.get_robot_orientation_vector()
+	dock_point = calc_dock_point(p1, vect1, 0.6)
+
+	q0 = (p2.x, p2.y, vect2.vector_to_radians())
+	q1 = (dock_point.x, dock_point.y, vect1.vector_to_radians())
+	r = const.ROBOT_RADIUS
+	solution = dubins.shortest_path(q0, q1, r)
+	configurations, _ = solution.sample_many(step_size)
+	path = convert_tup_to_point3d(configurations)
+	gc.visualise_path(path, gc_const.GREEN_VERTICE_PATH, 'p')
+	
 print('Finish!')
 rospy.spin()
 

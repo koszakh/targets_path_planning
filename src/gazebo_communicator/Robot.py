@@ -279,23 +279,32 @@ class Robot(thr.Thread):
 			
 		
 	def perform_charger_mission(self, path):
-	
+
 		self.follow_the_route(path)
-		dock_point = self.dock_points[0]
 		self.dock_points.pop(0)
 		
-		dock_path = self.plan_path_to_dock_point(dock_point)
-		self.follow_the_route(dock_path)
 		partner = self.rechargeable_robots[0]
+		self.wait_for_worker()
+		rech_pos = gc.get_robot_position(partner)
+		rech_vect = gc.get_robot_orientation_vector(partner)
+		dock_point = calc_dock_point(rech_pos, rech_vect, const.ROBOT_RADIUS * 2)
+		dock_path = self.plan_path_to_dock_point(dock_point, rech_vect)
+		self.follow_the_route(dock_path)
 		self.rechargeable_robots.pop(0)
 		self.set_docking_mode(partner)
 		self.docking()
 		self.start_charging()
+		self.follow_the_route(path[2])
 		
-	def plan_path_to_dock_point(self, dock_point):
+	def plan_path_to_dock_point(self, dock_point, end_vect):
 	
-		pass
-		return None
+		robot_pos = self.get_robot_position()
+		vect = self.get_robot_orientation_vector()
+		
+		path = calc_dubins_path(robot_pos, vect, dock_point, end_vect)
+		
+		return path
+		
 		
 	def start_charging(self):
 
@@ -316,6 +325,23 @@ class Robot(thr.Thread):
 			if rech_b_level >= const.HIGH_LIMIT_BATTERY and self.check_recharge_battery():
 			
 				self.mode = None
+				
+	def recharge_batteries(self):
+	
+		self.mode = "recharging"
+		b_level, re_b_level = self.get_battery_level()
+		s_ch_time = rospy.get_time()
+		
+		while b_level < const.HIGH_LIMIT_BATTERY and re_b_level < const.HIGH_LIMIT_BATTERY:
+		
+			cur_ch_time = rospy.get_time()
+			time_diff = cur_ch_time - s_ch_time
+			s_ch_time = cur_ch_time
+			charge_received = const.CHARGING_SPEED * time_diff
+			self.bt.recharge_power_change(charge_received)
+			self.bt.power_change(charge_received)
+			b_level, re_b_level = self.get_battery_level()
+			
 
 	def print_bt_charges(self):
 	
@@ -507,3 +533,19 @@ def prepare_paths_msg(paths):
 		msg.paths.append(path_msg)
 		
 	return msg
+
+def calc_dock_point(pos, orient, offset):
+
+	rev_orient = orient.get_rotated_vector(180)
+	p = pos.get_point_in_direction(rev_orient, offset)
+	
+	return p
+
+def calc_dubins_path(s_pos, s_vect, e_pos, e_vect):
+
+	q0 = (s_pos.x, s_pos.y, s_vect.vector_to_radians())
+	q1 = (e_pos.x, e_pos.y, e_vect.vector_to_radians())
+	solution = dubins.shortest_path(q0, q1, const.ROBOT_RADIUS)
+	configurations, _ = solution.sample_many(const.DISTANCE_ERROR)
+	path = convert_tup_to_point3d(configurations)
+	return path

@@ -60,5 +60,9 @@ def get_battery_trackers(w_names, c_names):
 	
 	w_trackers = {name: BatteryTracker(name, "worker") for name in w_names}
 	c_trackers = {name: BatteryTracker(name, "charger") for name in c_names}
-	b_trackers = w_trackers + c_trackers
+	b_trackers = dict(w_trackers.items() + c_trackers.items())
+	for key in b_trackers:
+
+		print(key, b_trackers[key])
+
 	return b_trackers
