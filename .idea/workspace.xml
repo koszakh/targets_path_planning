@@ -1,8 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ChangeListManager">
-    <list default="true" id="d9c1b2a3-638d-4b88-bbc2-16d9d38258af" name="Changes" comment="">
+    <list default="true" id="d9c1b2a3-638d-4b88-bbc2-16d9d38258af" name="Changes" comment="Fixed ta.launch">
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/launch/ta.launch" beforeDir="false" afterPath="$PROJECT_DIR$/launch/ta.launch" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/nodes/energy_check.py" beforeDir="false" afterPath="$PROJECT_DIR$/nodes/energy_check.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/nodes/target_assignment.py" beforeDir="false" afterPath="$PROJECT_DIR$/nodes/target_assignment.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/charge/MsgListener.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/charge/MsgListener.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/charge/utils.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/charge/utils.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -25,6 +30,7 @@
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
   </component>
   <component name="ProjectId" id="1z5hhyVqIX2B7FiTB18AfXsmXBq" />
+  <component name="ProjectLevelVcsManager" settingsEditedManually="true" />
   <component name="ProjectViewState">
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
@@ -49,6 +55,14 @@
       <option name="presentableId" value="Default" />
       <updated>1633443986540</updated>
     </task>
+    <task id="LOCAL-00001" summary="Fixed ta.launch">
+      <created>1633613606382</created>
+      <option name="number" value="00001" />
+      <option name="presentableId" value="LOCAL-00001" />
+      <option name="project" value="LOCAL" />
+      <updated>1633613606382</updated>
+    </task>
+    <option name="localTasksCounter" value="2" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -62,5 +76,9 @@
       </map>
     </option>
     <option name="oldMeFiltersMigrated" value="true" />
+  </component>
+  <component name="VcsManagerConfiguration">
+    <MESSAGE value="Fixed ta.launch" />
+    <option name="LAST_COMMIT_MESSAGE" value="Fixed ta.launch" />
   </component>
 </project>

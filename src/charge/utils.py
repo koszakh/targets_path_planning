@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from targets_path_planning.msg import AllPaths, Vector2d, Path
+from targets_path_planning.msg import AllPaths, Vector2d, Path, WorkPath, ChargePoints, ChargePoint
 from geometry_msgs.msg import Point
 
 def convert_to_point(msg):
@@ -22,24 +22,35 @@ def convert_to_path(msg):
     return path
 
 
-def prepare_paths_msg(names, paths):
-    msg = AllPaths()
-    msg.path_list = []
-    for name in names:
-        path = paths[name]
-        path_msg = prepare_path_msg(name, path)
-        msg.path_list.append(path_msg)
+def prepare_paths_msg(name, paths):
+    msg = WorkPath()
+    msg.paths = []
+    #msg.workpoints = prepare_path_msg(workpoints)
+    msg.robot_name = name
+
+    for path in paths:
+        path_msg = prepare_path_msg(path)
+        msg.paths.append(path_msg)
+
     return msg
 
 
-def prepare_path_msg(name, path):
+def prepare_path_msg(path):
     msg = Path()
     msg.path = []
-    msg.robot_name = name
+
     for state in path:
-        point = Point()
-        point.x = state.x
-        point.y = state.y
-        point.z = state.z
-        msg.path.append(point)
+        point_msg = prepare_point_msg(state)
+        msg.path.append(point_msg)
+
+    return msg
+
+
+def prepare_point_msg(point):
+    # print('point: ' + str(point))
+    msg = Point()
+    msg.x = point.x
+    msg.y = point.y
+    msg.z = point.z
+
     return msg

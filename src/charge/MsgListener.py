@@ -13,6 +13,5 @@ class MsgListener(thr.Thread):
         self.c_names_sub = rospy.Subscriber('chargers_names', NamesList, self.c_names_callback)
 
     def c_names_callback(self, msg):
-        print("NAMES RECEIVED" + str(msg.names))
         self.c_names = msg.names
 
