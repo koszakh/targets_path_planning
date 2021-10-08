@@ -16,36 +16,10 @@ from charge.utils import convert_to_path, prepare_paths_msg, prepare_path_msg, c
 from charge.MsgListener import MsgListener
 
 
-def convert_to_strings(c_names_msg):
-	names = c_names_msg.names
-	c_names = []
-	for name in names:
-		c_names.append(name)
-	return c_names
-
-
-def find_workers_and_chargers(robot_names, all_topics):
-	w_names = []
-	c_names = []
-	for name in robot_names:
-		topic_to_find = '/' + name + '/waypoints_array'
-		if topic_to_find in all_topics:
-			w_names.append(name)
-		else:
-			c_names.append(name)
-	return w_names, c_names
-
-
-def init_path_listeners(w_names):
-	workers = dict()
-	for name in w_names:
-		workers[name] = PathListener(name)
-	return workers
-
-
 def c_names_callback(msg):
 	c_names = msg_data.names
 	return c_names
+
 
 def parse_worker_paths_msg(workers_msg):
 	all_paths = workers_msg.all_paths
@@ -70,20 +44,20 @@ def parse_worker_paths_msg(workers_msg):
 	return w_names, workers_data, workers_workpoints
 
 
-def charge_alloc(charging_pts, charging_robot_names, hmap):
+def charge_alloc(charging_pts, charging_robot_names):
 	# Queue of names
 	print(charging_robot_names)
 	ch_robot_names = charging_robot_names
 	# Data preparation
-	allocation = {}
+	allocation = dict()
 	for name in ch_robot_names:
 		allocation[name] = []
 
 	nums_of_ch_points = [len(points) for points in charging_pts.values()]
-
+	max_nums_of_points = max(nums_of_ch_points) if len(nums_of_ch_points) > 0 else 0
 	i = 0
 	# While i less than number of every list of charging points
-	while i < max(nums_of_ch_points):
+	while i < max_nums_of_points:
 		for work_robot_name in charging_pts.keys():
 			# If i less than number of list of charging points
 			if i < len(charging_pts[work_robot_name]):
@@ -95,25 +69,6 @@ def charge_alloc(charging_pts, charging_robot_names, hmap):
 
 	return allocation
 
-def define_charging_points_with_parse(workers_data):
-	ch_pts = dict()
-	for w_name in workers_data.keys():
-		ch_pts[w_name] = []
-
-	for w_name in workers_data.keys():
-		energy_resource = 1
-		paths_msg = workers_data[w_name].paths.paths
-		workpoints_msg = workers_data[w_name].workpoints.path
-		workpoints = [convert_to_point(i) for i in workpoints_msg]
-		for path_msg in paths_msg:
-			path = convert_to_path(path_msg)
-			ch_pts, energy_resource = eval_charge_points(path, workpoints, energy_resource)
-
-			for ch_pt in ch_pts:
-				ch_pts[w_name].append(ch_pt)
-
-	return ch_pts
-
 
 def define_charging_points(workers_data, workers_workpoints):
 	ch_p = dict()
@@ -121,7 +76,7 @@ def define_charging_points(workers_data, workers_workpoints):
 		ch_p[w_name] = []
 
 	for w_name in workers_data.keys():
-		energy_resource = 1
+		energy_resource = 100
 		paths = workers_data[w_name]
 		for path in paths:
 			ch_pts, energy_resource = eval_charge_points(path, workers_workpoints, energy_resource)
@@ -132,30 +87,34 @@ def define_charging_points(workers_data, workers_workpoints):
 
 
 if __name__ == "__main__":
-	#rospy.sleep(15)  # Отладочные 15 сек для ожидания появления топиков с траекториями и рабочими точками
 	rospy.init_node('energy_check')
+	c_names_sub = MsgListener()
 
-	hm = Heightmap(const.HEIGHTMAP_SDF_PATH)
-	hmap, l_scale, w_scale, x_step, y_step, step_count = hm.prepare_heightmap()
+	#hm = Heightmap(const.HEIGHTMAP_SDF_PATH)
+	#hmap, l_scale, w_scale, x_step, y_step, step_count = hm.prepare_heightmap()
 
 	workers_data = rospy.wait_for_message('/worker_paths', AllPaths)
 	w_names, workers_data, workers_workpoints = parse_worker_paths_msg(workers_data)
 	print("Converting charging names")
-	#c_names_msg = rospy.Subscriber('/chargers_names', NamesList, c_names_callback)
-	c_names_sub = MsgListener()
 	c_names = c_names_sub.c_names
-	#c_names = convert_to_strings(c_names_msg)
 	print("Defining charging points")
 	charging_points = define_charging_points(workers_data, workers_workpoints)
 	print("Allocating charging robots")
-	robot_allocation = charge_alloc(charging_points, c_names, hmap)
+	robot_allocation = charge_alloc(charging_points, c_names)
 
+	print("Publishing allocation")
 	allocation_pub = rospy.Publisher('/charging_robots/allocation', AllPaths, queue_size=10)
-	allocation_msg = prepare_paths_msg(c_names, allocation)
-	allocation_pub.publish(allocation_msg)
+	allocation_msg = prepare_paths_msg(c_names, robot_allocation)
 
+	print("Publishing points")
 	charging_points_pub = rospy.Publisher('/working_robots/charging_points', AllPaths, queue_size=10)
 	charging_points_msg = prepare_paths_msg(w_names, charging_points)
-	charging_points_pub.publish(charging_points_msg)
 
-	rospy.spin()
+	print("Done!")
+	print(allocation_msg)
+	print(charging_points_msg)
+	while True:
+		allocation_pub.publish(allocation_msg)
+		charging_points_pub.publish(charging_points_msg)
+
+	#rospy.spin()

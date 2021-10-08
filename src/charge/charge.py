@@ -15,10 +15,9 @@ MAX_COORDINATE = 1024
 MAX_X, MAX_Y = 30000, 30000
 k = MAX_X/MAX_COORDINATE  # Коэффициент преобразования из hmap в point и наоборот
 
-ENERGY_THRESHOLD = 15
-ENERGY_CONSUME = 1
-ENERGY_RESOURCE = 100#4 * (60*60)  # seconds  # TODO: добавить в поле класса Robot
-MAX_ENERGY_RESOURCE = ENERGY_RESOURCE #4 * (60*60)
+ENERGY_THRESHOLD = gc_const.LOWER_LIMIT_BATTERY
+ENERGY_RESOURCE = 100
+MAX_ENERGY_RESOURCE = gc_const.HIGH_LIMIT_BATTERY
 
 # Point: x, y, z
 # Hmap: y, x
@@ -44,7 +43,7 @@ def eval_charge_points(path, workpoints, energy_resource):
         last_point = path[i-1]
 
         distance = eval_distance(point, last_point)  # m
-        energy_resource -= distance/gc_const.MOVEMENT_SPEED
+        energy_resource -= distance*gc_const.MOVE_CHARGE_LOSS_COEF
         if energy_resource < ENERGY_THRESHOLD:
             # rectangle = make_rectangle(point, hmap)
             # angle = angle_with_ground(rectangle, hmap)
