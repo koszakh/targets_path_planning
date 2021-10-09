@@ -36,7 +36,6 @@ def eval_charge_points(path, workpoints, energy_resource):
 
     path_full = len(path)
     i_mem = []
-    #energy_resource = (ENERGY_RESOURCE/MAX_ENERGY_RESOURCE)
     i = 1
     while i < path_full:
         point = path[i]
@@ -72,65 +71,12 @@ def eval_charge_points(path, workpoints, energy_resource):
             if energy_resource < ENERGY_THRESHOLD:
                 while True:
                     energy_resource += MAX_ENERGY_RESOURCE - ENERGY_THRESHOLD
+                    ch_p.append(point)
                     if energy_resource >= ENERGY_THRESHOLD:
                         break
-                    ch_p.append(point)
         i += 1
 
     return ch_p, energy_resource
-
-
-# def calc_charge_points(path, hmap):
-#     # Calculating charging points on the path
-#     # Input:
-#     #       path - trajectory of robot
-#     #       hmap - height map
-#     # Output:
-#     #       charging_points - array of charging points
-#
-#     charging_points = []
-#     ch_p = []
-#
-#     path_full = len(path)
-#     # Number of vertexes, that robot can overcome with own capacity
-#     path_part = int(ENERGY_THRESHOLD * path_full)
-#
-#     # Starting vertex for defining charging point
-#     # If 'i' less than 'path_full', robot do not come to the target point yet.s
-#     i = path_part
-#     # List of already calculated charging points (indexes of vertexes on the path)
-#     i_mem = []
-#     energy_resource = ENERGY_RESOURCE
-#
-#     while i < path_full:
-#         # First charging point to check
-#         point = path[i]
-#
-#         #rectangle = make_rectangle(point, hmap)
-#         #angle = angle_with_ground(rectangle, hmap)
-#         angle = 1
-#         if angle < ANGLE_THRESHOLD:
-#             ch_p.append(point)
-#             charging_points += [str(point).split()]
-#             gc.spawn_sdf_model(point, gc_const.GREEN_VERTICE_PATH, str(i) + str(random.random()))
-#
-#             # DRAW REGION
-#             # draw_charging_region(rectangle, hmap)
-#
-#             # Remember this vertex (if next vertex cannot be found, path cannot be overcomed)
-#             i_mem.append(i)
-#             # Robot reached part of the path, so adding "path_part" to "i"
-#             i += path_part
-#         # If angle is too big, take step back and calc points again
-#         else:
-#             i -= 1
-#             # (i <= 0) if charging point cannot be found on part of the path
-#             # (i in i_mem) if next charging points cannot be found
-#             if (i <= 0) or (i in i_mem):
-#                 print('Path cannot be overcome!')
-#                 return 0
-#
-#     return ch_p
 
 
 def eval_distance(p1, p2):

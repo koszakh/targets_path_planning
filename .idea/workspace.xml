@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ChangeListManager">
-    <list default="true" id="d9c1b2a3-638d-4b88-bbc2-16d9d38258af" name="Changes" comment="Refactoring of code">
+    <list default="true" id="d9c1b2a3-638d-4b88-bbc2-16d9d38258af" name="Changes" comment="Fixed bug">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/nodes/energy_check.py" beforeDir="false" afterPath="$PROJECT_DIR$/nodes/energy_check.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/nodes/target_assignment.py" beforeDir="false" afterPath="$PROJECT_DIR$/nodes/target_assignment.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/charge/charge.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/charge/charge.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/gazebo_communicator/GazeboConstants.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/gazebo_communicator/GazeboConstants.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -81,7 +81,14 @@
       <option name="project" value="LOCAL" />
       <updated>1633698156867</updated>
     </task>
-    <option name="localTasksCounter" value="5" />
+    <task id="LOCAL-00005" summary="Fixed bug">
+      <created>1633785648559</created>
+      <option name="number" value="00005" />
+      <option name="presentableId" value="LOCAL-00005" />
+      <option name="project" value="LOCAL" />
+      <updated>1633785648559</updated>
+    </task>
+    <option name="localTasksCounter" value="6" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -101,6 +108,7 @@
     <MESSAGE value="Minor changes" />
     <MESSAGE value="Added evaluation of charging points and allocation to target_assignment node" />
     <MESSAGE value="Refactoring of code" />
-    <option name="LAST_COMMIT_MESSAGE" value="Refactoring of code" />
+    <MESSAGE value="Fixed bug" />
+    <option name="LAST_COMMIT_MESSAGE" value="Fixed bug" />
   </component>
 </project>
