@@ -62,7 +62,7 @@ def charge_alloc(charging_pts, charging_robot_names):
 			# If i less than number of list of charging points
 			if i < len(charging_pts[work_robot_name]):
 				ch_robot_name = ch_robot_names[0]
-				allocation[ch_robot_name].append(charging_pts[work_robot_name][i])
+				allocation[ch_robot_name].append((charging_pts[work_robot_name][i], work_robot_name))
 				tmp_name = ch_robot_names.pop(0)
 				ch_robot_names.append(tmp_name)
 		i += 1
@@ -79,7 +79,7 @@ def define_charging_points(workers_data, workers_workpoints):
 		energy_resource = 100
 		paths = workers_data[w_name]
 		for path in paths:
-			ch_pts, energy_resource = eval_charge_points(path, workers_workpoints, energy_resource)
+			ch_pts, energy_resource = eval_charge_points(path, workers_workpoints[w_name], energy_resource)
 			for ch_pt in ch_pts:
 				ch_p[w_name].append(ch_pt)
 

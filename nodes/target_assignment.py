@@ -196,7 +196,8 @@ def fullfill_paths_dicts(paths_to_ch_p, paths_to_base):
 	for c_name in robot_allocation.keys():
 		start_id = t_as.mh.get_nearest_vertice_id(poses[c_name].x, poses[c_name].y)
 		ch_pts = robot_allocation[c_name]
-		for ch_pt in ch_pts:
+		for pair in ch_pts:
+			ch_pt, _ = pair
 			goal_id = t_as.mh.get_nearest_vertice_id(ch_pt.x, ch_pt.y)
 			path, path_ids = t_as.mh.find_path(start_id, goal_id, orients[c_name])
 			paths_of_ch_robots_to_ch_p[c_name].append(path)
@@ -236,7 +237,7 @@ if workpoints_was_deleted:
 
 charging_points = define_charging_points(paths, workpoints)
 robot_allocation = charge_alloc(charging_points, c_names)
-
+print(robot_allocation)
 paths_to_ch_p, paths_to_base = init_paths_dict()
 paths_of_ch_robots_to_ch_p, paths_of_ch_robots_to_base = fullfill_paths_dicts(paths_to_ch_p, paths_to_base)
 
