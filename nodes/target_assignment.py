@@ -149,7 +149,9 @@ def define_new_dict_of_workpoints(workpoints, poses, orients, workpoints_was_del
 				path, path_ids = t_as.mh.find_path(start_id, goal_id, orients[c_name])
 
 				path_cost = calc_path_cost(path) * 2
+				rospy.loginfo("Path cost of " + c_name + " to workpoint of " + w_name + ": " + str(path_cost))
 				if path_cost > gc_const.HIGH_LIMIT_BATTERY - gc_const.LOWER_LIMIT_BATTERY:
+					rospy.logwarn("This workpoint has been deleted.")
 					copy_wpts[w_name].pop(i)
 					workpoints_was_deleted = True
 					continue
