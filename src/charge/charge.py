@@ -3,9 +3,10 @@
 
 import gazebo_communicator.GazeboCommunicator as gc
 import gazebo_communicator.GazeboConstants as gc_const
+import path_planning.Constants as const
 from path_planning.Point import Point as pt
 import random
-from numpy import absolute, arctan, pi, sqrt
+from numpy import absolute, arctan, pi, sqrt, sin, cos
 
 
 ANGLE_THRESHOLD = 30  # Angle threshold for charge possibility
@@ -29,9 +30,8 @@ def eval_charge_points(path, workpoints, energy_resource):
     #       path - trajectory of robot
     #       hmap - height map
     # Output:
-    #       charging_points - array of charging points
+    #       ch_p - array of charging points
 
-    charging_points = []
     ch_p = []
 
     path_full = len(path)
@@ -46,12 +46,17 @@ def eval_charge_points(path, workpoints, energy_resource):
         if energy_resource < ENERGY_THRESHOLD:
             # rectangle = make_rectangle(point, hmap)
             # angle = angle_with_ground(rectangle, hmap)
-            angle = 1
-            if angle < ANGLE_THRESHOLD:
-                ch_p.append(point)
-                charging_points += [str(point).split()]
+            angle_with_ground = 1
+            if angle_with_ground < ANGLE_THRESHOLD:
+
+                robot_vect = last_point.get_dir_vector_between_points(point)
+                vect = robot_vect.get_rotated_vector(-135)
+                new_p = point.get_point_in_direction(vect, 4*const.ROBOT_RADIUS)
+
+                angle = 2
+                ch_p.append(new_p)
                 i_mem.append(i)
-                gc.spawn_sdf_model(point, gc_const.GREEN_VERTICE_PATH, str(i) + str(random.random()))
+                gc.spawn_sdf_model(new_p, gc_const.GREEN_VERTICE_PATH, str(i) + str(random.random()))
                 # draw_charging_region(rectangle, hmap)
                 energy_resource = MAX_ENERGY_RESOURCE
                 i += 1
@@ -69,9 +74,12 @@ def eval_charge_points(path, workpoints, energy_resource):
         if point in workpoints:
             energy_resource -= gc_const.TASK_ENERGY_COST
             if energy_resource < ENERGY_THRESHOLD:
+                robot_vect = last_point.get_dir_vector_between_points(point)
+                vect = robot_vect.get_rotated_vector(-135)
+                new_p = point.get_point_in_direction(vect, 4*const.ROBOT_RADIUS)
                 while True:
                     energy_resource += MAX_ENERGY_RESOURCE - ENERGY_THRESHOLD
-                    ch_p.append(point)
+                    ch_p.append(new_p)
                     if energy_resource >= ENERGY_THRESHOLD:
                         break
         i += 1
