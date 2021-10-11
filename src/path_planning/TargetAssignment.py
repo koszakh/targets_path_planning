@@ -10,7 +10,7 @@ import Constants as const
 import gazebo_communicator.GazeboCommunicator as gc
 import gazebo_communicator.GazeboConstants as gc_const
 import gazebo_communicator.BatteryTracker as bt
-from ORCA import ORCAsolver
+from MovementManager import MovementManager
 import random
 import itertools
 import functools
@@ -161,10 +161,10 @@ class TargetAssignment():
 
 		paths = self.calc_task_paths(best_per)
 
-		print('\n>>> Best combination <<<\n')
+		#print('\n>>> Best combination <<<\n')
 		for key in best_per.keys():
 
-			print(key, best_per[key])
+			#print(key, best_per[key])
 			new_per = self.sort_tasks(workpoints[key], key)
 			workpoints[key] = new_per
 

@@ -4,7 +4,10 @@ import rospy
 import path_planning.Constants as const
 import gazebo_communicator.GazeboCommunicator as gc
 import gazebo_communicator.GazeboConstants as gc_const
-from path_planning.Point import Point 
+from gazebo_communicator.Worker import Worker
+from gazebo_communicator.Charger import Charger
+import gazebo_communicator.BatteryTracker as bt
+from path_planning.Point import Point
 import copy
 import rvo2
 from time import sleep
@@ -24,14 +27,18 @@ from threading import Thread
 # agents: dictionary of agents used in sim
 # final_paths: dictionary of final routes of robots
 # init_paths: dictionary of initial routes of robots
-class DynamicPlanner(Thread):
+class MovementManager(Thread):
 
-	def __init__(self, mh, robots):
+	def __init__(self, mh, w_names, c_names):
 	
 		Thread.__init__(self)
 		self.ms = gc_const.MOVEMENT_SPEED
 		self.mh = mh
-		self.robots = robots
+		self.robots = get_robots_dict(w_names, c_names)
+		self.w_names = w_names
+		self.c_names = c_names
+		print('w_names: ' + str(w_names))
+		print('c_names: ' + str(c_names))
 		self.time_step = rospy.Duration(0, gc_const.PID_NSEC_DELAY)
 
 # Adding an agent to the group movement simulation
@@ -61,7 +68,7 @@ class DynamicPlanner(Thread):
 			dist = current_robot_pos.get_distance_to(robot_pos)
 		
 			if dist < min_dist:
-		
+
 				min_dist = dist
 				closest_r_name = name
 		
@@ -72,6 +79,17 @@ class DynamicPlanner(Thread):
 		for key in self.robots:
 		
 			self.robots[key].start()
+			
+	def prepare_robots(self, w_paths, w_points, w_ch_points, ch_points, to_ch_p_paths, to_base_paths):
+	
+		for name in self.w_names:
+		
+			self.robots[name].set_worker_data(w_paths[name], w_points[name], w_ch_points[name])
+			
+		for name in self.c_names:
+		
+			self.robots[name].set_charger_data(ch_points, to_ch_p_paths, to_base_paths)
+			
 	
 	def run(self):
 
@@ -130,6 +148,14 @@ class DynamicPlanner(Thread):
 						elif robot.waiting:
 						
 							robot.stop_waiting()
+							
+					elif robot.mode == "waiting_for_worker":
+					
+						cur_worker = self.robots[robot.cur_worker]
+						
+						if cur_worker.mode == "charge_waiting":
+						
+							robot.mode == "docking"
 							
 		print('ALL ROBOTS FINISHED!')
 						
@@ -248,3 +274,20 @@ def delete_intermediate_points(path, cut_step):
 				path_copy.remove(path[i])
 
 	return path_copy
+	
+def get_robots_dict(w_names, c_names):
+
+	robots = {}
+	trackers = bt.get_battery_trackers(w_names, c_names)
+
+	for name in w_names:
+	
+		robot = Worker(name, trackers)
+		robots[name] = robot
+		
+	for name in c_names:
+	
+		robot = Charger(name, trackers)
+		robots[name] = robot
+		
+	return robots

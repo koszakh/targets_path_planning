@@ -3,8 +3,10 @@
 # Path planning node for ground targets
 import path_planning.TargetAssignment as ta
 import gazebo_communicator.GazeboConstants as const
-from path_planning.DynamicPlanner import DynamicPlanner
-from gazebo_communicator.Robot import Robot
+import gazebo_communicator.BatteryTracker as bt
+from path_planning.MovementManager import MovementManager
+from gazebo_communicator.Worker import Worker
+from gazebo_communicator.Charger import Charger
 from targets_path_planning.msg import AllPaths, WorkPath, Path, Poses, RobotState, Vector2d, NamesList
 from geometry_msgs.msg import Point
 import rospy
@@ -123,7 +125,6 @@ def subtraction_of_set(mas1, mas2):
 
 	return new_mas
 
-
 def calc_path_cost(path):
 	path_cost = 0
 	for i in range(1, len(path)):
@@ -196,9 +197,8 @@ def fullfill_paths_dicts(paths_to_ch_p, paths_to_base):
 	for c_name in robot_allocation.keys():
 		start_id = t_as.mh.get_nearest_vertice_id(poses[c_name].x, poses[c_name].y)
 		ch_pts = robot_allocation[c_name]
-		for pair in ch_pts:
-			ch_pt, _ = pair
-			goal_id = t_as.mh.get_nearest_vertice_id(ch_pt.x, ch_pt.y)
+		for ch_pt in ch_pts:
+			goal_id = t_as.mh.get_nearest_vertice_id(ch_pt[0].x, ch_pt[0].y)
 			path, path_ids = t_as.mh.find_path(start_id, goal_id, orients[c_name])
 			paths_of_ch_robots_to_ch_p[c_name].append(path)
 			paths_of_ch_robots_to_base[c_name].append(path[::-1])
@@ -221,7 +221,12 @@ paths, workpoints = t_as.target_assignment()
 
 poses, orients = t_as.get_robots_pos_orient(names)
 
+print('\nw_names: ' + str(w_names))
+print('\n >>> INIT WORKPOINTS DICT LEN: ' + str(len(workpoints.keys())))
 
+for key in workpoints.keys():
+
+	print(key, workpoints[key])
 
 workpoints_was_deleted = False
 copy_wpts, workpoints_was_deleted = define_new_dict_of_workpoints(workpoints, poses, orients, workpoints_was_deleted)
@@ -238,16 +243,29 @@ if workpoints_was_deleted:
 charging_points = define_charging_points(paths, workpoints)
 robot_allocation = charge_alloc(charging_points, c_names)
 print(robot_allocation)
+print('\nend w_names: ' + str(w_names))
+print('\n >>> END WORKPOINTS DICT LEN: ' + str(len(workpoints.keys())))
+for key in workpoints.keys():
+
+	print(key, workpoints[key])
+
+
 paths_to_ch_p, paths_to_base = init_paths_dict()
 paths_of_ch_robots_to_ch_p, paths_of_ch_robots_to_base = fullfill_paths_dicts(paths_to_ch_p, paths_to_base)
 
 
 
-poses_msg = prepare_poses_msg(poses, orients)
-poses_pub.publish(poses_msg)
+mm = MovementManager(t_as.mh, w_names, c_names)
+mm.prepare_robots(paths, workpoints, charging_points, robot_allocation, paths_of_ch_robots_to_ch_p, paths_of_ch_robots_to_base)
+mm.start()
 
-names_msg = prepare_names_msg(c_names)
-c_names_pub.publish(names_msg)
+#mm.prepare_robots()
 
-paths_msg = prepare_all_paths_msg(w_names, paths, workpoints)
-paths_pub.publish(paths_msg)
+#poses_msg = prepare_poses_msg(poses, orients)
+#poses_pub.publish(poses_msg)
+
+#names_msg = prepare_names_msg(c_names)
+#c_names_pub.publish(names_msg)
+
+#paths_msg = prepare_all_paths_msg(w_names, paths, workpoints)
+#paths_pub.publish(paths_msg)

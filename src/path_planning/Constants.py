@@ -1,7 +1,7 @@
 import random
 
 ROBOTS_COUNT = 6
-ROOT_PATH = "/home/const/.gazebo/models"
+ROOT_PATH = "/root/.gazebo/models"
 CURRENT_MAP = 'hmap2'
 HEIGHTMAP_SDF_PATH = ROOT_PATH + '/' + CURRENT_MAP + '/model.sdf'
 HIGH_BOUND_HEIGHT_DIFF = 25#1

@@ -3,7 +3,7 @@
 
 import rospy
 import threading as thr
-from targets_path_planning.msg import Path, Paths, NamesList
+from targets_path_planning.msg import Path, NamesList
 
 class MsgListener(thr.Thread):
 
