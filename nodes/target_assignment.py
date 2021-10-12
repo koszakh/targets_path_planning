@@ -217,18 +217,17 @@ robots_count = const.WORKERS_COUNT + const.CHARGERS_COUNT
 names = ['sim_p3at' + str(i) for i in range(1, robots_count + 1)]
 w_names = get_random_els(names, const.WORKERS_COUNT)
 c_names = subtraction_of_set(names, w_names)
+old_w_names = w_names
 
 t_as = ta.TargetAssignment(w_names, c_names, const.TARGETS_COUNT)
+s_time = time.time()
 paths, workpoints = t_as.target_assignment()
+f_time = time.time()
+
+exec_time = f_time - s_time
+print('Target assignment time: ' + str(exec_time))
 
 poses, orients = t_as.get_robots_pos_orient(names)
-
-print('\nw_names: ' + str(w_names))
-print('\n >>> INIT WORKPOINTS DICT LEN: ' + str(len(workpoints.keys())))
-
-for key in workpoints.keys():
-
-	print(key, workpoints[key])
 
 workpoints_was_deleted = False
 copy_wpts, workpoints_was_deleted = define_new_dict_of_workpoints(workpoints, poses, orients, workpoints_was_deleted)
@@ -241,23 +240,19 @@ if workpoints_was_deleted:
 	w_names = new_w_names
 	paths = new_paths
 	workpoints = copy_wpts
+	
+paths, flag = t_as.calc_task_paths(workpoints)
 
 charging_points = define_charging_points(paths, workpoints)
 robot_allocation = charge_alloc(charging_points, c_names)
-print(robot_allocation)
-print('\nend w_names: ' + str(w_names))
-print('\n >>> END WORKPOINTS DICT LEN: ' + str(len(workpoints.keys())))
-for key in workpoints.keys():
 
-	print(key, workpoints[key])
-
+print('new_w_names: ' + str(w_names))
 
 paths_to_ch_p, paths_to_base = init_paths_dict()
 paths_of_ch_robots_to_ch_p, paths_of_ch_robots_to_base = fullfill_paths_dicts(paths_to_ch_p, paths_to_base)
 
 
-
-mm = MovementManager(t_as.mh, w_names, c_names)
+mm = MovementManager(t_as.mh, old_w_names, c_names)
 mm.prepare_robots(paths, workpoints, charging_points, robot_allocation, paths_of_ch_robots_to_ch_p, paths_of_ch_robots_to_base)
 mm.start()
 

@@ -1,7 +1,11 @@
 from gazebo_communicator.Robot import Robot
+import gazebo_communicator.GazeboCommunicator as gc
 import GazeboConstants as const
+import path_planning.Constants as pp_const
 import threading as thr
 import rospy
+from math import fabs
+import dubins
 
 class Charger(Robot):
 
@@ -18,19 +22,27 @@ class Charger(Robot):
 		self.to_base_paths = []
 		self.rech_robots = []
 		self.finished = False
-		self.waiting = False		
+		self.waiting = False
+		self.mode = "stop"	
+		self.dock_path = []
+		self.dodging = False
+
+	def change_mode(self, mode):
+	
+		self.mode = mode
+		rospy.loginfo("Current charger " + self.name + " changed mode to: " + str(self.mode))
 
 
 	def get_distance_to_partner(self):
 	
 		self_pos = self.get_robot_position()
-		partner_pos = gc.get_model_position(self.partner_name)
+		partner_pos = gc.get_model_position(self.cur_worker)
 		dist = self_pos.get_distance_to(partner_pos)
 		return dist
 		
 	def get_angle_difference_with_parther(self):
 	
-		partner_orient = gc.get_robot_orientation_vector(self.partner_name)
+		partner_orient = gc.get_robot_orientation_vector(self.cur_worker)
 		self_orient = self.get_robot_orientation_vector()
 		angle_difference = self_orient.get_angle_between_vectors(partner_orient)
 
@@ -46,90 +58,146 @@ class Charger(Robot):
 			self.rech_robots.append(w_name)
 			self.pre_ch_points.append(p)
 		
+		print(self.name, len(self.pre_ch_points))
+		gc.visualise_path(self.pre_ch_points, const.GREEN_VERTICE_PATH, self.name + '_pre_ch_p_')
+		
 		self.to_ch_p_paths = to_ch_p_paths
 		self.to_base_paths = to_base_paths
 
 	def docking(self):
-	
+
+		self.change_mode("docking")
 		self.set_movespeed(const.DOCKING_SPEED)
 		dist = self.get_distance_to_partner()
-		partner_pos = gc.get_model_position(self.partner_name)
+		partner_pos = gc.get_model_position(self.cur_worker)
 		self.turn_to_point(partner_pos)
-		old_error = 0
-		error_sum = 0
-		
-		while dist > const.DOCKING_THRESHOLD:
-		
-			angle_difference = self.get_angle_difference_with_parther()
-			
-			dist = self.get_distance_to_partner()
-			
-			u, old_error, error_sum = self.calc_control_action(partner_pos, old_error, error_sum)
-			self.movement(self.ms, u)
-
+		self.move_with_PID(self.dock_point, const.DOCK_DISTANCE_ERROR)
 		self.stop()
-		self.mode = None
-		print(self.name + ' successfully connected to ' + str(self.partner_name) + '.')
-		
-	def waiting_fork_worker(self):
+		print('Charger ' + self.name + ' successfully connected to ' + str(self.cur_worker) + '.')
+
+	def get_robot_battery_level(self, name):
 	
-		self.mode = "waiting_for_worker"
+		bt = self.trackers[name]
+		b_level = bt.battery
+		rech_level = bt.recharge_battery
+		return b_level, rech_level
+
+	def get_battery_level(self):
+
+		b_level, rech_level = self.get_robot_battery_level(self.name)
+		return b_level, rech_level
+		
+	def check_recharge_battery(self):
+
+		b_level, re_b_level = self.get_battery_level()
+		
+		if re_b_level < const.LOWER_LIMIT_RECHARGE_BATTERY:
+			
+			return False
+			
+		else:
+		
+			return True
+		
+	def wait_for_worker(self):
+	
+		self.change_mode("waiting_for_worker")
+		print('Charger ' + self.name + ' is waiting for worker ' + str(self.cur_worker))
 		
 		while self.mode == "waiting_for_worker":
 		
 			pass
+			
+		print(self.name + ' started docking!\n')
 
 # Moving the robot to a point with a PID controller
 # Input
 # goal: target point
-	def move_with_PID(self, goal):
+	def move_with_PID(self, goal, dist_error):
 	
-		old_error = 0
+		error = self.get_angle_difference(goal)
+		#print(self.name + ' error: ' + str(error))
 		error_sum = 0
 		robot_pos = self.get_robot_position()
+		old_pos = robot_pos
 		
-		while robot_pos.get_distance_to(goal) > const.DISTANCE_ERROR:
+		while robot_pos.get_distance_to(goal) > dist_error and fabs(error) < 90:
 		
 			robot_pos = self.get_robot_position()
-			u, old_error, error_sum = self.calc_control_action(goal, old_error, error_sum)
+			u, error, error_sum = self.calc_control_action(goal, error, error_sum)
 			self.movement(self.ms, u)
-			self.robot_waiting()
+			self.is_waiting()
+			self.is_dodging()
+			self.move_energy_cons(robot_pos, old_pos)
+			old_pos = robot_pos
 			rospy.sleep(self.pid_delay)
+		
+	def follow_the_route(self, path, ms, dist_error):
+	
+		self.change_mode("movement")
+		self.set_movespeed(ms)
+
+		for state in path:
+
+			self.move_with_PID(state, dist_error)
+	
+		self.stop()
 		
 	def perform_charger_mission(self):
 
-		ch_path = self.to_ch_p_paths[0]
-		self.to_ch_p_paths.pop(0)
-		self.follow_the_route(ch_path)
-		self.waiting_for_worker()
-		self.cur_worker = self.rech_robots[0]
-		self.rech_robots.pop(0)
-		self.waiting_for_worker()
-		rech_pos = gc.get_robot_position(partner)
-		rech_vect = gc.get_robot_orientation_vector(partner)
-		dock_point = calc_dock_point(rech_pos, rech_vect, const.ROBOT_RADIUS * 2)
-		dock_path = self.plan_path_to_dock_point(dock_point, rech_vect)
-		self.follow_the_route(dock_path)
-		self.rechargeable_robots.pop(0)
-		self.set_docking_mode(partner)
+		ch_path = self.get_to_ch_p_path()
+		#gc.visualise_path(ch_path, const.GREEN_VERTICE_PATH, self.name + '_p_')
+		self.follow_the_route(ch_path, const.MOVEMENT_SPEED, const.DISTANCE_ERROR)
+		self.set_next_worker()
+		self.wait_for_worker()
+		self.follow_the_route(self.dock_path, const.PRE_DOCKING_SPEED, const.DOCK_DISTANCE_ERROR)
 		self.docking()
 		self.start_charging()
-		self.follow_the_route(path[2])
+		b_path = self.get_to_base_path()
+		self.follow_the_route(b_path, const.MOVEMENT_SPEED, const.DISTANCE_ERROR)
+		self.recharge_batteries()
 		
-	def plan_path_to_dock_point(self, dock_point, end_vect):
+	def recharge_batteries(self):
 	
-		robot_pos = self.get_robot_position()
-		vect = self.get_robot_orientation_vector()
+		b_level, r_level = self.get_battery_level()
+		s_time = rospy.get_time()
 		
-		path = calc_dubins_path(robot_pos, vect, dock_point, end_vect)
+		while b_level < const.HIGH_LIMIT_BATTERY and r_level < const.HIGH_LIMIT_BATTERY:
 		
-		return path
-		
+			b_level, r_level = self.get_battery_level()
+			cur_time = rospy.get_time()
+			time_diff = cur_time - s_time
+			s_time = cur_time
+			charge_received = const.CHARGING_SPEED * time_diff
+			self.bt.recharge_power_change(charge_received)
+			self.bt.power_change(charge_received)
+			rospy.sleep(self.pid_delay)
+
+
+	def set_next_worker(self):
+	
+		w_name = self.rech_robots[0]
+		self.rech_robots.pop(0)
+		self.cur_worker = w_name
+
+	def get_to_ch_p_path(self):
+	
+		ch_path = self.to_ch_p_paths[0]
+		self.to_ch_p_paths.pop(0)
+		return ch_path
+
+	def get_to_base_path(self):
+	
+		b_path = self.to_base_paths[0]
+		self.to_base_paths.pop(0)
+		return b_path
+				
 	def start_charging(self):
 
-		self.mode = "charging"
+		self.change_mode("charging")
+		print('Charger ' + self.name + ' started charging ' + self.cur_worker + '.')
 		s_ch_time = rospy.get_time()
-		rechargeable_bt = self.b_trackers[self.partner]
+		rechargeable_bt = self.trackers[self.cur_worker]
 		
 		while self.mode == "charging":
 			
@@ -140,31 +208,19 @@ class Charger(Robot):
 			rechargeable_bt.power_change(charge_received)
 			self.bt.recharge_power_change(-charge_received)
 			rech_b_level = rechargeable_bt.battery
+			rospy.sleep(self.pid_delay)
+			print('self battery: ' + str(self.bt.recharge_battery))
+			print('worker battery: ' + str(rechargeable_bt.battery))
 			
-			if rech_b_level >= const.HIGH_LIMIT_BATTERY and self.check_recharge_battery():
+			if rech_b_level >= const.HIGH_LIMIT_BATTERY:
 			
-				self.mode = None
+				self.change_mode(None)
 				
 	def run(self):
 	
 		for ch_p in self.pre_ch_points:
 		
-			self.perform_charger_mission
+			self.perform_charger_mission()
 
-		self.finished = True
-				
-def calc_dock_point(pos, orient, offset):
-
-	rev_orient = orient.get_rotated_vector(180)
-	p = pos.get_point_in_direction(rev_orient, offset)
-	
-	return p
-
-def calc_dubins_path(s_pos, s_vect, e_pos, e_vect):
-
-	q0 = (s_pos.x, s_pos.y, s_vect.vector_to_radians())
-	q1 = (e_pos.x, e_pos.y, e_vect.vector_to_radians())
-	solution = dubins.shortest_path(q0, q1, const.ROBOT_RADIUS)
-	configurations, _ = solution.sample_many(const.DISTANCE_ERROR)
-	path = convert_tup_to_point3d(configurations)
-	return path
+		print('Charger ' + self.name + ' has finished!')
+		self.change_mode("finished")

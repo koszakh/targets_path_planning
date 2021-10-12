@@ -44,6 +44,7 @@ class Robot(thr.Thread):
 		self.finished = False
 		self.charging = False
 		self.waiting = False
+		self.dodging = False
 		
 	def init_topics(self):
 		
@@ -102,7 +103,7 @@ class Robot(thr.Thread):
 # goal: target point
 	def move_with_PID(self, goal):
 	
-		old_error = 0
+		old_error = self.get_angle_difference(goal)
 		error_sum = 0
 		robot_pos = self.get_robot_position()
 		
@@ -111,8 +112,6 @@ class Robot(thr.Thread):
 			robot_pos = self.get_robot_position()
 			u, old_error, error_sum = self.calc_control_action(goal, old_error, error_sum)
 			self.movement(self.ms, u)
-			#self.add_path_gps('a+')
-			self.robot_waiting()
 			rospy.sleep(self.pid_delay)
 
 	def calc_control_action(self, goal, old_error, error_sum):
@@ -135,6 +134,12 @@ class Robot(thr.Thread):
 		u = up + ui + ud
 		return u, old_error, error_sum
 
+	def move_energy_cons(self, pos, last_pos):
+	
+		dist = pos.get_distance_to(last_pos)
+		charge_loss = -(dist * const.MOVE_CHARGE_LOSS_COEF)
+		self.bt.power_change(charge_loss)
+
 # Rotate the robot towards a point
 # Input
 # goal: target point
@@ -148,33 +153,28 @@ class Robot(thr.Thread):
 		
 			if angle_difference > 0:
 		
-				self.movement(0, const.ROTATION_SPEED)
+				self.movement(0, const.DOCKING_ROTATION_SPEED)
 		
 			else:
 		
-				self.movement(0, -const.ROTATION_SPEED)
+				self.movement(0, -const.DOCKING_ROTATION_SPEED)
 		
 		self.stop()
 		
 	def follow_the_route(self, path):
 	
-		self.mode = "movement"
+		self.change_mode("movement")
 		self.set_movespeed(const.MOVEMENT_SPEED)
-		last_pos = self.get_robot_position()
 
 		for state in path:
 
 			self.move_with_PID(state)
-			dist = last_pos.get_distance_to(state)
-			charge_loss = -(dist * const.MOVE_CHARGE_LOSS_COEF)
-			last_pos = state
-			self.bt.power_change(charge_loss)
 	
 		self.stop()
 
 # Stopping the robot
 	def stop(self):
-	
+
 		msg = Twist()
 		msg.linear.x = 0
 		msg.angular.z = 0
@@ -227,26 +227,8 @@ class Robot(thr.Thread):
 				
 			path = convert_to_path(path_msg)
 			self.paths.append(path)
-
-
-	def follow_the_route(self, path):
 	
-		self.mode = "movement"
-		self.set_movespeed(const.MOVEMENT_SPEED)
-		last_pos = self.get_robot_position()
-
-		for state in path:
-
-			self.move_with_PID(state)
-			dist = last_pos.get_distance_to(state)
-			charge_loss = -(dist * const.MOVE_CHARGE_LOSS_COEF)
-			last_pos = state
-			self.bt.power_change(charge_loss)
-			self.check_battery()
-	
-		self.stop()
-	
-	def robot_waiting(self):
+	def is_waiting(self):
 	
 		while self.waiting:
 		
@@ -261,6 +243,19 @@ class Robot(thr.Thread):
 	def stop_waiting(self):
 	
 		self.waiting = False
+		self.change_mode("movement")
+
+	def is_dodging(self):
+
+		if self.dodging:
+		
+			while self.dodging:
+		
+				pass
+
+	def stop_dodging(self):
+
+		self.dodging = False
 
 	def print_bt_charges(self):
 	
@@ -269,30 +264,6 @@ class Robot(thr.Thread):
 		
 			self.get_robot_battery_level(name)
 
-	def get_robot_battery_level(self, name):
-	
-		bt = self.b_trackers[name]
-		b_level = bt.battery
-		re_b_level = bt.recharge_battery
-		#print(name + ' move battery level: ' + str(m_level) + '% | task battery level: ' + str(t_level) + '%')
-		return b_level, re_b_level
-
-	def get_battery_level(self):
-
-		b_level, re_b_level = self.get_robot_battery_level(self.name)
-		return b_level, re_b_level
-				
-	def check_recharge_battery(self):
-
-		b_level, re_b_level = self.get_battery_level()
-		
-		if re_b_level < const.LOWER_LIMIT_RECHARGE_BATTERY:
-			
-			return False
-			
-		else:
-		
-			return True
 
 	def set_movespeed(self, ms):
 	

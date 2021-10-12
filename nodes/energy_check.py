@@ -62,13 +62,19 @@ def charge_alloc(charging_pts, charging_robot_names):
 			# If i less than number of list of charging points
 			if i < len(charging_pts[work_robot_name]):
 				ch_robot_name = ch_robot_names[0]
-				allocation[ch_robot_name].append((charging_pts[work_robot_name][i], work_robot_name))
+				ch_p = get_pre_ch_p(charging_pts[work_robot_name][i])
+				allocation[ch_robot_name].append((ch_p, work_robot_name))
 				tmp_name = ch_robot_names.pop(0)
 				ch_robot_names.append(tmp_name)
 		i += 1
 
 	return allocation
 
+def get_pre_ch_p(p):
+
+	vect = p.last_vect.get_rotated_vector(const.PRE_CHARGE_ORIENT_TURN)
+	new_p = p.get_point_in_direction(vect, 6 * const.ROBOT_RADIUS)
+	return new_p
 
 def define_charging_points(workers_data, workers_workpoints):
 	ch_p = dict()

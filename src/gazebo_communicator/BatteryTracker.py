@@ -10,8 +10,9 @@ class BatteryTracker:
 		self.name = name
 		self.dir_point = self.name + const.DIR_POINT_SUFFIX
 		self.battery = 100
-		
-		if role == "charger":
+		self.role = role		
+
+		if self.role == "charger":
 		
 			self.recharge_battery = 100
 		

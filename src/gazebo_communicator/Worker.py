@@ -1,6 +1,9 @@
 from gazebo_communicator.Robot import Robot
+import gazebo_communicator.GazeboCommunicator as gc
 import threading as thr
 import GazeboConstants as const
+import path_planning.Constants as pp_const
+from math import fabs
 import rospy
 
 class Worker(Robot):
@@ -18,9 +21,19 @@ class Worker(Robot):
 		self.charge_points = None
 		self.finished = False
 		self.waiting = False
+		self.mode = "stop"
+		self.dodging = False
+		robot_pos = self.get_robot_position()
+		gc.spawn_sdf_model(robot_pos, const.BIG_GREEN_VERTICE_PATH, self.name + '_s')
+
+	def change_mode(self, mode):
+	
+		self.mode = mode
+		rospy.loginfo("Current worker " + self.name + " changed mode to: " + str(self.mode))
 
 	def perform_worker_mission(self, path):
 
+		#gc.visualise_path(path, const.RED_VERTICE_PATH, self.name + '_p_')
 		self.follow_the_route(path)
 		self.perform_the_task()
 
@@ -30,49 +43,70 @@ class Worker(Robot):
 # goal: target point
 	def move_with_PID(self, goal):
 	
-		old_error = 0
+		error = self.get_angle_difference(goal)
+		#print(self.name + ' error: ' + str(error))
 		error_sum = 0
 		robot_pos = self.get_robot_position()
+		old_pos = robot_pos
 		
 		while robot_pos.get_distance_to(goal) > const.DISTANCE_ERROR:
 		
 			robot_pos = self.get_robot_position()
-			u, old_error, error_sum = self.calc_control_action(goal, old_error, error_sum)
+			u, error, error_sum = self.calc_control_action(goal, error, error_sum)
 			self.movement(self.ms, u)
-			#self.add_path_gps('a+')
-			self.robot_waiting()
+			self.is_waiting()
+			self.is_dodging()
 			self.check_ch_p_reach()
+			self.move_energy_cons(robot_pos, old_pos)
+			old_pos = robot_pos
 			rospy.sleep(self.pid_delay)
 
 	def check_ch_p_reach(self):
 	
-		dist = self.get_robot_position().get_distance_to(self.charge_points[0])
-		
-		if dist < const.DISTANCE_ERROR:
-		
-			self.stop()
-			self.wait_for_charge()
-			self.charge_points.pop(0)
+		if len(self.charge_points) > 0:
 
-	def wait_for_charge(self):
+			dist = self.get_robot_position().get_distance_to(self.charge_points[0])
+			
+			if dist < const.DISTANCE_ERROR:
+			
+				self.stop()
+				self.wait_for_charger()
+				self.charge_points.pop(0)
+
+	def get_robot_battery_level(self, name):
 	
-		self.mode = "charge_waiting"
+		bt = self.trackers[name]
+		b_level = bt.battery
+		return b_level
 
-		b_level, re_b_level = self.get_battery_level()
+	def get_battery_level(self):
+
+		b_level = self.get_robot_battery_level(self.name)
+		return b_level
+
+	def wait_for_charger(self):
+	
+		self.change_mode("waiting_for_charger")
+		print('Worker ' + self.name + ' is waiting for charge.')
+
+		b_level = self.get_battery_level()
+		print(self.name, b_level)
+			
+		while b_level < const.HIGH_LIMIT_BATTERY:
 		
-		if b_level < const.LOWER_LIMIT_BATTERY:
-			
-			while b_level < const.HIGH_LIMIT_BATTERY:
-			
-				b_level, re_b_level = self.get_battery_level()
+			b_level = self.get_battery_level()
 				
-		self.mode = "movement"
+		self.change_mode("movement")
+		print('Worker ' + self.name + ' is charged.')
 
 	def set_worker_data(self, w_paths, w_points, w_ch_points):
 
 		self.paths = w_paths
 		self.workpoints = w_points
+		gc.visualise_path(self.workpoints, const.GREEN_VERTICE_PATH, self.name + '_task')
 		self.charge_points = w_ch_points
+		gc.visualise_path(self.charge_points, const.BLUE_VERTICE_PATH, self.name + '_ch_p_')
+
 		self.tasks_left = len(w_points)
 
 	def perform_the_task(self):
@@ -80,33 +114,41 @@ class Worker(Robot):
 		if self.tasks_left > 0:
 		
 			print('\n>>> ' + self.name + ' started performing task!')
-			task_completion = 0
-			start_time = rospy.get_time()
-			last_step_time = start_time
-			exec_duration = const.TASK_EXEC_SPEED
-			total_consumption = 0
-			
-			while task_completion < 100:
-			
-				cur_time = rospy.get_time()
-				all_time = cur_time - start_time
-				task_completion = float((all_time / exec_duration) * 100)
-				#print('Completion of the task by ' + self.name + ' :' + str(task_completion))
-				step_time = cur_time - last_step_time
-				last_step_time = cur_time
-				power_consumption = (step_time / exec_duration) * const.TASK_ENERGY_COST
-				total_consumption += power_consumption
-				self.bt.power_change(-power_consumption)
-				self.check_battery()
+			b_level = self.get_battery_level()
+			self.change_mode("task_performing")
+			self.workpoints.pop(0)
+			if b_level > const.TASK_ENERGY_COST:
+
+				task_completion = 0
+				start_time = rospy.get_time()
+				last_step_time = start_time
+				exec_duration = const.TASK_EXEC_DURATION
+				total_consumption = 0
 				
-			print(self.name + ' task energy consumption: ' + str(total_consumption))
-			self.tasks_left -= 1
+				while task_completion < 100:
+				
+					cur_time = rospy.get_time()
+					all_time = cur_time - start_time
+					task_completion = float((all_time / exec_duration) * 100)
+					step_time = cur_time - last_step_time
+					last_step_time = cur_time
+					rospy.sleep(self.pid_delay)
+				
+				self.bt.power_change(-const.TASK_ENERGY_COST)
+				self.tasks_left -= 1
+				
+			else:
+			
+				print(self.name + ' has insufficient charge to complete the task.')
 
 	def run(self):
+	
+		if self.workpoints:
 
-		for path in self.paths:
-			
-			self.perform_worker_mission(path)
-			
+			for path in self.paths:
+				
+				self.perform_worker_mission(path)
+				
 		print('Worker ' + str(self.name) + ' has finished!')
-		self.finished = True
+
+		self.change_mode("finished")

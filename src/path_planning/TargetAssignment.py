@@ -82,7 +82,6 @@ class TargetAssignment():
 		target_ids = self.mh.get_random_ids_in_area(self.goal_r[0], self.goal_r[1], const.GOAL_DIST_OFFSET, self.t_count)
 		
 		targets = [self.mh.heightmap[v_id] for v_id in target_ids]
-		gc.visualise_path(targets, gc_const.GREEN_VERTICE_PATH, 'target')
 			
 		return target_ids
 
@@ -91,7 +90,7 @@ class TargetAssignment():
 		trackers = get_robot_trackers(self.names)
 		
 		for name in trackers.keys():
-		
+
 			r_tracker = trackers[name]
 			robot_pos, orient = self.mh.get_start_pos(self.start_r[0], self.start_r[1], const.START_DIST_OFFSET)
 			gc.spawn_target(name, robot_pos, orient)
@@ -104,8 +103,10 @@ class TargetAssignment():
 		
 	def target_assignment(self):
 
+		print('Target assignment started.')
 		robot_per = {}
 		best_per = {}
+		total_pers = []
 		combs = get_permutations(self.w_names, len(self.w_names), len(self.w_names), 0)
 		best_paths_cost = float('inf')
 		for comb in combs:
@@ -139,17 +140,17 @@ class TargetAssignment():
 					cost = robot_pos.get_distance_to(init_r_pos)
 					cur_cost += cost
 
-					robot_per[name].append((per, cur_cost))
+					robot_per[name].append((cur_cost, per))
 
 				new_mas = sort_tuple_mas(robot_per[name])
 				cur_best_per[name] = get_best_free_config(closed_targets, new_mas)
-				rem_targets = difference_of_sets(rem_targets, cur_best_per[name][0])
-				cur_wp_ids = cur_best_per[name][0]
+				rem_targets = difference_of_sets(rem_targets, cur_best_per[name][1])
+				cur_wp_ids = cur_best_per[name][1]
 				closed_targets.extend(cur_wp_ids)
 				cur_workpoints[name] = [self.mh.heightmap[cur_id] for cur_id in cur_wp_ids]
-				cur_paths_cost += cur_best_per[name][1]
+				cur_paths_cost += cur_best_per[name][0]
 				rem_workers_count -= 1
-
+				total_pers.append((cur_paths_cost, cur_workpoints))
 
 			if cur_paths_cost < best_paths_cost:
 
@@ -157,18 +158,31 @@ class TargetAssignment():
 				best_paths_cost = cur_paths_cost
 				workpoints = copy.copy(cur_workpoints)
 
-			#print(comb, cur_paths_cost, best_paths_cost)
+		self.all_pers = sort_tuple_mas(total_pers)
 
-		paths = self.calc_task_paths(best_per)
+		break_flag = True
+		
+		while break_flag:
+
+			best_per = self.get_best_per()
+			paths, break_flag = self.calc_task_paths(best_per[1])
 
 		#print('\n>>> Best combination <<<\n')
-		for key in best_per.keys():
+		w_points = {}
+		for key in self.w_names:
 
 			#print(key, best_per[key])
-			new_per = self.sort_tasks(workpoints[key], key)
-			workpoints[key] = new_per
+			workpoints = best_per[1][key]
+			new_per = self.sort_tasks(workpoints, key)
+			w_points[key] = new_per
 
-		return paths, workpoints
+		return paths, w_points
+	
+	def get_best_per(self):
+	
+		per = self.all_pers[0]
+		self.all_pers.pop(0)
+		return per
 	
 	def sort_tasks(self, per, robot_name):
 	
@@ -195,13 +209,20 @@ class TargetAssignment():
 	def calc_task_paths(self, goals):
 
 		paths = {}
+		break_flag = False
 			
 		for key in goals.keys():
 		
-			robot_goals = [self.mh.heightmap[ind] for ind in goals[key][0]]	
+			
+			robot_goals = goals[key]
 			paths[key] = self.calc_task_path(key, robot_goals)
+			
+			if not paths[key]:
 
-		return paths
+				break_flag = True
+				break
+
+		return paths, break_flag
 		
 	def calc_task_path(self, name, robot_goals):
 		
@@ -209,17 +230,29 @@ class TargetAssignment():
 		last_vect = r_tracker.last_vect
 		last_id = r_tracker.start_id
 		whole_path = []
+		break_flag = False
 		
 		for goal in robot_goals:
 		
 			goal_id = self.mh.get_nearest_vertice_id(goal.x, goal.y)
 			path, path_cost = self.mh.find_path(last_id, goal_id, last_vect)
-			last_id = goal_id
-			last_vect = get_end_vect(path)
-			whole_path.append(path)
 			
-		path, path_cost = self.mh.find_path(last_id, r_tracker.start_id, last_vect)
-		whole_path.append(path)
+			if path:
+
+				last_id = goal_id
+				last_vect = get_end_vect(path)
+				whole_path.append(path)
+				
+			else:
+				
+				break_flag = True
+				break
+				
+		if not break_flag:
+			
+			path, path_cost = self.mh.find_path(last_id, r_tracker.start_id, last_vect)
+			whole_path.append(path)
+
 		return whole_path
 		
 def get_best_free_config(closed_targets, pers):
@@ -231,7 +264,7 @@ def get_best_free_config(closed_targets, pers):
 		cur_per = copy_pers[0]
 		#print(cur_per)
 		pers.pop(0)
-		cur_targets = cur_per[0]
+		cur_targets = cur_per[1]
 
 		if not mas_intersection(cur_targets, closed_targets):
 
@@ -357,7 +390,7 @@ def sort_tuple_mas(mas):
 
 		for item in copy_mas:
 
-			cost = item[1]
+			cost = item[0]
 			if cost < min_cost:
 
 				min_cost = cost

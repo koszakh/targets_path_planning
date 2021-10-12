@@ -10,7 +10,7 @@ import gazebo_communicator.BatteryTracker as bt
 import gazebo_communicator.GazeboConstants as gc_const
 import path_planning.PathPlanner as pp
 import path_planning.Constants as const
-from path_planning.DynamicPlanner import DynamicPlanner
+from path_planning.MovementManager import MovementManager
 from path_planning.Heightmap import Heightmap
 import copy
 from math import sqrt, asin, fabs, pi
@@ -80,26 +80,26 @@ name1 = 'sim_p3at1'
 name2 = 'sim_p3at2'
 names = [name1, name2]
 p1 = Point(5, 0, 0)
-p2 = Point(4, -2, 0)
+p2 = Point(0, 0, 0)
 gc.spawn_target(name1, p1, (0, 0, 0, 0))
 gc.spawn_target(name2, p2, (0, 0, 0, 0))
-bts = bt.get_battery_trackers(names)
 
 
 g1 = Point(-5, 0, 0)
-g2 = Point(-4, 2, 0)
-path1 = [p1, g1]
-path2 = [p2, g2]
+g2 = Point(0, 0, 0)
+paths = {}
+workpoints = {}
+w_ch_points = {}
+paths[name1] = [[p1, g1]]
+paths[name2] = [[p2, g2]]
+workpoints[name1] = [g1]
+workpoints[name2] = [g2]
+w_ch_points[name1] = [g1]
+w_ch_points[name2] = [g2]
 
-robot1 = Robot(name1, "worker", bts)
-robot2 = Robot(name2, "worker", bts)
-robot1.waypoints_publisher([path1])
-robot2.waypoints_publisher([path2])
-robots = {}
-robots[name1] = robot1
-robots[name2] = robot2
-dp = DynamicPlanner(None, robots)
-dp.start()
+mm = MovementManager(None, names, [])
+mm.prepare_robots(paths, workpoints, w_ch_points, {}, {}, {})
+mm.start()
 print('Finish!')
 rospy.spin()
 

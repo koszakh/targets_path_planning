@@ -30,12 +30,22 @@ class Vector2d:
 # Output
 # angle: vector value in degrees
 	def vector_to_angle(self):
-		if not self.y == 0:
-			rad_angle = acos(self.x) * fabs(self.y) / self.y
-		else:
-			rad_angle = acos(self.x)
+
+		rad_angle = self.vector_to_radians()
 		angle = radians_to_degrees(rad_angle)
 		return angle
+
+	def vector_to_radians(self):
+
+		if not self.y == 0:
+
+			rad_angle = acos(self.x) * fabs(self.y) / self.y
+
+		else:
+
+			rad_angle = acos(self.x)
+
+		return rad_angle
 
 # Calculating the angle between vectors
 # Input
@@ -94,6 +104,7 @@ class Point:
 		self.edge_attach = None
 		self.init_point = None
 		self.label = None
+		self.last_vect = None
 
 	def __str__(self):
 		return str(self.x) + " " + str(self.y) + " " + str(self.z)
