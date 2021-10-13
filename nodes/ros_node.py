@@ -89,7 +89,7 @@ if flag:
 	path1_1 = [g1, p1]
 	
 	p2 = Point(5, 5, 0)
-	pre_ch_p = Point(2, 2, 0)
+	pre_ch_p = Point(3, 2, 0)
 	pre_ch_p2 = (pre_ch_p, ch_p1, name1)
 	path2_ch = [p2, pre_ch_p]
 	path2_b = [ch_p1, p2]

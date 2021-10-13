@@ -51,13 +51,16 @@ class Charger(Robot):
 	
 		self.pre_ch_points = []
 		self.rech_robots = []
+		self.ch_points = []
 		
 		for tup in ch_points:
 		
 			pre_ch_p = tup[0]
+			ch_p = tup[1]
 			w_name = tup[2]
 			self.rech_robots.append(w_name)
 			self.pre_ch_points.append(pre_ch_p)
+			self.ch_points.append(ch_p)
 		
 		
 		self.to_ch_p_paths = to_ch_p_paths
@@ -68,8 +71,8 @@ class Charger(Robot):
 		self.set_movespeed(const.DOCKING_SPEED)
 		dist = self.get_distance_to_partner()
 		partner_pos = gc.get_model_position(self.cur_worker)
-		self.turn_to_point(partner_pos)
-		self.move_with_PID(self.dock_point, const.DOCK_DISTANCE_ERROR, )
+		self.turn_to_point(self.dock_point)
+		self.move_with_PID(self.dock_point, const.DOCK_DISTANCE_ERROR)
 		self.stop()
 		print('Charger ' + self.name + ' successfully connected to ' + str(self.cur_worker) + '.')
 
@@ -154,6 +157,9 @@ class Charger(Robot):
 		self.docking()
 		self.start_charging()
 		b_path = self.get_to_base_path()
+		self.move_back(3)
+		self.is_waiting()
+		print(self.name + ' moving back to base.')
 		self.follow_the_route(b_path, const.MOVEMENT_SPEED, const.DISTANCE_ERROR, "movement")
 		self.recharge_batteries()
 		
@@ -173,6 +179,12 @@ class Charger(Robot):
 			self.bt.power_change(charge_received)
 			rospy.sleep(self.pid_delay)
 
+	def move_back(self, sec):
+	
+		dur = rospy.Duration(sec, 0)
+		self.movement(-const.PRE_DOCKING_SPEED, 0)
+		rospy.sleep(dur)
+		self.stop
 
 	def set_next_worker(self):
 	
@@ -214,8 +226,10 @@ class Charger(Robot):
 			if rech_b_level >= const.HIGH_LIMIT_BATTERY:
 			
 				w_charged = True
-				
+
+		self.change_mode("finished_charging")
 		print(self.name + ' finished charging worker ' + self.cur_worker)
+		self.ch_points.pop(0)
 				
 	def run(self):
 	

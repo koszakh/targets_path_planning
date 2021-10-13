@@ -118,57 +118,33 @@ class MovementManager(Thread):
 					
 					if robot.mode == "movement":
 
-						min_dist, neighbor_name = self.calc_min_neighbor_dist(key)
-
-						neighbor = self.robots[neighbor_name]
-						robot_pos = robot.get_robot_position()
-						neighbor_pos = neighbor.get_robot_position()
-						
-						robot_vect = robot.get_robot_orientation_vector()
-						neighbor_vect = neighbor.get_robot_orientation_vector()
-						
-						robot_to_n_vect = robot_pos.get_dir_vector_between_points(neighbor_pos)
-						n_to_robot_vect = neighbor_pos.get_dir_vector_between_points(robot_pos)
-						
-						robot_angle = robot_vect.get_angle_between_vectors(robot_to_n_vect)
-						neighbor_angle = neighbor_vect.get_angle_between_vectors(n_to_robot_vect)
-						
-						robots_dir_angle = robot_vect.get_angle_between_vectors(neighbor_vect)
-
-							
-						if min_dist < const.MIN_NEIGHBOR_DIST and robot_angle > 0 and robot_angle < const.MM_ORIENT_BOUND and self.is_robot_standing(neighbor):
-
-							print(key + ' is dodging to the right! ' + str(neighbor.mode))
-							robot.dodging = True
-							robot.movement(robot.ms, -gc_const.ROTATION_SPEED)
-						
-						elif min_dist < const.MIN_NEIGHBOR_DIST and robot_angle < 0 and robot_angle > -const.MM_ORIENT_BOUND and self.is_robot_standing(neighbor):
-						
-							print(key + ' is dodging to the left! ' + str(neighbor.mode))
-							robot.dodging = True
-							robot.movement(robot.ms, gc_const.ROTATION_SPEED)
-							
-						elif min_dist < const.MIN_NEIGHBOR_DIST and robot_angle < const.HW_ORIENT_BOUND and robot_angle > const.LW_ORIENT_BOUND and not self.is_robot_standing(neighbor):
-
-							print(key + ' is waiting!')
-							robot.wait()
-
-						elif robot.waiting:
-						
-							robot.stop_waiting()
-							
-						elif robot.dodging:
-						
-							robot.stop_dodging()
+						self.robot_avoiding(key)
 							
 					elif robot.mode == "waiting_for_worker":
 					
 						cur_worker = self.robots[robot.cur_worker]
+						ch_p = robot.ch_points[0]
+						w_pos = cur_worker.get_robot_position()
+						dist = w_pos.get_distance_to(ch_p)
 						
-						if cur_worker.mode == "waiting_for_charger":
+						if dist < gc_const.DISTANCE_ERROR:
 						
 							robot.dock_path, robot.dock_point = self.get_docking_path(robot.name, cur_worker.name)
 							robot.change_mode("prepare_to_dock")
+							
+					elif robot.mode == "finished_charging":
+					
+						cur_worker = self.robots[robot.cur_worker]
+						w_pos = cur_worker.get_robot_position()
+						c_pos = robot.get_robot_position()
+						dist = w_pos.get_distance_to(c_pos)
+						if dist < const.MIN_NEIGHBOR_DIST:
+						
+							robot.wait()
+							
+						else:
+						
+							robot.stop_waiting()
 						
 							
 							
@@ -176,7 +152,7 @@ class MovementManager(Thread):
 		
 	def is_robot_standing(self, robot):
 	
-		if robot.mode == "waiting_for_charger" or robot.mode == "finished" or robot.mode == "waiting_for_worker" or robot.waiting:
+		if robot.mode == "task_performing" or robot.mode == "waiting_for_charger" or robot.mode == "finished" or robot.mode == "waiting_for_worker" or robot.waiting:
 		
 			return True
 			
@@ -184,6 +160,52 @@ class MovementManager(Thread):
 		
 			return False
 		
+	def robot_avoiding(self, key):
+	
+		robot = self.robots[key]
+	
+		min_dist, neighbor_name = self.calc_min_neighbor_dist(key)
+
+		neighbor = self.robots[neighbor_name]
+		robot_pos = robot.get_robot_position()
+		neighbor_pos = neighbor.get_robot_position()
+		
+		robot_vect = robot.get_robot_orientation_vector()
+		neighbor_vect = neighbor.get_robot_orientation_vector()
+		
+		robot_to_n_vect = robot_pos.get_dir_vector_between_points(neighbor_pos)
+		n_to_robot_vect = neighbor_pos.get_dir_vector_between_points(robot_pos)
+		
+		robot_angle = robot_vect.get_angle_between_vectors(robot_to_n_vect)
+		neighbor_angle = neighbor_vect.get_angle_between_vectors(n_to_robot_vect)
+		
+		robots_dir_angle = robot_vect.get_angle_between_vectors(neighbor_vect)
+
+		if min_dist < const.MIN_NEIGHBOR_DIST and robot_angle < const.HW_ORIENT_BOUND and robot_angle > const.LW_ORIENT_BOUND and not self.is_robot_standing(neighbor):
+
+			print(key + ' is waiting!')
+			robot.wait()
+			
+		elif min_dist < const.MIN_NEIGHBOR_DIST and robot_angle > 0 and robot_angle < const.MM_ORIENT_BOUND and self.is_robot_standing(neighbor):
+
+			print(key + ' is dodging to the right!')
+			robot.dodging = True
+			robot.movement(robot.ms, -gc_const.ROTATION_SPEED)
+		
+		elif min_dist < const.MIN_NEIGHBOR_DIST and robot_angle < 0 and robot_angle > -const.MM_ORIENT_BOUND and self.is_robot_standing(neighbor):
+		
+			print(key + ' is dodging to the left!')
+			robot.dodging = True
+			robot.movement(robot.ms, gc_const.ROTATION_SPEED)
+
+		elif robot.waiting:
+		
+			robot.stop_waiting()
+			
+		elif robot.dodging:
+		
+			robot.stop_dodging()
+
 	def get_docking_path(self, c_name, w_name):
 	
 		charger = self.robots[c_name]
@@ -203,7 +225,7 @@ class MovementManager(Thread):
 		q0 = (s_pos.x, s_pos.y, s_vect.vector_to_radians())
 		q1 = (e_pos.x, e_pos.y, e_vect.vector_to_radians())
 		solution = dubins.shortest_path(q0, q1, const.ROBOT_RADIUS)
-		configurations, _ = solution.sample_many(gc_const.DISTANCE_ERROR)
+		configurations, _ = solution.sample_many(gc_const.DOCK_DISTANCE_ERROR * 2)
 		path = self.convert_tup_to_mas(configurations)
 		return path
 			
@@ -226,110 +248,6 @@ class MovementManager(Thread):
 		p = Point(x, y, z)
 		
 		return p
-		
-def delete_doubled_vertices(path):
-	new_path = copy.copy(path)
-	i = 1
-	goal = path[len(path) - 1]
-	
-	while True:
-		
-		p1 = path[i - 1]
-		p2 = path[i]
-		dist = p1.get_2d_distance(p2)
-		
-		if round(dist, 2) == 0:
-		
-			new_path.remove(p2)
-			i += 2
-		
-		else:
-		
-			i += 1
-		
-		if p2.get_2d_distance(goal):
-		
-			break
-		
-		if i >= len(path):
-		
-			i = len(path) - 1
-	
-	return new_path
-
-def path_loops_deleting(path):
-	new_path = copy.copy(path)
-	i = len(path) - 1
-	goal = path[0]
-	
-	if len(path) > 2:
-
-		while True:
-		
-			p1 = path[i - 2]
-			p2 = path[i - 1]
-			p3 = path[i]
-			dist1 = p1.get_2d_distance(p3)
-			dist2 = p2.get_2d_distance(p3)
-		
-			if dist1 < dist2:
-		
-				new_path.remove(p2)
-				i -= 2
-		
-			else:
-		
-				i -= 1
-		
-			if round(p1.get_2d_distance(goal), 2) == 0:
-		
-				break
-		
-			if i < 2:
-		
-				i = 2
-		
-		#path_curv = get_path_curvature(new_path)
-		#print('New path curvature: ' + str(path_curv))
-		
-		return new_path
-		
-	else:
-	
-		return path
-	
-def get_path_curvature(path):
-
-	max_curvature = 0
-
-	for i in range(0, len(path) - 2):
-
-		p1 = path[i]
-		p2 = path[i + 1]
-		p3 = path[i + 2]
-		v1 = p1.get_dir_vector_between_points(p2)
-		v2 = p2.get_dir_vector_between_points(p3)
-		angle_difference = fabs(v1.get_angle_between_vectors(v2))
-
-		if angle_difference > max_curvature:
-
-			max_curvature = angle_difference
-
-	return max_curvature
-	
-def delete_intermediate_points(path, cut_step):
-
-	path_copy = copy.copy(path)
-
-	for i in range(len(path) - 1):
-
-		if (i % cut_step > 0):
-
-			if path[i] in path_copy:
-
-				path_copy.remove(path[i])
-
-	return path_copy
 	
 def get_robots_dict(w_names, c_names):
 

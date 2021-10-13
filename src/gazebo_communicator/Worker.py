@@ -65,13 +65,18 @@ class Worker(Robot):
 	
 		if len(self.charge_points) > 0:
 
-			dist = self.get_robot_position().get_distance_to(self.charge_points[0])
+			ch_p = self.charge_points[0]
+			self.check_dist_to_ch_p(ch_p)
 			
-			if dist < const.DISTANCE_ERROR:
-			
-				self.stop()
-				self.wait_for_charger()
-				self.charge_points.pop(0)
+	def check_dist_to_ch_p(self, ch_p):
+	
+		dist = self.get_robot_position().get_distance_to(ch_p)
+		
+		if dist < const.DISTANCE_ERROR:
+		
+			self.stop()
+			self.wait_for_charger()
+			self.charge_points.pop(0)
 
 	def get_robot_battery_level(self, name):
 	
