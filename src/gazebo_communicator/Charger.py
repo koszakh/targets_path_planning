@@ -6,6 +6,7 @@ import threading as thr
 import rospy
 from math import fabs
 import dubins
+import random
 
 class Charger(Robot):
 
@@ -51,15 +52,13 @@ class Charger(Robot):
 		self.pre_ch_points = []
 		self.rech_robots = []
 		
-		for ch_p in ch_points:
+		for tup in ch_points:
 		
-			p = ch_p[0]
-			w_name = ch_p[1]
+			pre_ch_p = tup[0]
+			w_name = tup[2]
 			self.rech_robots.append(w_name)
-			self.pre_ch_points.append(p)
+			self.pre_ch_points.append(pre_ch_p)
 		
-		print(self.name, len(self.pre_ch_points))
-		gc.visualise_path(self.pre_ch_points, const.GREEN_VERTICE_PATH, self.name + '_pre_ch_p_')
 		
 		self.to_ch_p_paths = to_ch_p_paths
 		self.to_base_paths = to_base_paths
@@ -136,6 +135,8 @@ class Charger(Robot):
 	
 		self.change_mode("movement")
 		self.set_movespeed(ms)
+
+		#gc.visualise_path(path, const.GREEN_VERTICE_PATH, self.name + '_' + str(random.uniform(0, 1)) + '_p_')
 
 		for state in path:
 
@@ -215,6 +216,8 @@ class Charger(Robot):
 			if rech_b_level >= const.HIGH_LIMIT_BATTERY:
 			
 				self.change_mode(None)
+				
+		print(self.name + ' finished charging worker ' + self.cur_worker)
 				
 	def run(self):
 	

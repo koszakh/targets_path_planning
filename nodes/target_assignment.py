@@ -12,7 +12,6 @@ from geometry_msgs.msg import Point
 import rospy
 import time
 import random
-
 import copy
 import gazebo_communicator.GazeboConstants as gc_const
 from charge.charge import eval_distance
@@ -199,11 +198,19 @@ def fullfill_paths_dicts(paths_to_ch_p, paths_to_base):
 	for c_name in robot_allocation.keys():
 		start_id = t_as.mh.get_nearest_vertice_id(poses[c_name].x, poses[c_name].y)
 		ch_pts = robot_allocation[c_name]
-		for ch_pt in ch_pts:
-			goal_id = t_as.mh.get_nearest_vertice_id(ch_pt[0].x, ch_pt[0].y)
-			path, path_ids = t_as.mh.find_path(start_id, goal_id, orients[c_name])
-			paths_of_ch_robots_to_ch_p[c_name].append(path)
-			paths_of_ch_robots_to_base[c_name].append(path[::-1])
+		for pt in ch_pts:
+		
+			pre_ch_pt = pt[0]
+			ch_pt = pt[1]
+		
+			goal_id = t_as.mh.get_nearest_vertice_id(pre_ch_pt.x, pre_ch_pt.y)
+			ch_path, path_ids = t_as.mh.find_path(start_id, goal_id, orients[c_name])
+			paths_of_ch_robots_to_ch_p[c_name].append(ch_path)
+			
+			end_vect = ch_pt.last_vect
+			last_id = ch_pt.id
+			base_path, path_ids = t_as.mh.find_path(last_id, start_id, end_vect)
+			paths_of_ch_robots_to_base[c_name].append(base_path)
 	return paths_of_ch_robots_to_ch_p, paths_of_ch_robots_to_base
 
 rospy.init_node('target_assignment')

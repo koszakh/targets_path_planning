@@ -126,6 +126,7 @@ class TargetAssignment():
 
 				for per in pers:
 				
+					print(name, per)
 					rt = copy.deepcopy(self.trackers[name])
 					robot_pos = init_r_pos
 					cur_cost = 0

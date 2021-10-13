@@ -101,7 +101,8 @@ class Worker(Robot):
 
 	def set_worker_data(self, w_paths, w_points, w_ch_points):
 
-		self.paths = w_paths
+		self.paths = w_paths[:len(w_paths) - 1]
+		self.to_base_path = w_paths[len(w_paths) - 1]
 		self.workpoints = w_points
 		gc.visualise_path(self.workpoints, const.GREEN_VERTICE_PATH, self.name + '_task')
 		self.charge_points = w_ch_points
@@ -148,6 +149,8 @@ class Worker(Robot):
 			for path in self.paths:
 				
 				self.perform_worker_mission(path)
+
+			self.follow_the_route(self.to_base_path)
 				
 		print('Worker ' + str(self.name) + ' has finished!')
 

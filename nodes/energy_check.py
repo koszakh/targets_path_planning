@@ -62,8 +62,9 @@ def charge_alloc(charging_pts, charging_robot_names):
 			# If i less than number of list of charging points
 			if i < len(charging_pts[work_robot_name]):
 				ch_robot_name = ch_robot_names[0]
-				ch_p = get_pre_ch_p(charging_pts[work_robot_name][i])
-				allocation[ch_robot_name].append((ch_p, work_robot_name))
+				ch_p = charging_pts[work_robot_name][i]
+				pre_ch_p = get_pre_ch_p(ch_p)
+				allocation[ch_robot_name].append((pre_ch_p, ch_p, work_robot_name))
 				tmp_name = ch_robot_names.pop(0)
 				ch_robot_names.append(tmp_name)
 		i += 1
