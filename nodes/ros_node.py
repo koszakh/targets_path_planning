@@ -79,27 +79,82 @@ flag = True
 name1 = 'sim_p3at1'
 name2 = 'sim_p3at2'
 names = [name1, name2]
-p1 = Point(5, 0, 0)
-p2 = Point(0, 0, 0)
-gc.spawn_target(name1, p1, (0, 0, 0, 0))
-gc.spawn_target(name2, p2, (0, 0, 0, 0))
+flag = True
+if flag:
+	
+	p1 = Point(5, 0, 0)
+	ch_p1 = Point(0, 0, 0)
+	g1 = Point(-5, 0, 0)
+	path1 = [p1, g1]
+	path1_1 = [g1, p1]
+	
+	p2 = Point(5, 5, 0)
+	pre_ch_p = Point(2, 2, 0)
+	pre_ch_p2 = (pre_ch_p, ch_p1, name1)
+	path2_ch = [p2, pre_ch_p]
+	path2_b = [ch_p1, p2]
+	
+	vect1 = p1.get_angle_between_points(g1)
+	rot1 = Rotation.from_euler('xyz', [0, 0, vect1], degrees=True)
+	quat1 = rot1.as_quat()
 
+	vect2 = p2.get_angle_between_points(pre_ch_p)
+	rot2 = Rotation.from_euler('xyz', [0, 0, vect2], degrees=True)
+	quat2 = rot2.as_quat()
 
-g1 = Point(-5, 0, 0)
-g2 = Point(0, 0, 0)
-paths = {}
-workpoints = {}
-w_ch_points = {}
-paths[name1] = [[p1, g1]]
-paths[name2] = [[p2, g2]]
-workpoints[name1] = [g1]
-workpoints[name2] = [g2]
-w_ch_points[name1] = [g1]
-w_ch_points[name2] = [g2]
+	gc.spawn_target(name1, p1, quat1)
+	gc.spawn_target(name2, p2, quat2)
+	
+	w_paths = {}
+	w_points = {}
+	ch_points = {}
+	w_paths[name1] = [path1, path1_1]
+	w_points[name1] = [g1]
+	ch_points[name1] = [ch_p1]
+	
+	pre_ch_points = {}
+	to_ch_paths = {}
+	to_base_paths = {}
+	pre_ch_points[name2] = [pre_ch_p2]
+	to_ch_paths[name2] = [path2_ch]
+	to_base_paths[name2] = [path2_b]
+	
+	mm = MovementManager(None, [name1], [name2])
+	mm.prepare_robots(w_paths, w_points, ch_points, pre_ch_points, to_ch_paths, to_base_paths)
+	mm.start()
+	
+else:
 
-mm = MovementManager(None, names, [])
-mm.prepare_robots(paths, workpoints, w_ch_points, {}, {}, {})
-mm.start()
+	p1 = Point(3.4, 0, 0)
+	p2 = Point(-3, 2, 0)
+
+	g1 = Point(-5, 0, 0)
+	g2 = Point(3, -2, 0)
+	paths = {}
+	workpoints = {}
+	w_ch_points = {}
+	paths[name1] = [[p1, g1]]
+	paths[name2] = [[p2, g2]]
+
+	vect1 = p1.get_angle_between_points(g1)
+	rot1 = Rotation.from_euler('xyz', [0, 0, vect1], degrees=True)
+	quat1 = rot1.as_quat()
+
+	vect2 = p2.get_angle_between_points(g2)
+	rot2 = Rotation.from_euler('xyz', [0, 0, vect2], degrees=True)
+	quat2 = rot2.as_quat()
+
+	gc.spawn_target(name1, p1, quat1)
+	gc.spawn_target(name2, p2, quat2)
+
+	workpoints[name1] = [g1]
+	workpoints[name2] = [g2]
+	w_ch_points[name1] = [g1]
+	w_ch_points[name2] = [g2]
+
+	mm = MovementManager(None, names, [])
+	mm.prepare_robots(paths, workpoints, w_ch_points, {}, {}, {})
+	mm.start()
 print('Finish!')
 rospy.spin()
 

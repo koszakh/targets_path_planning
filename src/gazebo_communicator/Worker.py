@@ -49,7 +49,7 @@ class Worker(Robot):
 		robot_pos = self.get_robot_position()
 		old_pos = robot_pos
 		
-		while robot_pos.get_distance_to(goal) > const.DISTANCE_ERROR:
+		while robot_pos.get_distance_to(goal) > const.DISTANCE_ERROR and fabs(error) < 90:
 		
 			robot_pos = self.get_robot_position()
 			u, error, error_sum = self.calc_control_action(goal, error, error_sum)
@@ -101,14 +101,20 @@ class Worker(Robot):
 
 	def set_worker_data(self, w_paths, w_points, w_ch_points):
 
-		self.paths = w_paths[:len(w_paths) - 1]
-		self.to_base_path = w_paths[len(w_paths) - 1]
-		self.workpoints = w_points
-		gc.visualise_path(self.workpoints, const.GREEN_VERTICE_PATH, self.name + '_task')
-		self.charge_points = w_ch_points
-		gc.visualise_path(self.charge_points, const.BLUE_VERTICE_PATH, self.name + '_ch_p_')
+		if w_paths:
+		
+			self.paths = w_paths[:len(w_paths) - 1]
+			self.to_base_path = w_paths[len(w_paths) - 1]
+			self.workpoints = w_points
+			gc.visualise_path(self.workpoints, const.GREEN_VERTICE_PATH, self.name + '_task')
+			self.charge_points = w_ch_points
+			gc.visualise_path(self.charge_points, const.BLUE_VERTICE_PATH, self.name + '_ch_p_')
 
-		self.tasks_left = len(w_points)
+			self.tasks_left = len(w_points)
+			
+		else:
+		
+			self.workpoints = []
 
 	def perform_the_task(self):
 		

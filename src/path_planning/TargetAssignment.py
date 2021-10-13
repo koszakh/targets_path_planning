@@ -125,8 +125,7 @@ class TargetAssignment():
 				init_r_pos = self.mh.heightmap[init_rt.start_id]
 
 				for per in pers:
-				
-					print(name, per)
+
 					rt = copy.deepcopy(self.trackers[name])
 					robot_pos = init_r_pos
 					cur_cost = 0
@@ -159,6 +158,7 @@ class TargetAssignment():
 				best_paths_cost = cur_paths_cost
 				workpoints = copy.copy(cur_workpoints)
 
+		print('\nBest permutations found.')
 		self.all_pers = sort_tuple_mas(total_pers)
 
 		break_flag = True
@@ -167,8 +167,9 @@ class TargetAssignment():
 
 			best_per = self.get_best_per()
 			paths, break_flag = self.calc_task_paths(best_per[1])
+			print(break_flag)
 
-		#print('\n>>> Best combination <<<\n')
+		print('\nWorkers routes are built.')
 		w_points = {}
 		for key in self.w_names:
 
@@ -214,14 +215,13 @@ class TargetAssignment():
 			
 		for key in goals.keys():
 		
-			
+			print(key)	
 			robot_goals = goals[key]
 			paths[key] = self.calc_task_path(key, robot_goals)
-			
+			print(len(paths[key]))
 			if not paths[key]:
 
-				break_flag = True
-				break
+				return {}, True
 
 		return paths, break_flag
 		
@@ -246,13 +246,10 @@ class TargetAssignment():
 				
 			else:
 				
-				break_flag = True
-				break
+				return []
 				
-		if not break_flag:
-			
-			path, path_cost = self.mh.find_path(last_id, r_tracker.start_id, last_vect)
-			whole_path.append(path)
+		path, path_cost = self.mh.find_path(last_id, r_tracker.start_id, last_vect)
+		whole_path.append(path)
 
 		return whole_path
 		

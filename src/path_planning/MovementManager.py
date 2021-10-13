@@ -88,9 +88,8 @@ class MovementManager(Thread):
 				self.robots[name].set_worker_data(w_paths[name], w_points[name], w_ch_points[name])
 				
 			else:
-				
-				print('WAAAAT!')
-				self.robots[name].set_worker_data(w_paths[name], [], [])
+
+				self.robots[name].set_worker_data([], [], [])
 			
 		for name in self.c_names:
 		
@@ -137,23 +136,23 @@ class MovementManager(Thread):
 						robots_dir_angle = robot_vect.get_angle_between_vectors(neighbor_vect)
 
 							
-						if min_dist < const.MIN_NEIGHBOR_DIST and fabs(robot_angle) < 45 and self.is_robot_standing(neighbor) and robot_angle > 0:
-							print(key + ' is dodging to the left!')
+						if min_dist < const.MIN_NEIGHBOR_DIST and robot_angle > 0 and robot_angle < const.MM_ORIENT_BOUND and self.is_robot_standing(neighbor):
+
+							print(key + ' is dodging to the right! ' + str(neighbor.mode))
 							robot.dodging = True
 							robot.movement(robot.ms, -gc_const.ROTATION_SPEED)
 						
-						elif min_dist < const.MIN_NEIGHBOR_DIST and fabs(robot_angle) < 45 and self.is_robot_standing(neighbor) and robot_angle < 0:
+						elif min_dist < const.MIN_NEIGHBOR_DIST and robot_angle < 0 and robot_angle > -const.MM_ORIENT_BOUND and self.is_robot_standing(neighbor):
 						
-							print(key + ' is dodging to the left!')
+							print(key + ' is dodging to the left! ' + str(neighbor.mode))
 							robot.dodging = True
 							robot.movement(robot.ms, gc_const.ROTATION_SPEED)
 							
-							
-						elif min_dist < const.MIN_NEIGHBOR_DIST and robot_angle < 30 and not self.is_robot_standing(neighbor) and robot_angle > -60:
+						elif min_dist < const.MIN_NEIGHBOR_DIST and robot_angle < const.HW_ORIENT_BOUND and robot_angle > const.LW_ORIENT_BOUND and not self.is_robot_standing(neighbor):
 
 							print(key + ' is waiting!')
 							robot.wait()
-								
+
 						elif robot.waiting:
 						
 							robot.stop_waiting()
@@ -177,7 +176,7 @@ class MovementManager(Thread):
 		
 	def is_robot_standing(self, robot):
 	
-		if robot.mode == "waiting_for_charger" or robot.mode == "finished" or robot.mode == "waiting_for_worker":
+		if robot.mode == "waiting_for_charger" or robot.mode == "finished" or robot.mode == "waiting_for_worker" or robot.waiting:
 		
 			return True
 			
@@ -194,7 +193,7 @@ class MovementManager(Thread):
 		rech_vect = worker.get_robot_orientation_vector()
 		ch_pos = charger.get_robot_position()
 		ch_vect = charger.get_robot_orientation_vector()
-		pre_dock_point = calc_dock_point(rech_pos, rech_vect, const.ROBOT_RADIUS * 3)
+		pre_dock_point = calc_dock_point(rech_pos, rech_vect, const.ROBOT_RADIUS * 2)
 		dock_point = calc_dock_point(rech_pos, rech_vect, gc_const.DOCKING_THRESHOLD)
 		dock_path = self.plan_path_to_dock_point(ch_pos, ch_vect, pre_dock_point, rech_vect)
 		return dock_path, dock_point

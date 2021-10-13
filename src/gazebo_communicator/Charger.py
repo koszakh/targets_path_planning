@@ -65,12 +65,11 @@ class Charger(Robot):
 
 	def docking(self):
 
-		self.change_mode("docking")
 		self.set_movespeed(const.DOCKING_SPEED)
 		dist = self.get_distance_to_partner()
 		partner_pos = gc.get_model_position(self.cur_worker)
 		self.turn_to_point(partner_pos)
-		self.move_with_PID(self.dock_point, const.DOCK_DISTANCE_ERROR)
+		self.move_with_PID(self.dock_point, const.DOCK_DISTANCE_ERROR, )
 		self.stop()
 		print('Charger ' + self.name + ' successfully connected to ' + str(self.cur_worker) + '.')
 
@@ -131,9 +130,9 @@ class Charger(Robot):
 			old_pos = robot_pos
 			rospy.sleep(self.pid_delay)
 		
-	def follow_the_route(self, path, ms, dist_error):
+	def follow_the_route(self, path, ms, dist_error, mode):
 	
-		self.change_mode("movement")
+		self.change_mode(mode)
 		self.set_movespeed(ms)
 
 		#gc.visualise_path(path, const.GREEN_VERTICE_PATH, self.name + '_' + str(random.uniform(0, 1)) + '_p_')
@@ -148,14 +147,14 @@ class Charger(Robot):
 
 		ch_path = self.get_to_ch_p_path()
 		#gc.visualise_path(ch_path, const.GREEN_VERTICE_PATH, self.name + '_p_')
-		self.follow_the_route(ch_path, const.MOVEMENT_SPEED, const.DISTANCE_ERROR)
+		self.follow_the_route(ch_path, const.MOVEMENT_SPEED, const.DISTANCE_ERROR, "movement")
 		self.set_next_worker()
 		self.wait_for_worker()
-		self.follow_the_route(self.dock_path, const.PRE_DOCKING_SPEED, const.DOCK_DISTANCE_ERROR)
+		self.follow_the_route(self.dock_path, const.PRE_DOCKING_SPEED, const.DOCK_DISTANCE_ERROR, "docking")
 		self.docking()
 		self.start_charging()
 		b_path = self.get_to_base_path()
-		self.follow_the_route(b_path, const.MOVEMENT_SPEED, const.DISTANCE_ERROR)
+		self.follow_the_route(b_path, const.MOVEMENT_SPEED, const.DISTANCE_ERROR, "movement")
 		self.recharge_batteries()
 		
 	def recharge_batteries(self):
@@ -199,8 +198,9 @@ class Charger(Robot):
 		print('Charger ' + self.name + ' started charging ' + self.cur_worker + '.')
 		s_ch_time = rospy.get_time()
 		rechargeable_bt = self.trackers[self.cur_worker]
+		w_charged = False
 		
-		while self.mode == "charging":
+		while not w_charged:
 			
 			cur_ch_time = rospy.get_time()
 			time_diff = cur_ch_time - s_ch_time
@@ -210,12 +210,10 @@ class Charger(Robot):
 			self.bt.recharge_power_change(-charge_received)
 			rech_b_level = rechargeable_bt.battery
 			rospy.sleep(self.pid_delay)
-			print('self battery: ' + str(self.bt.recharge_battery))
-			print('worker battery: ' + str(rechargeable_bt.battery))
 			
 			if rech_b_level >= const.HIGH_LIMIT_BATTERY:
 			
-				self.change_mode(None)
+				w_charged = True
 				
 		print(self.name + ' finished charging worker ' + self.cur_worker)
 				
