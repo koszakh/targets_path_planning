@@ -119,7 +119,7 @@ class TargetAssignment():
 			cur_workpoints = {}
 			for name in comb:
 
-				pers = get_task_permutations(rem_targets, self.t_count, len(self.w_names), rem_workers_count)
+				pers = get_task_combinations(rem_targets, self.t_count, len(self.w_names), rem_workers_count)
 				robot_per[name] = []
 				init_rt = self.trackers[name]
 				init_r_pos = self.mh.heightmap[init_rt.start_id]
@@ -151,6 +151,10 @@ class TargetAssignment():
 				cur_paths_cost += cur_best_per[name][0]
 				rem_workers_count -= 1
 				total_pers.append((cur_paths_cost, cur_workpoints))
+				
+				if not rem_targets:
+				
+					break
 
 			if cur_paths_cost < best_paths_cost:
 
@@ -177,6 +181,17 @@ class TargetAssignment():
 			workpoints = best_per[1][key]
 			new_per = self.sort_tasks(workpoints, key)
 			w_points[key] = new_per
+
+		paths = clean_dict(paths)
+		w_points = clean_dict(w_points)
+
+		for key in w_points.keys():
+
+			print(key, w_points[key])
+
+			for path in paths[key]:
+
+				print(len(path))
 
 		return paths, w_points
 	
@@ -253,6 +268,18 @@ class TargetAssignment():
 
 		return whole_path
 		
+def clean_dict(d):
+
+	new_d = {}
+
+	for key in d.keys():
+	
+		if d[key]:
+		
+			new_d[key] = d[key]
+			
+	return new_d
+
 def get_best_free_config(closed_targets, pers):
 
 	per = None
@@ -329,6 +356,21 @@ def calc_task_seq_len(seq_len, w_count, rem_workers_num):
 
 	return cur_len
 
+def calc_task_seq_len(seq_len, w_count, rem_workers_num):
+
+	td = int(seq_len / w_count)
+	td_mod = seq_len % w_count
+
+	if rem_workers_num > td_mod:
+
+		cur_len = td
+
+	else:
+
+		cur_len = td + 1
+
+	return cur_len
+
 def get_permutations(mas, seq_len, w_count, i):
 
 	cur_len = calc_current_seq_len(seq_len, w_count, i)
@@ -341,10 +383,10 @@ def get_permutations(mas, seq_len, w_count, i):
 
 	return per_list
 	
-def get_task_permutations(mas, seq_len, w_count, rem_workers):
+def get_task_combinations(mas, seq_len, w_count, rem_workers):
 
 	cur_len = calc_task_seq_len(seq_len, w_count, rem_workers)
-	init_per_list = itertools.permutations(mas, cur_len)
+	init_per_list = itertools.combinations(mas, cur_len)
 	per_list = []
 
 	for item in init_per_list:

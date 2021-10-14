@@ -137,7 +137,7 @@ def calc_path_cost(path):
 def define_new_dict_of_workpoints(workpoints, poses, orients, workpoints_was_deleted):
 	copy_wpts = copy.copy(workpoints)
 	for c_name in c_names:
-		for w_name in w_names:
+		for w_name in workpoints.keys():
 			wpts = copy_wpts[w_name]
 			i = 0
 			while i < len(wpts):
@@ -231,6 +231,8 @@ s_time = time.time()
 paths, workpoints = t_as.target_assignment()
 f_time = time.time()
 
+b_w_names = paths.keys()
+
 exec_time = f_time - s_time
 print('Target assignment time: ' + str(exec_time))
 
@@ -252,8 +254,6 @@ paths, flag = t_as.calc_task_paths(workpoints)
 
 charging_points = define_charging_points(paths, workpoints)
 robot_allocation = charge_alloc(charging_points, c_names)
-
-print('new_w_names: ' + str(w_names))
 
 paths_to_ch_p, paths_to_base = init_paths_dict()
 paths_of_ch_robots_to_ch_p, paths_of_ch_robots_to_base = fullfill_paths_dicts(paths_to_ch_p, paths_to_base)
