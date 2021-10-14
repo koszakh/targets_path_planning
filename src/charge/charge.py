@@ -24,16 +24,16 @@ MAX_ENERGY_RESOURCE = gc_const.HIGH_LIMIT_BATTERY
 # Hmap: y, x
 
 
-def eval_charge_points(path, workpoints, energy_resource):
+def eval_charge_points(path, workpoints, energy_resource, distance):
 	# Evaluating charging points on the path
 	# Input:
 	#	   path - trajectory of robot
 	#	   hmap - height map
 	# Output:
-	#	   ch_p - array of charging points
+	#	   ch_p - array of tuples (charging_point, distance)
 
 	ch_p = []
-
+	total_distance = distance
 	path_full = len(path)
 	i_mem = []
 	i = 1
@@ -43,8 +43,9 @@ def eval_charge_points(path, workpoints, energy_resource):
 		last_point = path[i-1]
 		last_point.last_vect = last_vect
 
-		distance = eval_distance(point, last_point)  # m
-		energy_resource -= distance*gc_const.MOVE_CHARGE_LOSS_COEF
+		part_distance = eval_distance(point, last_point)  # m
+		total_distance += part_distance
+		energy_resource -= part_distance*gc_const.MOVE_CHARGE_LOSS_COEF
 		if energy_resource < ENERGY_THRESHOLD:
 			# rectangle = make_rectangle(point, hmap)
 			# angle = angle_with_ground(rectangle, hmap)
@@ -52,7 +53,7 @@ def eval_charge_points(path, workpoints, energy_resource):
 			if angle_with_ground < ANGLE_THRESHOLD:
 
 				angle = 2
-				ch_p.append(last_point)
+				ch_p.append((last_point, distance))
 				i_mem.append(i)
 				#gc.spawn_sdf_model(new_p, gc_const.GREEN_VERTICE_PATH, str(i) + str(random.random()))
 				# draw_charging_region(rectangle, hmap)
@@ -75,13 +76,13 @@ def eval_charge_points(path, workpoints, energy_resource):
 		
 				while True:
 					energy_resource += MAX_ENERGY_RESOURCE - ENERGY_THRESHOLD
-					ch_p.append(point)
+					ch_p.append((point, distance))
 					if energy_resource >= ENERGY_THRESHOLD:
 						break
 		last_vect = last_point.get_dir_vector_between_points(point)
 		i += 1
 
-	return ch_p, energy_resource
+	return ch_p, energy_resource, total_distance
 
 
 def eval_distance(p1, p2):
