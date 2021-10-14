@@ -199,6 +199,7 @@ def fullfill_paths_dicts(paths_to_ch_p, paths_to_base):
 		start_id = t_as.mh.get_nearest_vertice_id(poses[c_name].x, poses[c_name].y)
 		ch_pts = robot_allocation[c_name]
 		for pt in ch_pts:
+			
 			pre_ch_pt = pt[0]
 			ch_pt = pt[1]
 
@@ -254,7 +255,7 @@ paths, flag = t_as.calc_task_paths(workpoints)
 charging_points = define_charging_points(paths, workpoints)
 robot_allocation = charge_alloc(charging_points, c_names)
 robot_allocation = sort_by_distance(robot_allocation)
-print(robot_allocation)
+
 
 paths_to_ch_p, paths_to_base = init_paths_dict()
 paths_of_ch_robots_to_ch_p, paths_of_ch_robots_to_base = fullfill_paths_dicts(paths_to_ch_p, paths_to_base)

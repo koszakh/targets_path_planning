@@ -46,7 +46,7 @@ def parse_worker_paths_msg(workers_msg):
 
 def charge_alloc(charging_pts, charging_robot_names):
 	# Queue of names
-	print(charging_robot_names)
+	#print(charging_robot_names)
 	ch_robot_names = charging_robot_names
 	# Data preparation
 	allocation = dict()
@@ -61,10 +61,11 @@ def charge_alloc(charging_pts, charging_robot_names):
 		for work_robot_name in charging_pts.keys():
 			# If i less than number of list of charging points
 			if i < len(charging_pts[work_robot_name]):
+
 				ch_robot_name = ch_robot_names[0]
 				charging_point, distance = charging_pts[work_robot_name][i]
-				ch_p = get_pre_ch_p(charging_point)
-				allocation[ch_robot_name].append((ch_p, work_robot_name, distance))
+				pre_ch_p = get_pre_ch_p(charging_point)
+				allocation[ch_robot_name].append((pre_ch_p, charging_point, work_robot_name, distance))
 				tmp_name = ch_robot_names.pop(0)
 				ch_robot_names.append(tmp_name)
 		i += 1
@@ -89,7 +90,7 @@ def define_charging_points(workers_data, workers_workpoints):
 		for path in paths:
 			ch_pts, energy_resource, distance = eval_charge_points(path, workers_workpoints[w_name], energy_resource, distance)
 			for ch_pt in ch_pts:
-				# ch_pt -> (charging_point, distance)
+				
 				ch_p[w_name].append(ch_pt)
 
 	return ch_p
@@ -98,7 +99,7 @@ def sort_by_distance(allocation):
 	sorted_allocation = allocation
 	for c_name in sorted_allocation.keys():
 		points = sorted_allocation[c_name]
-		sorted_points = sorted(points, key=lambda (point, name, dist): dist)
+		sorted_points = sorted(points, key=lambda (pre_ch_p, ch_p, name, dist): dist)
 		sorted_allocation[c_name] = sorted_points
 	return sorted_allocation
 
