@@ -47,7 +47,6 @@ def eval_charge_points(path, workpoints, energy_resource, distance):
 		energy_resource -= part_distance*gc_const.MOVE_CHARGE_LOSS_COEF
 		if energy_resource < ENERGY_THRESHOLD:
 			ch_p.append((last_point, distance))
-			i_mem.append(i)
 			#gc.spawn_sdf_model(new_p, gc_const.GREEN_VERTICE_PATH, str(i) + str(random.random()))
 			energy_resource = MAX_ENERGY_RESOURCE
 			i += 1
