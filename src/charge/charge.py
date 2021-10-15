@@ -35,7 +35,6 @@ def eval_charge_points(path, workpoints, energy_resource, distance):
 	ch_p = []
 	total_distance = distance
 	path_full = len(path)
-	i_mem = []
 	i = 1
 	last_vect = path[0].get_dir_vector_between_points(path[1])
 	while i < path_full:
@@ -47,33 +46,15 @@ def eval_charge_points(path, workpoints, energy_resource, distance):
 		total_distance += part_distance
 		energy_resource -= part_distance*gc_const.MOVE_CHARGE_LOSS_COEF
 		if energy_resource < ENERGY_THRESHOLD:
-			# rectangle = make_rectangle(point, hmap)
-			# angle = angle_with_ground(rectangle, hmap)
-			angle_with_ground = 1
-			if angle_with_ground < ANGLE_THRESHOLD:
-
-				angle = 2
-				ch_p.append((last_point, distance))
-				i_mem.append(i)
-				#gc.spawn_sdf_model(new_p, gc_const.GREEN_VERTICE_PATH, str(i) + str(random.random()))
-				# draw_charging_region(rectangle, hmap)
-				energy_resource = MAX_ENERGY_RESOURCE
-				i += 1
-			else:
-				if i == 1:
-					return 0
-				i -= 1
-				if (i <= 0) or (i in i_mem):
-					print('Path cannot be overcome!')
-					return 0
-			continue
+			ch_p.append((last_point, distance))
+			i_mem.append(i)
+			#gc.spawn_sdf_model(new_p, gc_const.GREEN_VERTICE_PATH, str(i) + str(random.random()))
+			energy_resource = MAX_ENERGY_RESOURCE
+			i += 1
 
 		if point in workpoints:
-		
 			energy_resource -= gc_const.TASK_ENERGY_COST
-		
 			if energy_resource < ENERGY_THRESHOLD:
-		
 				while True:
 					energy_resource += MAX_ENERGY_RESOURCE - ENERGY_THRESHOLD
 					ch_p.append((point, distance))
