@@ -15,6 +15,8 @@ GOAL_VERTICE_PATH = GAZEBO_ROOT_PATH + '/.gazebo/models/goal_vertice/model.sdf'
 BLUE_VERTICE_PATH = GAZEBO_ROOT_PATH + '/.gazebo/models/blue_vertice/model.sdf'
 PATH_COLORS = [RED_VERTICE_PATH, GREEN_VERTICE_PATH, BLUE_VERTICE_PATH]
 
+PATH_CAMERA_PARAMS = WS_ROOT_PATH + '/catkin_ws/src/targets_path_planning/aruco_middle_point_position/cam_param.pkl'
+
 # Target constants
 
 MOVEMENT_SPEED = 0.3#0.4

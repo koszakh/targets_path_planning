@@ -1,3 +1,4 @@
+import cv2
 import rospy
 from targets_path_planning.msg import Path, WorkPath, Charge
 import path_planning.Point as PointGeom
@@ -30,6 +31,7 @@ class Robot(thr.Thread):
 		self.bt = self.b_trackers[self.name]
 		self.id = self.name[self.name.find('t') + 1:]
 		self.init_topics()
+		# self.init_camera()
 		self.pid_delay = rospy.Duration(0, const.PID_NSEC_DELAY)
 		msg = Twist()
 		rospy.sleep(self.pid_delay)
@@ -65,6 +67,49 @@ class Robot(thr.Thread):
 		self.gps_listener.unregister()
 		self.def_prob_sub.unregister()
 		self.workpoints_sub.unregister()
+
+	def init_camera(self):
+		self.aruco_dict = cv2.aruco.Dictionary_get(cv2.aruco.DICT_6X6_250)
+		self.parameters = cv2.aruco.DetectorParameters_create()
+
+		with open(const.PATH_CAMERA_PARAMS, 'rb') as f:
+			camera_param = pickle.load(f)
+		self.camera_mtx, self.dist_coefficients, _, _, _, _ = camera_param
+		for k in self.dist_coefficients:
+			k = 0
+
+		self.image_sub = rospy.Subscriber("/rrbot/camera1/image_raw", Image, self.callback_image)
+		self.pub = rospy.Publisher('distance', Float32, queue_size=10)
+		self.br = CvBridge()
+
+	def callback_image(self):
+		key = cv2.waitKey(1) & 0xFF
+
+		frame_bgr = self.br.imgmsg_to_cv2(image)
+		frame_grey = cv2.cvtColor(frame_bgr, cv2.COLOR_BGR2GRAY)
+
+		# Aruco detection
+		try:
+			middle_point_pose, middle_point_orient, dist1, dist2, rvec1, rvec2 = detect_show_markers(frame_bgr,
+																									frame_grey,
+																									self.aruco_dict,
+																									self.parameters,
+																									self.camera_mtx,
+																									self.dist_coefficients)
+			distance = middle_point_pose[0][0][2]
+			self.pub.publish(distance)
+			# if distance < 0.54:
+			# 	print('Coordinates of center: ', middle_point_pose)
+			# 	print('Distance to left marker: ', dist1)
+			# 	print('Distance to right marker: ', dist2)
+			# 	print('Orientation center: ', middle_point_orient)
+		# If markers was not detected:
+		except:
+			pass
+
+		# frame_rgb = cv2.cvtColor(frame_bgr, cv2.COLOR_BGR2RGB)
+		# cv2.imshow("camera", frame_rgb)
+		# cv2.waitKey(1)
 
 # Getting the position of the robot in 3D space in the Gazebo environment
 
