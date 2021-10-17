@@ -1,7 +1,7 @@
 import cv2
 import numpy as np
 
-
+middle_point_pose = None
 def detect_show_markers(img, gray, aruco_dict, parameters, camera_matrix, dist_coeffs, i=6, j=5):
     """
     :param img: coloured image without distortion
@@ -14,6 +14,8 @@ def detect_show_markers(img, gray, aruco_dict, parameters, camera_matrix, dist_c
     :param j: 5, Id of target aruco
     :return: show image
     """
+    MARKER_SIZE = 0.15
+
     detected_1, detected_2 = False, False
     distance_1, distance_2 = None, None
     font = cv2.FONT_HERSHEY_SIMPLEX
@@ -21,8 +23,7 @@ def detect_show_markers(img, gray, aruco_dict, parameters, camera_matrix, dist_c
     img = cv2.aruco.drawDetectedMarkers(img, corners, ids)
     if ids is not None:
         for k in range(len(ids)):
-            rvec, tvec, marker_points = cv2.aruco.estimatePoseSingleMarkers(corners[k], 0.15, camera_matrix,
-                                                                            dist_coeffs)
+            rvec, tvec = cv2.aruco.estimatePoseSingleMarkers(corners[k], MARKER_SIZE, camera_matrix, dist_coeffs)
             if ids[k] == i:
                 img = cv2.aruco.drawAxis(img, camera_matrix, dist_coeffs, rvec, tvec, 0.05)
                 m_0_rvec = rvec
@@ -36,6 +37,7 @@ def detect_show_markers(img, gray, aruco_dict, parameters, camera_matrix, dist_c
                 distance_2 = tvec[0][0][2]
                 detected_2 = True
             if detected_1 and detected_2:
+                global middle_point_pose
                 middle_point_pose = np.array([(m_0_tvec[0][0][0] + m_1_tvec[0][0][0]) / 2,
                                               (m_0_tvec[0][0][1] + m_1_tvec[0][0][1]) / 2,
                                               (m_0_tvec[0][0][2] + m_1_tvec[0][0][2]) / 2])
@@ -46,10 +48,10 @@ def detect_show_markers(img, gray, aruco_dict, parameters, camera_matrix, dist_c
                 middle_point_orientation = middle_point_orientation.reshape((1, 1, 3))
                 img = cv2.aruco.drawAxis(img, camera_matrix, dist_coeffs,
                                          middle_point_orientation, middle_point_pose, 0.05)
-                #cv2.putText(img, 'distance_to_platform: %.4fm' % (middle_point_pose[0][0][2]), (0, 32), font, 1,
-                            #(0, 255, 0), 2, cv2.LINE_AA)
-                cv2.putText(img, '%.4fm' % (middle_point_pose[0][0][0]), (0, 124), font, 1, (0, 255, 0), 2, cv2.LINE_AA)
-                cv2.putText(img, '%.4fm' % (middle_point_pose[0][0][1]), (0, 144), font, 1, (0, 255, 0), 2, cv2.LINE_AA)
+                cv2.putText(img, 'distance_to_platform: %.4fm' % (middle_point_pose[0][0][2]), (0, 32), font, 1,
+                            (0, 255, 0), 2, cv2.LINE_AA)
+                #cv2.putText(img, '%.4fm' % (middle_point_pose[0][0][0]), (0, 124), font, 1, (0, 255, 0), 2, cv2.LINE_AA)
+                #cv2.putText(img, '%.4fm' % (middle_point_pose[0][0][1]), (0, 144), font, 1, (0, 255, 0), 2, cv2.LINE_AA)
 
     if distance_1 is not None:
         cv2.putText(img, 'Id' + str(i) + ' %.4fm' % distance_1, (0, 64), font, 1, (0, 255, 0), 2, cv2.LINE_AA)
@@ -60,9 +62,8 @@ def detect_show_markers(img, gray, aruco_dict, parameters, camera_matrix, dist_c
         print('saved')
         cv2.imwrite('test.png', img)
     '''
-    
 
-    return cv2.imshow('frame', img) # Final img.
+    return middle_point_pose, middle_point_orientation, distance_1, distance_2, m_0_rvec, m_1_rvec
 
 
 def undistort_image(img, camera_matrix, dist_coeffs):

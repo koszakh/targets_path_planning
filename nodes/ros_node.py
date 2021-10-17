@@ -128,16 +128,17 @@ else:
 
 	name = 'sim_p3at1'
 	name1 = 'sim_p3at2'
-	d_path = "/home/admin/catkin_ws/src/targets_path_planning/urdf/pioneer3at_cam.urdf"
+	d_path = "/home/const/catkin_ws/src/targets_path_planning/urdf/pioneer3at_cam.urdf"
+	c_path = "/home/const/catkin_ws/src/targets_path_planning/urdf/pioneer3at_aruco.urdf"
 	p = Point(0, 0, 0)
 	p1 = Point(1, 0, 0)	
 	gc.spawn_urdf_model(name, d_path, p, (0, 0, 0, 0))
-	gc.spawn_urdf_model(name1, d_path, p1, (0, 0, 0, 0))
+	gc.spawn_urdf_model(name1, c_path, p1, (0, 0, 0, 0))
 	
 	robot1 = Robot(name)
 	robot2 = Robot(name1)
 	sleep(2)
-	print(robot1.aruco_dist)
+	#print(robot1.aruco_dist)
 
 
 print('Finish!')

@@ -11,6 +11,7 @@ from geometry_msgs.msg import Point, Twist
 from std_msgs.msg import Float32
 import pickle
 from cv_bridge import CvBridge
+from aruco_middle_point_position.utils import detect_show_markers
 
 # The class of the control object of the ground target in the Gazebo simulation environment
 
@@ -103,12 +104,12 @@ class Robot(thr.Thread):
 			# 	print('Distance to right marker: ', dist2)
 			# 	print('Orientation center: ', middle_point_orient)
 		# If markers was not detected:
-		except:
+		except Exception as e:
 			pass
 
-		# frame_rgb = cv2.cvtColor(frame_bgr, cv2.COLOR_BGR2RGB)
-		# cv2.imshow("camera", frame_rgb)
-		# cv2.waitKey(1)
+		frame_rgb = cv2.cvtColor(frame_bgr, cv2.COLOR_BGR2RGB)
+		cv2.imshow("camera", frame_rgb)
+		cv2.waitKey(1)
 
 # Getting the position of the robot in 3D space in the Gazebo environment
 
