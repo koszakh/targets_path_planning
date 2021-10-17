@@ -6,8 +6,11 @@ import GazeboConstants as const
 import GazeboCommunicator as gc
 from math import fabs
 import threading as thr
-from sensor_msgs.msg import NavSatFix
+from sensor_msgs.msg import NavSatFix, Image
 from geometry_msgs.msg import Point, Twist
+from std_msgs.msg import Float32
+import pickle
+from cv_bridge import CvBridge
 
 # The class of the control object of the ground target in the Gazebo simulation environment
 
@@ -23,26 +26,20 @@ from geometry_msgs.msg import Point, Twist
 # last_goal: previous point of the robot route
 class Robot(thr.Thread):
 	
-	def __init__(self, robot_name, role, b_trackers):
+	def __init__(self, robot_name):
 	
 		thr.Thread.__init__(self)
 		self.name = robot_name
-		self.b_trackers = b_trackers
-		self.bt = self.b_trackers[self.name]
 		self.id = self.name[self.name.find('t') + 1:]
 		self.init_topics()
-		# self.init_camera()
+		self.init_camera()
 		self.pid_delay = rospy.Duration(0, const.PID_NSEC_DELAY)
 		msg = Twist()
 		rospy.sleep(self.pid_delay)
 		self.vel_publisher.publish(msg)
 		self.set_movespeed(const.MOVEMENT_SPEED)
 		self.dir_point = robot_name + const.DIR_POINT_SUFFIX
-		self.paths = []
-		self.workpoints = []
-		self.partner_name = None
 		self.mode = None
-		self.role = role
 		self.finished = False
 		self.charging = False
 		self.waiting = False
@@ -50,15 +47,16 @@ class Robot(thr.Thread):
 		
 	def init_topics(self):
 		
-		topic_subname = '/' + self.name
+		self.topic_subname = '/' + self.name
 		
-		self.vel_publisher = rospy.Publisher(topic_subname + '/cmd_vel', Twist, queue_size=10)
+		self.vel_publisher = rospy.Publisher(self.topic_subname + '/cmd_vel', Twist, queue_size=10)
 		
-		self.paths_pub = rospy.Publisher(topic_subname + '/waypoints_array', WorkPath, queue_size=10)
-		self.paths_sub = rospy.Subscriber(topic_subname + '/waypoints_array', WorkPath, self.set_path)
+		self.paths_pub = rospy.Publisher(self.topic_subname + '/waypoints_array', WorkPath, queue_size=10)
+		self.paths_sub = rospy.Subscriber(self.topic_subname + '/waypoints_array', WorkPath, self.set_path)
 		
-		self.workpoints_pub = rospy.Publisher(topic_subname + '/workpoints_array', Path, queue_size=10)
-		self.workpoints_sub = rospy.Subscriber(topic_subname + '/workpoints_array', Path, self.set_work_points_path)
+		self.workpoints_pub = rospy.Publisher(self.topic_subname + '/workpoints_array', Path, queue_size=10)
+		self.workpoints_sub = rospy.Subscriber(self.topic_subname + '/workpoints_array', Path, self.set_work_points_path)
+		self.dist_sub = rospy.Subscriber(self.topic_subname + "/distance", Float32, self.dist_callback)
 
 	def unregister_subs(self):
 	
@@ -78,11 +76,16 @@ class Robot(thr.Thread):
 		for k in self.dist_coefficients:
 			k = 0
 
-		self.image_sub = rospy.Subscriber("/rrbot/camera1/image_raw", Image, self.callback_image)
-		self.pub = rospy.Publisher('distance', Float32, queue_size=10)
+		self.image_sub = rospy.Subscriber(self.topic_subname + "/camera1/image_raw", Image, self.callback_image)
+		self.pub = rospy.Publisher(self.topic_subname +  "/distance", Float32, queue_size=10)
 		self.br = CvBridge()
 
-	def callback_image(self):
+	def dist_callback(self, msg_data):
+	
+		self.aruco_dist = msg_data
+		print('\n>>> <<<')
+
+	def callback_image(self, msg_data):
 		key = cv2.waitKey(1) & 0xFF
 
 		frame_bgr = self.br.imgmsg_to_cv2(image)
@@ -90,12 +93,8 @@ class Robot(thr.Thread):
 
 		# Aruco detection
 		try:
-			middle_point_pose, middle_point_orient, dist1, dist2, rvec1, rvec2 = detect_show_markers(frame_bgr,
-																									frame_grey,
-																									self.aruco_dict,
-																									self.parameters,
-																									self.camera_mtx,
-																									self.dist_coefficients)
+			middle_point_pose, middle_point_orient, dist1, dist2, rvec1, rvec2 = detect_show_markers(frame_bgr, \
+			frame_grey, self.aruco_dict, self.parameters, self.camera_mtx, self.dist_coefficients)
 			distance = middle_point_pose[0][0][2]
 			self.pub.publish(distance)
 			# if distance < 0.54:

@@ -133,6 +133,11 @@ else:
 	p1 = Point(1, 0, 0)	
 	gc.spawn_urdf_model(name, d_path, p, (0, 0, 0, 0))
 	gc.spawn_urdf_model(name1, d_path, p1, (0, 0, 0, 0))
+	
+	robot1 = Robot(name)
+	robot2 = Robot(name1)
+	sleep(2)
+	print(robot1.aruco_dist)
 
 
 print('Finish!')
