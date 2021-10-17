@@ -62,6 +62,7 @@ add_message_files(
   ChargePoints.msg
   AllChargePoints.msg
   NamesList.msg
+  ArucoDist.msg
 )
 
 ## Generate services in the 'srv' folder

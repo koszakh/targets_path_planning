@@ -6,6 +6,8 @@ from path_planning.Point import Point, Vector2d
 from geometry_msgs.msg import Pose, Twist
 import gazebo_communicator.GazeboCommunicator as gc
 from gazebo_communicator.Robot import Robot
+from gazebo_communicator.Charger import Charger
+from gazebo_communicator.Worker import Worker
 import gazebo_communicator.BatteryTracker as bt
 import gazebo_communicator.GazeboConstants as gc_const
 import path_planning.PathPlanner as pp
@@ -128,16 +130,18 @@ else:
 
 	name = 'sim_p3at1'
 	name1 = 'sim_p3at2'
-	d_path = "/home/const/catkin_ws/src/targets_path_planning/urdf/pioneer3at_cam.urdf"
-	c_path = "/home/const/catkin_ws/src/targets_path_planning/urdf/pioneer3at_aruco.urdf"
-	p = Point(0, 0, 0)
+	d_path = "/home/admin/catkin_ws/src/targets_path_planning/urdf/pioneer3at_cam.urdf"
+	c_path = "/home/admin/catkin_ws/src/targets_path_planning/urdf/pioneer3at_aruco.urdf"
+	p = Point(0.25, 0, 0)
 	p1 = Point(1, 0, 0)	
 	gc.spawn_urdf_model(name, d_path, p, (0, 0, 0, 0))
 	gc.spawn_urdf_model(name1, c_path, p1, (0, 0, 0, 0))
-	
-	robot1 = Robot(name)
-	robot2 = Robot(name1)
-	sleep(2)
+	trackers = bt.get_battery_trackers([name1], [name])
+	robot1 = Charger(name, trackers)
+	robot2 = Worker(name1, trackers)
+	#robot1.movement(0.2, 0)
+	#sleep(2)
+	robot1.dock_to_worker()
 	#print(robot1.aruco_dist)
 
 

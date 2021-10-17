@@ -16,6 +16,7 @@ class Charger(Robot):
 		self.name = name
 		self.trackers = trackers
 		self.init_topics()
+		self.init_camera()
 		self.pid_delay = rospy.Duration(0, const.PID_NSEC_DELAY)
 		self.bt = self.trackers[name]
 		self.pre_ch_points = None
@@ -27,6 +28,7 @@ class Charger(Robot):
 		self.mode = "stop"	
 		self.dock_path = []
 		self.dodging = False
+		self.aruco_dist = None
 
 	def change_mode(self, mode):
 	
@@ -66,14 +68,41 @@ class Charger(Robot):
 		self.to_ch_p_paths = to_ch_p_paths
 		self.to_base_paths = to_base_paths
 
+	def dock_to_worker(self):
+	
+	
+		while not self.aruco_dist:
+		
+			pass
+
+		while True:
+		
+			if self.aruco_dist <= const.DOCKING_THRESHOLD:
+			
+				self.stop()
+				break
+		
+			print('aruco_dist: ' + str(self.aruco_dist))
+		
+			if self.left_dist > self.right_dist:
+			
+				u = -fabs(self.left_dist - self.right_dist)
+				#u = -0.005
+				
+			else:
+			
+				u = fabs(self.left_dist - self.right_dist)
+				#u = 0.005
+				
+			self.movement(const.DOCKING_SPEED, u)
+
 	def docking(self):
 
 		self.set_movespeed(const.DOCKING_SPEED)
 		dist = self.get_distance_to_partner()
 		partner_pos = gc.get_model_position(self.cur_worker)
 		self.turn_to_point(self.dock_point)
-		self.move_with_PID(self.dock_point, const.DOCK_DISTANCE_ERROR)
-		self.stop()
+		self.dock_to_worker()
 		print('Charger ' + self.name + ' successfully connected to ' + str(self.cur_worker) + '.')
 
 	def get_robot_battery_level(self, name):

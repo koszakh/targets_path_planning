@@ -1,6 +1,6 @@
 import cv2
 import rospy
-from targets_path_planning.msg import Path, WorkPath, Charge
+from targets_path_planning.msg import Path, WorkPath, Charge, ArucoDist
 import path_planning.Point as PointGeom
 import GazeboConstants as const
 import GazeboCommunicator as gc
@@ -57,7 +57,7 @@ class Robot(thr.Thread):
 		
 		self.workpoints_pub = rospy.Publisher(self.topic_subname + '/workpoints_array', Path, queue_size=10)
 		self.workpoints_sub = rospy.Subscriber(self.topic_subname + '/workpoints_array', Path, self.set_work_points_path)
-		self.dist_sub = rospy.Subscriber(self.topic_subname + "/distance", Float32, self.dist_callback)
+		self.dist_sub = rospy.Subscriber(self.topic_subname + "/distance", ArucoDist, self.dist_callback)
 
 	def unregister_subs(self):
 	
@@ -78,13 +78,14 @@ class Robot(thr.Thread):
 			k = 0
 
 		self.image_sub = rospy.Subscriber(self.topic_subname + "/camera1/image_raw", Image, self.callback_image)
-		self.pub = rospy.Publisher(self.topic_subname +  "/distance", Float32, queue_size=10)
+		self.pub = rospy.Publisher(self.topic_subname +  "/distance", ArucoDist, queue_size=10)
 		self.br = CvBridge()
 
 	def dist_callback(self, msg_data):
 
-		self.aruco_dist = msg_data
-		print('\n>>> <<<')
+		self.aruco_dist = msg_data.dist
+		self.left_dist = msg_data.left_dist
+		self.right_dist = msg_data.right_dist
 
 	def callback_image(self, image):
 		key = cv2.waitKey(1) & 0xFF
@@ -97,8 +98,8 @@ class Robot(thr.Thread):
 			middle_point_pose, middle_point_orient, dist1, dist2, rvec1, rvec2 = detect_show_markers(frame_bgr, \
 			frame_grey, self.aruco_dict, self.parameters, self.camera_mtx, self.dist_coefficients)
 			distance = middle_point_pose[0][0][2]
-			print('distance: ' + str(distance))
-			self.pub.publish(distance)
+			msg = prepare_aruco_dist_msg(distance, dist1, dist2)
+			self.pub.publish(msg)
 			# if distance < 0.54:
 			# 	print('Coordinates of center: ', middle_point_pose)
 			# 	print('Distance to left marker: ', dist1)
@@ -390,4 +391,12 @@ def prepare_paths_msg(paths):
 		path_msg = prepare_path_msg(path)
 		msg.paths.append(path_msg)
 		
+	return msg
+	
+def prepare_aruco_dist_msg(dist, left_dist, right_dist):
+
+	msg = ArucoDist()
+	msg.dist = dist
+	msg.left_dist = left_dist
+	msg.right_dist = right_dist
 	return msg
