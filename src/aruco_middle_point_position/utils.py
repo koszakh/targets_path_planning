@@ -21,8 +21,7 @@ def detect_show_markers(img, gray, aruco_dict, parameters, camera_matrix, dist_c
     img = cv2.aruco.drawDetectedMarkers(img, corners, ids)
     if ids is not None:
         for k in range(len(ids)):
-            rvec, tvec, marker_points = cv2.aruco.estimatePoseSingleMarkers(corners[k], 0.15, camera_matrix,
-                                                                            dist_coeffs)
+            rvec, tvec, marker_points = cv2.aruco.estimatePoseSingleMarkers(corners[k], 0.15, camera_matrix, dist_coeffs)
             if ids[k] == i:
                 img = cv2.aruco.drawAxis(img, camera_matrix, dist_coeffs, rvec, tvec, 0.05)
                 m_0_rvec = rvec
