@@ -81,11 +81,11 @@ class Robot(thr.Thread):
 		self.br = CvBridge()
 
 	def dist_callback(self, msg_data):
-	
+
 		self.aruco_dist = msg_data
 		print('\n>>> <<<')
 
-	def callback_image(self, msg_data):
+	def callback_image(self, image):
 		key = cv2.waitKey(1) & 0xFF
 
 		frame_bgr = self.br.imgmsg_to_cv2(image)
