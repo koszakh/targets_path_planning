@@ -79,7 +79,7 @@ flag = True
 name1 = 'sim_p3at1'
 name2 = 'sim_p3at2'
 names = [name1, name2]
-flag = True
+flag = False
 if flag:
 	
 	p1 = Point(5, 0, 0)
@@ -125,36 +125,16 @@ if flag:
 	
 else:
 
-	p1 = Point(3.4, 0, 0)
-	p2 = Point(-3, 2, 0)
 
-	g1 = Point(-5, 0, 0)
-	g2 = Point(3, -2, 0)
-	paths = {}
-	workpoints = {}
-	w_ch_points = {}
-	paths[name1] = [[p1, g1]]
-	paths[name2] = [[p2, g2]]
+	name = 'sim_p3at1'
+	name1 = 'sim_p3at2'
+	d_path = "/home/admin/catkin_ws/src/targets_path_planning/urdf/pioneer3at_cam.urdf"
+	p = Point(0, 0, 0)
+	p1 = Point(1, 0, 0)	
+	gc.spawn_urdf_model(name, d_path, p, (0, 0, 0, 0))
+	gc.spawn_urdf_model(name1, d_path, p1, (0, 0, 0, 0))
 
-	vect1 = p1.get_angle_between_points(g1)
-	rot1 = Rotation.from_euler('xyz', [0, 0, vect1], degrees=True)
-	quat1 = rot1.as_quat()
 
-	vect2 = p2.get_angle_between_points(g2)
-	rot2 = Rotation.from_euler('xyz', [0, 0, vect2], degrees=True)
-	quat2 = rot2.as_quat()
-
-	gc.spawn_target(name1, p1, quat1)
-	gc.spawn_target(name2, p2, quat2)
-
-	workpoints[name1] = [g1]
-	workpoints[name2] = [g2]
-	w_ch_points[name1] = [g1]
-	w_ch_points[name2] = [g2]
-
-	mm = MovementManager(None, names, [])
-	mm.prepare_robots(paths, workpoints, w_ch_points, {}, {}, {})
-	mm.start()
 print('Finish!')
 rospy.spin()
 
