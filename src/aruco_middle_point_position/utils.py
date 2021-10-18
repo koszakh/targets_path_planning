@@ -2,6 +2,11 @@ import cv2
 import numpy as np
 
 middle_point_pose = None
+middle_point_orientation = None
+# m_0_rvec = None
+# m_0_tvec = None
+# m_1_rvec = None
+# m_1_tvec = None
 def detect_show_markers(img, gray, aruco_dict, parameters, camera_matrix, dist_coeffs, i=6, j=5):
     """
     :param img: coloured image without distortion
@@ -38,6 +43,7 @@ def detect_show_markers(img, gray, aruco_dict, parameters, camera_matrix, dist_c
                 detected_2 = True
             if detected_1 and detected_2:
                 global middle_point_pose
+                global middle_point_orientation
                 middle_point_pose = np.array([(m_0_tvec[0][0][0] + m_1_tvec[0][0][0]) / 2,
                                               (m_0_tvec[0][0][1] + m_1_tvec[0][0][1]) / 2,
                                               (m_0_tvec[0][0][2] + m_1_tvec[0][0][2]) / 2])
@@ -63,7 +69,7 @@ def detect_show_markers(img, gray, aruco_dict, parameters, camera_matrix, dist_c
         cv2.imwrite('test.png', img)
     '''
 
-    return middle_point_pose, middle_point_orientation, distance_1, distance_2, m_0_rvec, m_1_rvec
+    return middle_point_pose, middle_point_orientation, distance_1, distance_2
 
 
 def undistort_image(img, camera_matrix, dist_coeffs):

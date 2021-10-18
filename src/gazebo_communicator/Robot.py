@@ -7,6 +7,7 @@ import GazeboCommunicator as gc
 from math import fabs
 import threading as thr
 from geometry_msgs.msg import Point, Twist
+from targets_path_planning.msg import ArucoDist
 
 # The class of the control object of the ground target in the Gazebo simulation environment
 

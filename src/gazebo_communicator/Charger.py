@@ -13,6 +13,7 @@ import pickle
 from cv_bridge import CvBridge
 from sensor_msgs.msg import Image
 from aruco_middle_point_position.utils import detect_show_markers
+from gazebo_communicator.Robot import prepare_aruco_dist_msg
 
 class Charger(Robot):
 
@@ -54,7 +55,7 @@ class Charger(Robot):
 			k = 0
 
 		self.image_sub = rospy.Subscriber(self.topic_subname + "/camera1/image_raw", Image, self.callback_image)
-		self.pub = rospy.Publisher(self.topic_subname +  "/distance", ArucoDist, queue_size=10)
+		self.pub = rospy.Publisher(self.topic_subname + "/distance", ArucoDist, queue_size=10)
 		self.br = CvBridge()
 
 	def dist_callback(self, msg_data):
@@ -68,14 +69,14 @@ class Charger(Robot):
 
 		frame_bgr = self.br.imgmsg_to_cv2(image)
 		frame_grey = cv2.cvtColor(frame_bgr, cv2.COLOR_BGR2GRAY)
-
 		# Aruco detection
 		try:
-			middle_point_pose, middle_point_orient, dist1, dist2, rvec1, rvec2 = detect_show_markers(frame_bgr, \
+			middle_point_pose, middle_point_orient, dist1, dist2 = detect_show_markers(frame_bgr, \
 			frame_grey, self.aruco_dict, self.parameters, self.camera_mtx, self.dist_coefficients)
 			distance = middle_point_pose[0][0][2]
 			msg = prepare_aruco_dist_msg(distance, dist1, dist2)
 			self.pub.publish(msg)
+			# print("Markers was detected!")
 			# if distance < 0.54:
 			# 	print('Coordinates of center: ', middle_point_pose)
 			# 	print('Distance to left marker: ', dist1)
@@ -85,9 +86,9 @@ class Charger(Robot):
 		except Exception as e:
 			pass
 
-		frame_rgb = cv2.cvtColor(frame_bgr, cv2.COLOR_BGR2RGB)
-		cv2.imshow("camera", frame_rgb)
-		cv2.waitKey(1)
+		# frame_rgb = cv2.cvtColor(frame_bgr, cv2.COLOR_BGR2RGB)
+		# cv2.imshow("camera "+self.name, frame_rgb)
+		# cv2.waitKey(1)
 
 	def change_mode(self, mode):
 	
