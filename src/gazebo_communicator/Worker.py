@@ -50,8 +50,10 @@ class Worker(Robot):
 		
 		while robot_pos.get_distance_to(goal) > const.DISTANCE_ERROR and fabs(error) < 90:
 		
+			old_error = error
 			robot_pos = self.get_robot_position()
-			u, error, error_sum = self.calc_control_action(goal, error, error_sum)
+			error = self.get_angle_difference(goal)
+			u, error_sum = self.calc_control_action(error, old_error, error_sum)
 			self.movement(self.ms, u)
 			self.is_waiting()
 			self.is_dodging()
@@ -111,7 +113,7 @@ class Worker(Robot):
 			self.to_base_path = w_paths[len(w_paths) - 1]
 			self.workpoints = w_points
 			gc.visualise_path(self.workpoints, const.GREEN_VERTICE_PATH, self.name + '_task')
-			self.charge_points = [ch_p[0] for ch_p in w_ch_points]
+			self.charge_points = [ch_p for ch_p in w_ch_points]
 				
 			gc.visualise_path(self.charge_points, const.BLUE_VERTICE_PATH, self.name + '_ch_p_')
 

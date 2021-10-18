@@ -85,6 +85,39 @@ flag = False
 if flag:
 	
 	p1 = Point(5, 0, 0)
+	g1 = Point(-5, 0, 0)
+	
+	p2 = Point(0, -0.5, 0)
+	g2 = Point(0, 0.5, 0)
+	
+	vect1 = p1.get_angle_between_points(g1)
+	rot1 = Rotation.from_euler('xyz', [0, 0, vect1], degrees=True)
+	quat1 = rot1.as_quat()
+
+	vect2 = p2.get_angle_between_points(g2)
+	rot2 = Rotation.from_euler('xyz', [0, 0, vect2], degrees=True)
+	quat2 = rot2.as_quat()
+
+	gc.spawn_worker(name1, p1, quat1)
+	gc.spawn_worker(name2, p2, quat2)
+	
+	w_paths = {}
+	w_points = {}
+	ch_points = {}
+	w_paths[name1] = [[p1, g1]]
+	w_paths[name2] = [[p2, g2]]
+	w_points[name1] = [g1]
+	w_points[name2] = [g2]
+	ch_points[name1] = []
+	ch_points[name2] = []
+	
+	mm = MovementManager(None, [name1, name2], [])
+	mm.prepare_robots(w_paths, w_points, ch_points, {}, {}, {})
+	mm.start()
+	
+else:
+
+	p1 = Point(5, 0, 0)
 	ch_p1 = Point(0, 0, 0)
 	g1 = Point(-5, 0, 0)
 	path1 = [p1, g1]
@@ -104,8 +137,8 @@ if flag:
 	rot2 = Rotation.from_euler('xyz', [0, 0, vect2], degrees=True)
 	quat2 = rot2.as_quat()
 
-	gc.spawn_target(name1, p1, quat1)
-	gc.spawn_target(name2, p2, quat2)
+	gc.spawn_worker(name1, p1, quat1)
+	gc.spawn_charger(name2, p2, quat2)
 	
 	w_paths = {}
 	w_points = {}
@@ -124,29 +157,6 @@ if flag:
 	mm = MovementManager(None, [name1], [name2])
 	mm.prepare_robots(w_paths, w_points, ch_points, pre_ch_points, to_ch_paths, to_base_paths)
 	mm.start()
-	
-else:
-
-
-	name = 'sim_p3at1'
-	c_name = 'sim_p3at3'
-	name1 = 'sim_p3at2'
-	d_path = "/home/admin/catkin_ws/src/targets_path_planning/urdf/pioneer3at_cam.urdf"
-	c_path = "/home/admin/catkin_ws/src/targets_path_planning/urdf/pioneer3at_aruco.urdf"
-	p = Point(0.25, 0, 0)
-	c_p = Point(0.4, 0.6, 0)
-	p1 = Point(1, 0, 0)	
-	gc.spawn_urdf_model(name, d_path, p, (0, 0, 0, 0))
-	gc.spawn_urdf_model(c_name, d_path, c_p, (0, 0, 0, 0))
-	gc.spawn_urdf_model(name1, c_path, p1, (0, 0, 0, 0))
-	trackers = bt.get_battery_trackers([name1], [name, c_name])
-	robot1 = Charger(name, trackers)
-	c_robot = Charger(c_name, trackers)
-	robot2 = Worker(name1, trackers)
-	#robot1.movement(0.2, 0)
-	#sleep(2)
-	robot1.dock_to_worker()
-	#print(robot1.aruco_dist)
 
 
 print('Finish!')

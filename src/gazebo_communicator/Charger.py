@@ -9,11 +9,11 @@ from math import fabs
 import dubins
 import random
 import cv2
+from time import sleep
 import pickle
 from cv_bridge import CvBridge
 from sensor_msgs.msg import Image
 from aruco_middle_point_position.utils import detect_show_markers
-from gazebo_communicator.Robot import prepare_aruco_dist_msg
 
 class Charger(Robot):
 
@@ -23,8 +23,8 @@ class Charger(Robot):
 		self.name = name
 		self.trackers = trackers
 		self.init_topics()
-		self.init_aruco_topic()
 		self.init_camera()
+		self.init_aruco_topics()
 		self.pid_delay = rospy.Duration(0, const.PID_NSEC_DELAY)
 		self.bt = self.trackers[name]
 		self.pre_ch_points = None
@@ -38,11 +38,15 @@ class Charger(Robot):
 		self.dodging = False
 		self.aruco_dist = None
 
-	def init_aruco_topic(self):
-		
-		self.dist_sub = rospy.Subscriber(self.topic_subname + "/distance", ArucoDist, self.dist_callback)
+	def init_aruco_topics(self):
+
+		#self.dist_sub = rospy.Subscriber(self.topic_subname + '/distance', ArucoDist, self.dist_callback)
+		self.image_sub = rospy.Subscriber(self.topic_subname + '/camera1/image_raw', Image, self.callback_image)
+		#self.dist_pub = rospy.Publisher(self.topic_subname + '/distance', ArucoDist, queue_size=10)
+		self.br = CvBridge()
 		
 	def init_camera(self):
+	
 		self.aruco_dict = cv2.aruco.Dictionary_get(cv2.aruco.DICT_6X6_250)
 		self.parameters = cv2.aruco.DetectorParameters_create()
 
@@ -54,15 +58,19 @@ class Charger(Robot):
 		
 			k = 0
 
-		self.image_sub = rospy.Subscriber(self.topic_subname + "/camera1/image_raw", Image, self.callback_image)
-		self.pub = rospy.Publisher(self.topic_subname + "/distance", ArucoDist, queue_size=10)
-		self.br = CvBridge()
-
 	def dist_callback(self, msg_data):
 
-		self.aruco_dist = msg_data.dist
-		self.left_dist = msg_data.left_dist
-		self.right_dist = msg_data.right_dist
+		print('Aruco updated')
+		#self.aruco_dist = msg_data.dist
+		#self.left_dist = msg_data.left_dist
+		#self.right_dist = msg_data.right_dist
+		
+	def set_aruco_dist(self, dist, left_dist, right_dist):
+
+		#print('Aruco updated')
+		self.aruco_dist = dist
+		self.left_dist = left_dist
+		self.right_dist = right_dist
 
 	def callback_image(self, image):
 		key = cv2.waitKey(1) & 0xFF
@@ -75,7 +83,9 @@ class Charger(Robot):
 			frame_grey, self.aruco_dict, self.parameters, self.camera_mtx, self.dist_coefficients)
 			distance = middle_point_pose[0][0][2]
 			msg = prepare_aruco_dist_msg(distance, dist1, dist2)
-			self.pub.publish(msg)
+			#print('111')
+			self.set_aruco_dist(distance, dist1, dist2)
+			#self.dist_pub.publish(msg)
 			# print("Markers was detected!")
 			# if distance < 0.54:
 			# 	print('Coordinates of center: ', middle_point_pose)
@@ -86,14 +96,36 @@ class Charger(Robot):
 		except Exception as e:
 			pass
 
-		# frame_rgb = cv2.cvtColor(frame_bgr, cv2.COLOR_BGR2RGB)
-		# cv2.imshow("camera "+self.name, frame_rgb)
-		# cv2.waitKey(1)
+		frame_rgb = cv2.cvtColor(frame_bgr, cv2.COLOR_BGR2RGB)
+		cv2.imshow("camera "+self.name, frame_rgb)
+		cv2.waitKey(1)
 
 	def change_mode(self, mode):
 	
 		self.mode = mode
 		rospy.loginfo("Current charger " + self.name + " changed mode to: " + str(self.mode))
+
+
+# Rotate the robot towards a point
+# Input
+# goal: target point
+	def turn_to_point(self, goal):
+	
+		angle_difference = self.get_aruco_error()
+		
+		while fabs(angle_difference) > const.ARUCO_ANGLE_ERROR:
+		
+			angle_difference = self.get_aruco_error()
+		
+			if angle_difference > 0:
+		
+				self.movement(0, -const.DOCKING_ROTATION_SPEED)
+		
+			else:
+		
+				self.movement(0, const.DOCKING_ROTATION_SPEED)
+		
+		self.stop()
 
 
 	def get_distance_to_partner(self):
@@ -128,12 +160,21 @@ class Charger(Robot):
 		self.to_ch_p_paths = to_ch_p_paths
 		self.to_base_paths = to_base_paths
 
+	def get_aruco_error(self):
+	
+		aruco_error = self.left_dist - self.right_dist
+		return aruco_error
+
 	def dock_to_worker(self):
 	
+		self.set_movespeed(const.DOCKING_SPEED)
 	
 		while not self.aruco_dist:
 		
 			pass
+			
+		error = self.get_aruco_error()
+		error_sum = 0
 
 		while True:
 		
@@ -143,25 +184,20 @@ class Charger(Robot):
 				break
 		
 			#print('aruco_dist: ' + str(self.aruco_dist))
-		
-			if self.left_dist > self.right_dist:
+			old_error = error
+			error = self.get_aruco_error()
+			u, error_sum = self.calc_control_action(error, old_error, error_sum)
+			#print(u)
+
+			self.movement(self.ms, u)
 			
-				u = -fabs(self.left_dist - self.right_dist)
-				#u = -0.005
-				
-			else:
-			
-				u = fabs(self.left_dist - self.right_dist)
-				#u = 0.005
-				
-			self.movement(const.DOCKING_SPEED, u)
+		self.stop()
 
 	def docking(self):
 
 		self.set_movespeed(const.DOCKING_SPEED)
-		dist = self.get_distance_to_partner()
-		partner_pos = gc.get_model_position(self.cur_worker)
 		self.turn_to_point(self.dock_point)
+		print(self.name + ' started moving to dock point.')
 		self.dock_to_worker()
 		print('Charger ' + self.name + ' successfully connected to ' + str(self.cur_worker) + '.')
 
@@ -213,7 +249,9 @@ class Charger(Robot):
 		while robot_pos.get_distance_to(goal) > dist_error and fabs(error) < 90:
 		
 			robot_pos = self.get_robot_position()
-			u, error, error_sum = self.calc_control_action(goal, error, error_sum)
+			old_error = error
+			error = self.get_angle_difference(goal)
+			u, error_sum = self.calc_control_action(error, old_error, error_sum)
 			self.movement(self.ms, u)
 			self.is_waiting()
 			self.is_dodging()
@@ -327,3 +365,11 @@ class Charger(Robot):
 
 		print('Charger ' + self.name + ' has finished!')
 		self.change_mode("finished")
+		
+def prepare_aruco_dist_msg(dist, left_dist, right_dist):
+
+	msg = ArucoDist()
+	msg.dist = dist
+	msg.left_dist = left_dist
+	msg.right_dist = right_dist
+	return msg

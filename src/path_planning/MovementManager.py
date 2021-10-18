@@ -186,13 +186,13 @@ class MovementManager(Thread):
 			#print(key + ' is waiting!')
 			robot.wait()
 			
-		elif min_dist < const.MIN_NEIGHBOR_DIST and robot_angle > 0 and robot_angle < const.MM_ORIENT_BOUND and self.is_robot_standing(neighbor):
+		elif min_dist < const.MIN_NEIGHBOR_DIST and robot_angle > 0 and robot_angle < const.DODGE_ORIENT_BOUND and self.is_robot_standing(neighbor):
 
 			#print(key + ' is dodging to the right!')
 			robot.dodging = True
 			robot.movement(robot.ms, -gc_const.ROTATION_SPEED)
 		
-		elif min_dist < const.MIN_NEIGHBOR_DIST and robot_angle < 0 and robot_angle > -const.MM_ORIENT_BOUND and self.is_robot_standing(neighbor):
+		elif min_dist < const.MIN_NEIGHBOR_DIST and robot_angle < 0 and robot_angle > -const.DODGE_ORIENT_BOUND and self.is_robot_standing(neighbor):
 		
 			#print(key + ' is dodging to the left!')
 			robot.dodging = True
@@ -215,7 +215,7 @@ class MovementManager(Thread):
 		rech_vect = worker.get_robot_orientation_vector()
 		ch_pos = charger.get_robot_position()
 		ch_vect = charger.get_robot_orientation_vector()
-		pre_dock_point = calc_dock_point(rech_pos, rech_vect, const.ROBOT_RADIUS * 2)
+		pre_dock_point = calc_dock_point(rech_pos, rech_vect, const.PRE_DOCK_DISTANCE)
 		dock_point = calc_dock_point(rech_pos, rech_vect, gc_const.DOCKING_THRESHOLD)
 		dock_path = self.plan_path_to_dock_point(ch_pos, ch_vect, pre_dock_point, rech_vect)
 		return dock_path, dock_point
@@ -227,6 +227,9 @@ class MovementManager(Thread):
 		solution = dubins.shortest_path(q0, q1, const.ROBOT_RADIUS)
 		configurations, _ = solution.sample_many(gc_const.DOCK_DISTANCE_ERROR * 2)
 		path = self.convert_tup_to_mas(configurations)
+		last_p = e_pos.get_point_in_direction(e_vect, gc_const.DISTANCE_ERROR)
+		path.append(last_p)
+		gc.visualise_path(path, gc_const.GREEN_VERTICE_PATH, 'v')
 		return path
 			
 	def convert_tup_to_mas(self, tup_mas):
@@ -244,7 +247,7 @@ class MovementManager(Thread):
 	
 		x = tup[0]
 		y = tup[1]
-		z = self.mh.find_z(x, y)
+		z = 0#self.mh.find_z(x, y)
 		p = Point(x, y, z)
 		
 		return p

@@ -53,6 +53,7 @@ class Robot(thr.Thread):
 		self.workpoints_pub = rospy.Publisher(self.topic_subname + '/workpoints_array', Path, queue_size=10)
 		self.workpoints_sub = rospy.Subscriber(self.topic_subname + '/workpoints_array', Path, self.set_work_points_path)
 
+
 	def unregister_subs(self):
 	
 		self.waypoint_sub.unregister()
@@ -98,20 +99,23 @@ class Robot(thr.Thread):
 # goal: target point
 	def move_with_PID(self, goal):
 	
-		old_error = self.get_angle_difference(goal)
+		error = self.get_angle_difference(goal)
 		error_sum = 0
 		robot_pos = self.get_robot_position()
 		
 		while robot_pos.get_distance_to(goal) > const.DISTANCE_ERROR:
 		
+	
+			old_error = error			
 			robot_pos = self.get_robot_position()
-			u, old_error, error_sum = self.calc_control_action(goal, old_error, error_sum)
+			
+			error = self.get_angle_difference(goal)
+			u, error_sum = self.calc_control_action(error, old_error, error_sum)
 			self.movement(self.ms, u)
 			rospy.sleep(self.pid_delay)
 
-	def calc_control_action(self, goal, old_error, error_sum):
+	def calc_control_action(self, error, old_error, error_sum):
 
-		error = self.get_angle_difference(goal)
 		error_sum += error
 		
 		if error_sum < self.i_min:
@@ -125,36 +129,14 @@ class Robot(thr.Thread):
 		up = self.kp * error
 		ui = self.ki * error_sum
 		ud = self.kd * (error - old_error)
-		old_error = error
 		u = up + ui + ud
-		return u, old_error, error_sum
+		return u, error_sum
 
 	def move_energy_cons(self, pos, last_pos):
 	
 		dist = pos.get_distance_to(last_pos)
 		charge_loss = -(dist * const.MOVE_CHARGE_LOSS_COEF)
 		self.bt.power_change(charge_loss)
-
-# Rotate the robot towards a point
-# Input
-# goal: target point
-	def turn_to_point(self, goal):
-	
-		angle_difference = self.get_angle_difference(goal)
-		
-		while fabs(angle_difference) > const.ANGLE_ERROR:
-		
-			angle_difference = self.get_angle_difference(goal)
-		
-			if angle_difference > 0:
-		
-				self.movement(0, const.DOCKING_ROTATION_SPEED)
-		
-			else:
-		
-				self.movement(0, -const.DOCKING_ROTATION_SPEED)
-		
-		self.stop()
 		
 	def follow_the_route(self, path):
 	
@@ -339,12 +321,4 @@ def prepare_paths_msg(paths):
 		path_msg = prepare_path_msg(path)
 		msg.paths.append(path_msg)
 		
-	return msg
-	
-def prepare_aruco_dist_msg(dist, left_dist, right_dist):
-
-	msg = ArucoDist()
-	msg.dist = dist
-	msg.left_dist = left_dist
-	msg.right_dist = right_dist
 	return msg
