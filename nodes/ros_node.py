@@ -129,15 +129,19 @@ else:
 
 
 	name = 'sim_p3at1'
+	c_name = 'sim_p3at3'
 	name1 = 'sim_p3at2'
 	d_path = "/home/admin/catkin_ws/src/targets_path_planning/urdf/pioneer3at_cam.urdf"
 	c_path = "/home/admin/catkin_ws/src/targets_path_planning/urdf/pioneer3at_aruco.urdf"
 	p = Point(0.25, 0, 0)
+	c_p = Point(0.4, 0.6, 0)
 	p1 = Point(1, 0, 0)	
 	gc.spawn_urdf_model(name, d_path, p, (0, 0, 0, 0))
+	gc.spawn_urdf_model(c_name, d_path, c_p, (0, 0, 0, 0))
 	gc.spawn_urdf_model(name1, c_path, p1, (0, 0, 0, 0))
-	trackers = bt.get_battery_trackers([name1], [name])
+	trackers = bt.get_battery_trackers([name1], [name, c_name])
 	robot1 = Charger(name, trackers)
+	c_robot = Charger(c_name, trackers)
 	robot2 = Worker(name1, trackers)
 	#robot1.movement(0.2, 0)
 	#sleep(2)

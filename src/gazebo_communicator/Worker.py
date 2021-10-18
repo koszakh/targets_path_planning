@@ -44,7 +44,6 @@ class Worker(Robot):
 	def move_with_PID(self, goal):
 	
 		error = self.get_angle_difference(goal)
-		#print(self.name + ' error: ' + str(error))
 		error_sum = 0
 		robot_pos = self.get_robot_position()
 		old_pos = robot_pos
@@ -95,7 +94,7 @@ class Worker(Robot):
 		print('Worker ' + self.name + ' is waiting for charge.')
 
 		b_level = self.get_battery_level()
-		print(self.name, b_level)
+		#print(self.name, b_level)
 			
 		while b_level < const.HIGH_LIMIT_BATTERY:
 		
@@ -113,10 +112,6 @@ class Worker(Robot):
 			self.workpoints = w_points
 			gc.visualise_path(self.workpoints, const.GREEN_VERTICE_PATH, self.name + '_task')
 			self.charge_points = [ch_p[0] for ch_p in w_ch_points]
-			#print(w_ch_points)
-			#for w_ch_p in w_ch_points:
-			
-			#	print(w_ch_p)
 				
 			gc.visualise_path(self.charge_points, const.BLUE_VERTICE_PATH, self.name + '_ch_p_')
 

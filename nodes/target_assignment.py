@@ -236,7 +236,7 @@ b_w_names = paths.keys()
 exec_time = f_time - s_time
 print('Target assignment time: ' + str(exec_time))
 
-poses, orients = t_as.get_robots_pos_orient(names)
+poses, orients = t_as.get_robots_pos_orient()
 
 workpoints_was_deleted = False
 copy_wpts, workpoints_was_deleted = define_new_dict_of_workpoints(workpoints, poses, orients, workpoints_was_deleted)
@@ -261,10 +261,8 @@ sorted_charging_points = sort_by_distance(charging_points)
 robot_allocation = charge_alloc(sorted_charging_points, c_names)
 # print("Robot allocation" + str(robot_allocation))
 
-
 paths_to_ch_p, paths_to_base = init_paths_dict()
 paths_of_ch_robots_to_ch_p, paths_of_ch_robots_to_base = fullfill_paths_dicts(paths_to_ch_p, paths_to_base)
-
 
 mm = MovementManager(t_as.mh, old_w_names, c_names)
 mm.prepare_robots(paths, workpoints, charging_points, robot_allocation, paths_of_ch_robots_to_ch_p, paths_of_ch_robots_to_base)

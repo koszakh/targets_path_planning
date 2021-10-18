@@ -3,8 +3,8 @@ import path_planning.Constants as const
 
 GAZEBO_ROOT_PATH = '/root'
 WS_ROOT_PATH = '/home/admin'
-CURRENT_MAP = 'hmap2'
-ROBOT_MODEL_PATH = WS_ROOT_PATH + '/catkin_ws/src/targets_path_planning/urdf/' + CURRENT_MAP + '/pioneer3at.urdf'
+WORKER_MODEL_PATH = WS_ROOT_PATH + '/catkin_ws/src/targets_path_planning/urdf/pioneer3at_aruco.urdf'
+CHARGER_MODEL_PATH = WS_ROOT_PATH + '/catkin_ws/src/targets_path_planning/urdf/pioneer3at_cam.urdf'
 DIR_POINT_SUFFIX = '::dir_point'
 VERTICE_PATH = GAZEBO_ROOT_PATH + '/.gazebo/models/vertice/model.sdf'
 RED_VERTICE_PATH = GAZEBO_ROOT_PATH + '/.gazebo/models/red_vertice/model.sdf'

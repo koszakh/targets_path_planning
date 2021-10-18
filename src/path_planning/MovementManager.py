@@ -183,18 +183,18 @@ class MovementManager(Thread):
 
 		if min_dist < const.MIN_NEIGHBOR_DIST and robot_angle < const.HW_ORIENT_BOUND and robot_angle > const.LW_ORIENT_BOUND and not self.is_robot_standing(neighbor):
 
-			print(key + ' is waiting!')
+			#print(key + ' is waiting!')
 			robot.wait()
 			
 		elif min_dist < const.MIN_NEIGHBOR_DIST and robot_angle > 0 and robot_angle < const.MM_ORIENT_BOUND and self.is_robot_standing(neighbor):
 
-			print(key + ' is dodging to the right!')
+			#print(key + ' is dodging to the right!')
 			robot.dodging = True
 			robot.movement(robot.ms, -gc_const.ROTATION_SPEED)
 		
 		elif min_dist < const.MIN_NEIGHBOR_DIST and robot_angle < 0 and robot_angle > -const.MM_ORIENT_BOUND and self.is_robot_standing(neighbor):
 		
-			print(key + ' is dodging to the left!')
+			#print(key + ' is dodging to the left!')
 			robot.dodging = True
 			robot.movement(robot.ms, gc_const.ROTATION_SPEED)
 

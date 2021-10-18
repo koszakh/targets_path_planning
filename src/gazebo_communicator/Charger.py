@@ -1,3 +1,4 @@
+from targets_path_planning.msg import ArucoDist
 from gazebo_communicator.Robot import Robot
 import gazebo_communicator.GazeboCommunicator as gc
 import GazeboConstants as const
@@ -7,6 +8,11 @@ import rospy
 from math import fabs
 import dubins
 import random
+import cv2
+import pickle
+from cv_bridge import CvBridge
+from sensor_msgs.msg import Image
+from aruco_middle_point_position.utils import detect_show_markers
 
 class Charger(Robot):
 
@@ -16,6 +22,7 @@ class Charger(Robot):
 		self.name = name
 		self.trackers = trackers
 		self.init_topics()
+		self.init_aruco_topic()
 		self.init_camera()
 		self.pid_delay = rospy.Duration(0, const.PID_NSEC_DELAY)
 		self.bt = self.trackers[name]
@@ -29,6 +36,58 @@ class Charger(Robot):
 		self.dock_path = []
 		self.dodging = False
 		self.aruco_dist = None
+
+	def init_aruco_topic(self):
+		
+		self.dist_sub = rospy.Subscriber(self.topic_subname + "/distance", ArucoDist, self.dist_callback)
+		
+	def init_camera(self):
+		self.aruco_dict = cv2.aruco.Dictionary_get(cv2.aruco.DICT_6X6_250)
+		self.parameters = cv2.aruco.DetectorParameters_create()
+
+		with open(const.PATH_CAMERA_PARAMS, 'rb') as f:
+			camera_param = pickle.load(f)
+		self.camera_mtx, self.dist_coefficients, _, _, _, _ = camera_param
+		
+		for k in self.dist_coefficients:
+		
+			k = 0
+
+		self.image_sub = rospy.Subscriber(self.topic_subname + "/camera1/image_raw", Image, self.callback_image)
+		self.pub = rospy.Publisher(self.topic_subname +  "/distance", ArucoDist, queue_size=10)
+		self.br = CvBridge()
+
+	def dist_callback(self, msg_data):
+
+		self.aruco_dist = msg_data.dist
+		self.left_dist = msg_data.left_dist
+		self.right_dist = msg_data.right_dist
+
+	def callback_image(self, image):
+		key = cv2.waitKey(1) & 0xFF
+
+		frame_bgr = self.br.imgmsg_to_cv2(image)
+		frame_grey = cv2.cvtColor(frame_bgr, cv2.COLOR_BGR2GRAY)
+
+		# Aruco detection
+		try:
+			middle_point_pose, middle_point_orient, dist1, dist2, rvec1, rvec2 = detect_show_markers(frame_bgr, \
+			frame_grey, self.aruco_dict, self.parameters, self.camera_mtx, self.dist_coefficients)
+			distance = middle_point_pose[0][0][2]
+			msg = prepare_aruco_dist_msg(distance, dist1, dist2)
+			self.pub.publish(msg)
+			# if distance < 0.54:
+			# 	print('Coordinates of center: ', middle_point_pose)
+			# 	print('Distance to left marker: ', dist1)
+			# 	print('Distance to right marker: ', dist2)
+			# 	print('Orientation center: ', middle_point_orient)
+		# If markers was not detected:
+		except Exception as e:
+			pass
+
+		frame_rgb = cv2.cvtColor(frame_bgr, cv2.COLOR_BGR2RGB)
+		cv2.imshow("camera", frame_rgb)
+		cv2.waitKey(1)
 
 	def change_mode(self, mode):
 	
@@ -82,7 +141,7 @@ class Charger(Robot):
 				self.stop()
 				break
 		
-			print('aruco_dist: ' + str(self.aruco_dist))
+			#print('aruco_dist: ' + str(self.aruco_dist))
 		
 			if self.left_dist > self.right_dist:
 			
@@ -146,7 +205,6 @@ class Charger(Robot):
 	def move_with_PID(self, goal, dist_error):
 	
 		error = self.get_angle_difference(goal)
-		#print(self.name + ' error: ' + str(error))
 		error_sum = 0
 		robot_pos = self.get_robot_position()
 		old_pos = robot_pos
@@ -188,7 +246,7 @@ class Charger(Robot):
 		b_path = self.get_to_base_path()
 		self.move_back(3)
 		self.is_waiting()
-		print(self.name + ' moving back to base.')
+		#print(self.name + ' moving back to base.')
 		self.follow_the_route(b_path, const.MOVEMENT_SPEED, const.DISTANCE_ERROR, "movement")
 		self.recharge_batteries()
 		

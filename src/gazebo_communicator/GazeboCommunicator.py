@@ -266,10 +266,15 @@ def spawn_sdf_model(state, model_directory, model_name):
 	
 		print "Service call failed: %s" % e
 
-def spawn_target(model_name, state, orient):
+def spawn_worker(model_name, state, orient):
 
 	state.set_z(float(state.z + const.SPAWN_HEIGHT_OFFSET))
-	spawn_urdf_model(model_name, const.ROBOT_MODEL_PATH, state, orient)
+	spawn_urdf_model(model_name, const.WORKER_MODEL_PATH, state, orient)
+	
+def spawn_charger(model_name, state, orient):
+
+	state.set_z(float(state.z + const.SPAWN_HEIGHT_OFFSET))
+	spawn_urdf_model(model_name, const.CHARGER_MODEL_PATH, state, orient)
 	
 def spawn_urdf_model(model_name, model_directory, state, orient):
 

@@ -153,9 +153,6 @@ class Heightmap:
 		self.max_z = 0
 		hmap = {(str(float(i)), str(float(j))): self.get_heightmap_point(i, j) for i in \
 		 range(self.min_col, self.max_col + 1) for j in range(self.min_row, self.max_row + 1)}
-		print('max_z: ' + str(self.max_z))
-		print('\np_min = (' + str(self.min_x) + ', ' + str(self.min_y) + ')')
-		print('p_max = (' + str(self.max_x) + ', ' + str(self.max_y) + ')\n')
 		#print('p_count: ' + str(self.p_count))
 		#cv2.imwrite("/root/catkin_ws/src/targets_path_planning/test_pic.png", self.image_copy)
 		#viewImage(self.image_copy, 'Des map')
