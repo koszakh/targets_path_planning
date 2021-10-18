@@ -253,8 +253,13 @@ if workpoints_was_deleted:
 paths, flag = t_as.calc_task_paths(workpoints)
 
 charging_points = define_charging_points(paths, workpoints)
-robot_allocation = charge_alloc(charging_points, c_names)
-robot_allocation = sort_by_distance(robot_allocation)
+# print("Charging points: " + str(charging_points) + "\n")
+
+sorted_charging_points = sort_by_distance(charging_points)
+# print("Sorted charging points: " + str(sorted_charging_points) + "\n")
+
+robot_allocation = charge_alloc(sorted_charging_points, c_names)
+# print("Robot allocation" + str(robot_allocation))
 
 
 paths_to_ch_p, paths_to_base = init_paths_dict()
