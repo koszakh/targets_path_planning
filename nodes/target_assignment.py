@@ -16,6 +16,7 @@ import copy
 import gazebo_communicator.GazeboConstants as gc_const
 from charge.charge import eval_distance
 from energy_check import define_charging_points, charge_alloc, sort_by_distance
+from mission_time.mission_time import eval_mission_time
 
 def prepare_all_paths_msg(names, paths, workpoints):
 
@@ -263,6 +264,8 @@ robot_allocation = charge_alloc(sorted_charging_points, c_names)
 
 paths_to_ch_p, paths_to_base = init_paths_dict()
 paths_of_ch_robots_to_ch_p, paths_of_ch_robots_to_base = fullfill_paths_dicts(paths_to_ch_p, paths_to_base)
+
+mission_time = eval_mission_time(paths, paths_of_ch_robots_to_ch_p, paths_of_ch_robots_to_base, robot_allocation, charging_points, workpoints)
 
 mm = MovementManager(t_as.mh, old_w_names, c_names)
 mm.prepare_robots(paths, workpoints, charging_points, robot_allocation, paths_of_ch_robots_to_ch_p, paths_of_ch_robots_to_base)
