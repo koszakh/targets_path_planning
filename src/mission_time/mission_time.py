@@ -12,8 +12,6 @@ TIME_ON_WORK = gc_const.TASK_EXEC_DURATION
 def eval_mission_time(paths_w_robots, paths_c_robots_to_ch_p, paths_c_robots_to_base, robot_allocation, charging_points, workpoints):
     mission_times = prepare_times_dict(paths_w_robots)
 
-    # times_for_w =
-    # times_for_c =
     times_for_w = eval_arrival_times_for_w(paths_w_robots, charging_points, prepare_times_dict(paths_w_robots))
     times_for_c = eval_arrival_times_for_c(paths_c_robots_to_ch_p, paths_c_robots_to_base, robot_allocation, prepare_times_dict(paths_w_robots))
 
