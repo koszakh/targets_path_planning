@@ -96,9 +96,9 @@ class Charger(Robot):
 		except Exception as e:
 			pass
 
-		frame_rgb = cv2.cvtColor(frame_bgr, cv2.COLOR_BGR2RGB)
-		cv2.imshow("camera "+self.name, frame_rgb)
-		cv2.waitKey(1)
+		# frame_rgb = cv2.cvtColor(frame_bgr, cv2.COLOR_BGR2RGB)
+		# cv2.imshow("camera "+self.name, frame_rgb)
+		# cv2.waitKey(1)
 
 	def change_mode(self, mode):
 	
