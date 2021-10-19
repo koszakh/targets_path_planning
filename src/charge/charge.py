@@ -8,10 +8,6 @@ from path_planning.Point import Point as pt
 import random
 from numpy import absolute, arctan, pi, sqrt
 
-
-ANGLE_THRESHOLD = 30  # Angle threshold for charge possibility
-SQUARE_RESERVE = 1  # (SQUARE_RESERVE*2)^2 == square of charging region
-
 MAX_COORDINATE = 1024
 MAX_X, MAX_Y = 30000, 30000
 k = MAX_X/MAX_COORDINATE  # Коэффициент преобразования из hmap в point и наоборот
