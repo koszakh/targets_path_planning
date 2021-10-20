@@ -3,40 +3,23 @@
 
 import rospy
 import datetime
+import copy
 from numpy import sqrt
 from gazebo_communicator import GazeboConstants as gc_const
 
 TIME_ON_CHARGING = (gc_const.HIGH_LIMIT_BATTERY - gc_const.LOWER_LIMIT_BATTERY)/gc_const.CHARGING_SPEED
-TIME_ON_WORK = gc_const.TASK_EXEC_DURATION
+
 
 def eval_mission_time(paths_w_robots, paths_c_robots_to_ch_p, paths_c_robots_to_base, robot_allocation, charging_points, workpoints):
-    mission_times = prepare_times_dict(paths_w_robots)
-
     times_for_w = eval_arrival_times_for_w(paths_w_robots, charging_points, prepare_times_dict(paths_w_robots))
     times_for_c = eval_arrival_times_for_c(paths_c_robots_to_ch_p, paths_c_robots_to_base, robot_allocation, prepare_times_dict(paths_w_robots))
 
-    waiting_times = dict()
-    for w_name in times_for_w.keys():
-        waiting_times[w_name] = 0
-        for i in range(len(times_for_w[w_name])):
-            _, arriving_time_w = times_for_w[w_name][i]
-            _, arriving_time_c = times_for_c[w_name][i]
-            waiting_time = arriving_time_c - arriving_time_w if arriving_time_c - arriving_time_w > 0 else 0
-            waiting_times[w_name] += waiting_time
-
-    mission_times = dict()
-    for w_name in paths_w_robots.keys():
-        mission_times[w_name] = 0
-        for path in paths_w_robots[w_name]:
-            path_length = eval_path_length(path)
-            time_on_path = eval_time_on_path(path_length)
-            mission_times[w_name] += time_on_path
-        num_of_workpoints = len(workpoints[w_name])
-        mission_times[w_name] += TIME_ON_WORK*num_of_workpoints + waiting_times[w_name]
+    waiting_times = eval_waiting_times(times_for_w, times_for_c)
+    mission_times = eval_mission_times(paths_w_robots, waiting_times, workpoints)
 
     times = mission_times.values()
-    max_mission_time = max(times)
     print(mission_times)
+    max_mission_time = max(times)
     rospy.loginfo("Approximate mission time: " + str(datetime.timedelta(seconds=max_mission_time)))
     return max_mission_time
 
@@ -76,9 +59,35 @@ def eval_arrival_times_for_c(paths_c_robots_to_ch_p, paths_c_robots_to_base, rob
             data = ch_p, total_time
             arrival_times[w_name].append(data)
 
-            total_time += path_time_to_base + docking_time + TIME_ON_CHARGING
+            total_time += docking_time + TIME_ON_CHARGING + path_time_to_base
 
     return arrival_times
+
+
+def eval_waiting_times(times_for_w, times_for_c):
+    """ Dict with times that each working robot waiting for the arrival of the charging robot. """
+    waiting_times = dict()
+    for w_name in times_for_w.keys():
+        waiting_times[w_name] = 0
+        for i in range(len(times_for_w[w_name])):
+            _, arriving_time_w = times_for_w[w_name][i]
+            _, arriving_time_c = times_for_c[w_name][i]
+            waiting_time = arriving_time_c - arriving_time_w if arriving_time_c - arriving_time_w > 0 else 0
+            waiting_times[w_name] += waiting_time
+    return waiting_times
+
+
+def eval_mission_times(paths_w_robots, waiting_times, workpoints):
+    mission_times = dict()
+    for w_name in paths_w_robots.keys():
+        mission_times[w_name] = 0
+        for path in paths_w_robots[w_name]:
+            path_length = eval_path_length(path)
+            time_on_path = eval_time_on_path(path_length)
+            mission_times[w_name] += time_on_path
+        num_of_workpoints = len(workpoints[w_name])
+        mission_times[w_name] += gc_const.TASK_EXEC_DURATION * num_of_workpoints + waiting_times[w_name]
+    return mission_times
 
 
 def prepare_times_dict(paths_w_robots):
