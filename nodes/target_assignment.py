@@ -192,6 +192,27 @@ def init_paths_dict():
 		paths_to_base[c_name] = []
 	return paths_to_ch_p, paths_to_base
 
+def get_points_count(w_dict):
+
+	count = 0
+
+	for key in w_dict.keys():
+	
+		count += len(w_dict[key])
+		
+	return count
+
+def get_chargers_count(ch_p_dict):
+
+	count = 0
+	
+	for key in ch_p_dict:
+	
+		if ch_p_dict[key]:
+		
+			count += 1
+			
+	return count
 
 def fullfill_paths_dicts(paths_to_ch_p, paths_to_base):
 	paths_of_ch_robots_to_ch_p = copy.copy(paths_to_ch_p)
@@ -228,14 +249,9 @@ c_names = subtraction_of_set(names, w_names)
 old_w_names = w_names
 
 t_as = ta.TargetAssignment(w_names, c_names, const.TARGETS_COUNT)
-s_time = time.time()
 paths, workpoints = t_as.target_assignment()
-f_time = time.time()
 
 b_w_names = paths.keys()
-
-exec_time = f_time - s_time
-print('Target assignment time: ' + str(exec_time))
 
 poses, orients = t_as.get_robots_pos_orient()
 
@@ -261,6 +277,14 @@ sorted_charging_points = sort_by_distance(charging_points)
 
 robot_allocation = charge_alloc(sorted_charging_points, c_names)
 # print("Robot allocation" + str(robot_allocation))
+
+real_t_count = get_points_count(workpoints)
+rospy.set_param('real_t_count', real_t_count)
+rospy.set_param('real_w_count', len(workpoints.keys()))
+
+real_c_count = get_chargers_count(robot_allocation)
+print('\nReal chargers count: ' + str(real_c_count))
+rospy.set_param('real_c_count', real_c_count)
 
 paths_to_ch_p, paths_to_base = init_paths_dict()
 paths_of_ch_robots_to_ch_p, paths_of_ch_robots_to_base = fullfill_paths_dicts(paths_to_ch_p, paths_to_base)

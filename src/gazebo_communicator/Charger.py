@@ -96,14 +96,14 @@ class Charger(Robot):
 		except Exception as e:
 			pass
 
-		# frame_rgb = cv2.cvtColor(frame_bgr, cv2.COLOR_BGR2RGB)
-		# cv2.imshow("camera "+self.name, frame_rgb)
-		# cv2.waitKey(1)
+		#frame_rgb = cv2.cvtColor(frame_bgr, cv2.COLOR_BGR2RGB)
+		#cv2.imshow("camera "+self.name, frame_rgb)
+		#cv2.waitKey(1)
 
 	def change_mode(self, mode):
 	
 		self.mode = mode
-		rospy.loginfo("Current charger " + self.name + " changed mode to: " + str(self.mode))
+		rospy.loginfo("Charger " + self.name + " changed mode to: " + str(self.mode))
 
 
 # Rotate the robot towards a point
@@ -160,10 +160,26 @@ class Charger(Robot):
 		self.to_ch_p_paths = to_ch_p_paths
 		self.to_base_paths = to_base_paths
 
+	def get_aruco_dist(self):
+	
+		try:
+
+			aruco_error = self.left_dist - self.right_dist
+			return aruco_error
+
+		except TypeError:
+		
+			return None
+
 	def get_aruco_error(self):
 	
-		aruco_error = self.left_dist - self.right_dist
-		return aruco_error
+		error = self.get_aruco_dist()
+		while not error:
+		
+			error = self.get_aruco_dist()
+			
+		return error
+ 		
 
 	def dock_to_worker(self):
 	

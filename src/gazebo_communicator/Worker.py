@@ -24,12 +24,11 @@ class Worker(Robot):
 		self.mode = "stop"
 		self.dodging = False
 		robot_pos = self.get_robot_position()
-		gc.spawn_sdf_model(robot_pos, const.BIG_GREEN_VERTICE_PATH, self.name + '_s')
 
 	def change_mode(self, mode):
 	
 		self.mode = mode
-		rospy.loginfo("Current worker " + self.name + " changed mode to: " + str(self.mode))
+		rospy.loginfo("Worker " + self.name + " changed mode to: " + str(self.mode))
 
 	def perform_worker_mission(self, path):
 
@@ -89,6 +88,11 @@ class Worker(Robot):
 
 		b_level = self.get_robot_battery_level(self.name)
 		return b_level
+		
+	def print_battery_level(self):
+		
+		b_level = self.get_battery_level()
+		rospy.loginfo("Worker " + self.name + " current battery level: " + str(b_level))
 
 	def wait_for_charger(self):
 	
@@ -112,8 +116,8 @@ class Worker(Robot):
 			self.paths = w_paths[:len(w_paths) - 1]
 			self.to_base_path = w_paths[len(w_paths) - 1]
 			self.workpoints = w_points
-			gc.visualise_path(self.workpoints, const.GREEN_VERTICE_PATH, self.name + '_task')
-			self.charge_points = [ch_p for ch_p in w_ch_points]
+			gc.visualise_path(self.workpoints, const.BIG_GREEN_VERTICE_PATH, self.name + '_task')
+			self.charge_points = [ch_p[0] for ch_p in w_ch_points]
 				
 			gc.visualise_path(self.charge_points, const.BLUE_VERTICE_PATH, self.name + '_ch_p_')
 
@@ -149,6 +153,7 @@ class Worker(Robot):
 					rospy.sleep(self.pid_delay)
 				
 				self.bt.power_change(-const.TASK_ENERGY_COST)
+				self.print_battery_level()
 				self.tasks_left -= 1
 				
 			else:
