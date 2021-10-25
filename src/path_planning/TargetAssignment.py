@@ -346,6 +346,8 @@ class TargetAssignment():
 					break
 		
 		row_ind, col_ind = linear_sum_assignment(b)
+		min_cost = self.task_matrix[row_ind[:len(self.target_ids)], col_ind[:len(self.target_ids)]].sum()
+		print('MIN_COST: ' + str(min_cost))
 		f_time = time.time()
 		print('Target assignment duration: ' + str(f_time - s_time))
 		return row_ind, col_ind
