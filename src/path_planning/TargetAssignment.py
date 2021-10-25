@@ -18,7 +18,6 @@ import time
 from math import sqrt
 from scipy.optimize import linear_sum_assignment
 import io
-# from networkx.algorithms.flow import preflow_push
 
 class RobotTracker():
 
@@ -47,15 +46,24 @@ class TargetAssignment():
 		self.c_names = c_names
 		self.names = w_names + c_names
 		self.w_count = len(w_names)
-		self.t_count = t_count
 		self.mh = prepare_hmap()
 		self.start_r, self.goal_r = self.calc_start_and_goal_centers()
 		self.print_areas_dist()
-		self.target_ids = self.prepare_targets()
 		self.trackers = get_robot_trackers(self.names)
+		self.prepare_mission_from_file(t_count)
+		self.task_matrix = self.get_task_matrix()
+	
+	def prepare_mission_from_file(self, t_count):
+	
+		self.prepare_targets_from_file(t_count)
+		self.spawn_workers_from_file()
+		self.spawn_chargers_from_file()
+		
+	def prepare_mission(self, t_count):
+	
+		self.prepare_targets(t_count)
 		self.spawn_workers()
 		self.spawn_chargers()
-		self.task_matrix = self.get_task_matrix()
 	
 	def get_target_pos(self, cur_i):
 	
@@ -69,6 +77,11 @@ class TargetAssignment():
 			
 		task_pos = self.mh.heightmap[task_id]
 		return task_pos
+		
+	def get_point_id(self, target):
+	
+		t_id = self.mh.get_nearest_vertice_id(target.x, target.y)
+		return t_id
 
 	def print_areas_dist(self):
 	
@@ -100,20 +113,21 @@ class TargetAssignment():
 		return robot_pos
 		
 	def get_task_matrix(self):
-	
-		#rd = np.empty((2, 3), int)
 
-		t_l = self.t_count
+		t_l = len(self.target_ids)
 		w_l = self.w_count
-
-		if (t_l > w_l and not t_l % w_l == 0) or (t_l < w_l and not w_l % t_l == 0):
-
-			mat_shape = max(t_l, w_l) + 1
-
+		
+		if t_l % w_l > 0:
+		
+		    mod_c = 1  
+		
 		else:
-
-			mat_shape = max(t_l, w_l)
-
+		
+			mod_c = 0
+		
+		mat_shape = ((t_l // w_l) + mod_c) * w_l
+		print('\nMatrix dimensions: [' + str(mat_shape) + 'x' + str(mat_shape) + ']')
+		
 		task_matrix = np.empty((mat_shape, mat_shape), int)
 		cur_i = 0
 		cur_j = 0
@@ -122,24 +136,34 @@ class TargetAssignment():
 
 			for j in range(mat_shape):
 
-				cur_i = i % t_l
-				cur_j = j % w_l
-
-				worker_name = self.w_names[cur_j]
-				w_pos = self.get_robot_position(worker_name)
-				task_pos = self.get_target_pos(cur_i)
-				dist = w_pos.get_distance_to(task_pos)
 				if i > t_l - 1:
 
 					task_matrix[i][j] = 0
 
 				else:
+				
+					cur_i = i % t_l
+					cur_j = j % w_l
 
-					task_matrix[i][j] = dist
+					cost = self.get_matrix_cost(cur_i, cur_j)
+					task_matrix[i][j] = cost
 					
 		print('task_matrix:\n' + str(task_matrix))
 					
 		return task_matrix
+	
+	def get_matrix_cost(self, cur_i, cur_j):
+	
+		worker_name = self.w_names[cur_j]
+		rt = self.trackers[worker_name]
+		start_id = rt.last_p_id
+		start_p = self.mh.heightmap[start_id]
+		goal_id = self.target_ids[cur_i]
+		goal_p = self.mh.heightmap[goal_id]
+		#path, cost = self.mh.find_path(start_id, goal_id, orient)
+		cost = start_p.get_distance_to(goal_p)
+		
+		return cost
 	
 	def calc_start_and_goal_centers(self):
 		
@@ -156,23 +180,15 @@ class TargetAssignment():
 		
 		return start, goal
 	
-	def prepare_targets(self):
+	def prepare_targets(self, t_count):
 		
-		target_ids = self.mh.get_random_ids_in_area(self.goal_r[0], self.goal_r[1], const.GOAL_DIST_OFFSET, self.t_count)
+		self.target_ids = self.mh.get_random_ids_in_area(self.goal_r[0], self.goal_r[1], const.GOAL_DIST_OFFSET, t_count)
 		
-		#save_targets(target_ids)
+		save_targets(self.target_ids)
 		
-		targets = [self.mh.heightmap[v_id] for v_id in target_ids]
-			
-		return target_ids
+	def prepare_targets_from_file(self, t_count):
 		
-	def prepare_targets_from_file(self):
-		
-		target_ids = get_target_ids_from_file(self.t_count)
-		
-		targets = [self.mh.heightmap[v_id] for v_id in target_ids]
-			
-		return target_ids
+		self.target_ids = get_target_ids_from_file(t_count)
 		
 	def spawn_workers(self):
 	
@@ -182,14 +198,14 @@ class TargetAssignment():
 
 			r_tracker = self.trackers[name]
 			robot_pos, orient = self.mh.get_start_pos(self.start_r[0], self.start_r[1], const.START_DIST_OFFSET)
-			poses.append(robot_pos)
+			poses.append((robot_pos, orient))
 			gc.spawn_worker(name, robot_pos, orient)
 			r_tracker.last_vect = r_tracker.get_robot_orientation_vector()
 			start_id, start_pos = self.mh.get_start_vertice_id(robot_pos, r_tracker.last_vect)
 			r_tracker.last_p_id = start_id
 			r_tracker.start_id = start_id
 			
-		#save_workers(poses)
+		save_workers(poses)
 		
 	def spawn_workers_from_file(self):
 	
@@ -198,9 +214,11 @@ class TargetAssignment():
 		for name in self.w_names:
 
 			r_tracker = self.trackers[name]
-			robot_pos = robot_poses[0]
+			robot_state = robot_poses[0]
+			robot_pos = robot_state[0]
+			orient = robot_state[1]
 			robot_poses.pop(0)
-			gc.spawn_worker(name, robot_pos, (0, 0, 0, 0))
+			gc.spawn_worker(name, robot_pos, orient)
 			r_tracker.last_vect = r_tracker.get_robot_orientation_vector()
 			start_id, start_pos = self.mh.get_start_vertice_id(robot_pos, r_tracker.last_vect)
 			r_tracker.last_p_id = start_id
@@ -213,10 +231,10 @@ class TargetAssignment():
 		for name in self.c_names:
 		
 			robot_pos, orient = self.mh.get_start_pos(self.start_r[0], self.start_r[1], const.START_DIST_OFFSET)
-			poses.append(robot_pos)
+			poses.append((robot_pos, orient))
 			gc.spawn_charger(name, robot_pos, orient)
 			
-		#save_chargers(poses)
+		save_chargers(poses)
 		
 	def spawn_chargers_from_file(self):
 		
@@ -224,9 +242,17 @@ class TargetAssignment():
 		
 		for name in self.c_names:
 		
-			robot_pos = robot_poses[0]
+			robot_state = robot_poses[0]
+			robot_pos = robot_state[0]
+			orient = robot_state[1]
 			robot_poses.pop(0)
-			gc.spawn_charger(name, robot_pos, (0, 0, 0, 0))
+			gc.spawn_charger(name, robot_pos, orient)
+		
+	def set_new_targets_list(self, workpoints):
+	
+		wp_ids = self.get_point_ids_from_dict(workpoints)
+		self.target_ids = wp_ids
+		self.task_matrix = self.get_task_matrix()
 		
 	def hungary(self):
 	
@@ -310,7 +336,7 @@ class TargetAssignment():
 					min_value = np.min(c)
 			
 					for i in row_sub:
-			
+
 						b[i] = b[i] - min_value
 			
 					for i in delete_count_of_rol:
@@ -328,7 +354,9 @@ class TargetAssignment():
 
 		row_ind, col_ind = self.hungary()
 		
-		assigned_pairs = [(row_ind[i], col_ind[i]) for i in range(self.t_count)][:self.t_count]
+		t_count = len(self.target_ids)
+		
+		assigned_pairs = [(row_ind[i], col_ind[i]) for i in range(t_count)][:t_count]
 		
 		workpoints = self.get_workpoints_dict(assigned_pairs)
 		paths, break_flag = self.calc_task_paths(workpoints)
@@ -345,11 +373,12 @@ class TargetAssignment():
 	def get_workpoints_dict(self, assigned_pairs):
 	
 		workpoints = {}
+		t_count = len(self.target_ids)
 
 		for pair in assigned_pairs:
 
 			w_ind = pair[0] % self.w_count
-			t_ind = pair[1] % self.t_count
+			t_ind = pair[1] % t_count
 			w_name = self.w_names[w_ind]
 			target = self.get_target_pos(t_ind)
 			
@@ -403,14 +432,26 @@ class TargetAssignment():
 
 		paths = {}
 		break_flag = False
+		all_paths_cost = 0
+		real_w_c = len(goals.keys())
+		max_path_cost = 0
 			
 		for key in goals.keys():
 	
 			robot_goals = goals[key]
-			paths[key] = self.calc_task_path(key, robot_goals)
+			paths[key], path_cost = self.calc_task_path(key, robot_goals)
 			if not paths[key]:
 
 				return {}, True
+				
+			all_paths_cost += path_cost
+			if path_cost > max_path_cost:
+			
+				max_path_cost = path_cost
+			
+		print('\nWorkers paths cost: ' + str(all_paths_cost))
+		#rospy.set_param('workers_path_cost', all_paths_cost)
+		rospy.set_param('max_path_cost', max_path_cost)
 
 		return paths, break_flag
 		
@@ -421,10 +462,11 @@ class TargetAssignment():
 		last_id = r_tracker.start_id
 		whole_path = []
 		break_flag = False
+		total_path_cost = 0
 		
 		for goal in robot_goals:
 		
-			goal_id = self.mh.get_nearest_vertice_id(goal.x, goal.y)
+			goal_id = self.get_point_id(goal)
 			path, path_cost = self.mh.find_path(last_id, goal_id, last_vect)
 			
 			if path:
@@ -432,15 +474,30 @@ class TargetAssignment():
 				last_id = goal_id
 				last_vect = get_end_vect(path)
 				whole_path.append(path)
+				total_path_cost += path_cost
 				
 			else:
 				
-				return []
+				return [], None
 				
 		path, path_cost = self.mh.find_path(last_id, r_tracker.start_id, last_vect)
 		whole_path.append(path)
 
-		return whole_path
+		return whole_path, total_path_cost
+		
+	def get_point_ids_from_dict(self, points_dict):
+	
+		wp_ids = []
+		for key in points_dict.keys():
+		
+			w_points = points_dict[key]
+			for wp in w_points:
+			
+				wp_id = self.get_point_id(wp)
+				wp_ids.append(wp_id)
+				
+		return wp_ids
+				
 		
 def clean_dict(d):
 
@@ -616,7 +673,7 @@ def sort_tuple_mas(mas):
 	
 def save_targets(target_ids):
 
-	f = open('/home/targets.txt', 'w+')
+	f = open(const.TARGETS_LOG_PATH, 'w+')
 
 	for t_id in target_ids:
 	
@@ -626,21 +683,23 @@ def save_targets(target_ids):
 	
 def save_workers(w_poses):
 
-	f = open('/home/workers.txt', 'w+')
+	f = open(const.WORKERS_LOG_PATH, 'w+')
 
 	for w_pos in w_poses:
 	
-		f.write(str(w_pos) + '\n')
+		orient_s = make_num_str(w_pos[1])
+		f.write(str(w_pos[0]) + ', ' + orient_s + '\n')
 
 	f.close()
 	
 def save_chargers(c_poses):
 
-	f = open('/home/chargers.txt', 'w+')
+	f = open(const.CHARGERS_LOG_PATH, 'w+')
 
 	for c_pos in c_poses:
 	
-		f.write(str(c_pos) + '\n')
+		orient_s = make_num_str(c_pos[1])
+		f.write(str(c_pos[0]) + ', ' + orient_s + '\n')
 
 	f.close()
 	
@@ -648,16 +707,14 @@ def get_target_ids_from_file(t_count):
 
 	t_ids = []
 
-	with io.open('/home/targets.txt', encoding='utf-8') as file:
+	with io.open(const.TARGETS_LOG_PATH, encoding='utf-8') as file:
 			
 		for line in file:
 
-			#print(line)
 			s = line[line.find('('):line.rfind(')')]
 			indices = [item for item in s.split("'") if try_float(item) == float]
 			col = indices[0]
 			row = indices[1]
-			#print(col, type(col))
 			t_id = (str(col), str(row))
 			t_ids.append(t_id)
 			
@@ -671,16 +728,19 @@ def get_worker_poses_from_file(w_count):
 
 	w_poses = []
 
-	with io.open('/home/workers.txt', encoding='utf-8') as file:
+	with io.open(const.WORKERS_LOG_PATH, encoding='utf-8') as file:
 			
 		for line in file:
 
-			coords = line.split(' ')
-			x = float(coords[0])
-			y = float(coords[1])
-			z = float(coords[2])
+			state = line.split(', ')
+			pos = state[0].split(' ')
+			x = float(pos[0])
+			y = float(pos[1])
+			z = float(pos[2])
 			p = Point(x, y, z)
-			w_poses.append(p)
+			orient_coords = state[1].split(' ')
+			rot = [float(c) for c in orient_coords if try_float(c) == float]
+			w_poses.append((p, rot))
 			
 			if len(w_poses) == w_count:
 			
@@ -692,16 +752,19 @@ def get_charger_poses_from_file(c_count):
 
 	c_poses = []
 
-	with io.open('/home/chargers.txt', encoding='utf-8') as file:
+	with io.open(const.CHARGERS_LOG_PATH, encoding='utf-8') as file:
 			
 		for line in file:
 
-			coords = line.split(' ')
-			x = float(coords[0])
-			y = float(coords[1])
-			z = float(coords[2])
+			state = line.split(', ')
+			pos = state[0].split(' ')
+			x = float(pos[0])
+			y = float(pos[1])
+			z = float(pos[2])
 			p = Point(x, y, z)
-			c_poses.append(p)
+			orient_coords = state[1].split(' ')
+			rot = [float(c) for c in orient_coords if try_float(c) == float]
+			c_poses.append((p, rot))
 			
 			if len(c_poses) == c_count:
 			
@@ -719,3 +782,23 @@ def try_float(x):
 	except ValueError:
 
 		return type(x)
+		
+def get_points_count(w_dict):
+
+	count = 0
+
+	for key in w_dict.keys():
+	
+		count += len(w_dict[key])
+		
+	return count
+	
+def make_num_str(points):
+
+	s = ''
+	
+	for p in points:
+	
+		s += str(p) + ' '
+		
+	return s

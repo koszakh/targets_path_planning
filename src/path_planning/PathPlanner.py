@@ -502,7 +502,6 @@ v1.get_distance_to(v2) #+ fabs(v1.riskiness - v2.riskiness)
 
 		self.closed.append(closest_id)
 
-		#print('Current vertice dist to goal: ' + str(min_dist))
 
 		if closest_id and self.open.__contains__(closest_id):
 
@@ -739,6 +738,9 @@ v1.get_distance_to(v2) #+ fabs(v1.riskiness - v2.riskiness)
 # Output
 # path: path vertex list (None if path cannot be built)
 	def find_path(self, start_id, goal_id, start_orient):
+
+		#print('start_id: ' + str(start_id))
+		#print('goal_id: ' + str(goal_id))
 		start_v = self.heightmap[start_id]
 
 		goal_v = self.heightmap[goal_id]
@@ -947,7 +949,6 @@ v1.get_distance_to(v2) #+ fabs(v1.riskiness - v2.riskiness)
 			line_count += 1
 
 		roll = float(sum_angle / line_count)
-		#print('roll: ' + str(roll))
 		line_count = 0
 		sum_angle = 0
 
@@ -962,7 +963,6 @@ v1.get_distance_to(v2) #+ fabs(v1.riskiness - v2.riskiness)
 			line_count += 1
 
 		pitch = float(sum_angle / line_count)
-		#print('pitch: ' + str(pitch))
 		return roll, pitch
 
 	def get_min_max_indices(self, id_list):
@@ -1086,11 +1086,8 @@ v1.get_distance_to(v2) #+ fabs(v1.riskiness - v2.riskiness)
 				v = self.heightmap[v_id]
 				new_vect = point.get_dir_vector_between_points(v)
 				angle_difference = fabs(robot_vect.get_angle_between_vectors(new_vect))
-				#print(v_id, angle_difference, v.obstacle)
 				
 				if angle_difference < const.ORIENT_BOUND and angle_difference < min_angle and not v.obstacle:
-				
-						#print(' >>> Start_id was found!')
 						min_angle = angle_difference
 						current_id = v_id
 						
@@ -1100,8 +1097,7 @@ v1.get_distance_to(v2) #+ fabs(v1.riskiness - v2.riskiness)
 				return None, None
 				
 			else:
-			
-				#print('Start vertice angle difference: ' + str(min_angle))
+
 				current_v = self.heightmap[current_id]
 				return current_id, current_v
 			
@@ -1237,39 +1233,39 @@ v1.get_distance_to(v2) #+ fabs(v1.riskiness - v2.riskiness)
 		
 		if min_x < self.min_x or max_x < self.min_x:
 		
-			min_x = self.min_x + const.UB_NEIGHBOR_DIST
+			min_x = self.min_x + const.MIN_NEIGHBOR_DIST
 			max_x = min_x + offset * 2
 			
 			if max_x > self.max_x:
 			
-				max_x = self.max_x - const.UB_NEIGHBOR_DIST
+				max_x = self.max_x - const.MIN_NEIGHBOR_DIST
 		
 		if min_y < self.min_y or max_y < self.min_y:
 		
-			min_y = self.min_y + const.UB_NEIGHBOR_DIST
+			min_y = self.min_y + const.MIN_NEIGHBOR_DIST
 			max_y = min_y + offset * 2
 			
 			if max_y > self.max_y:
 			
-				max_y = self.max_y - const.UB_NEIGHBOR_DIST
+				max_y = self.max_y - const.MIN_NEIGHBOR_DIST
 		
 		if max_x > self.max_x or min_x > self.max_x:
 		
-			max_x = self.max_x - const.UB_NEIGHBOR_DIST
+			max_x = self.max_x - const.MIN_NEIGHBOR_DIST
 			min_x = max_x - offset * 2
 			
 			if min_x < self.min_x:
 			
-				min_x = self.min_x + const.UB_NEIGHBOR_DIST
+				min_x = self.min_x + const.MIN_NEIGHBOR_DIST
 		
 		if max_y > self.max_y or min_y > self.max_y:
 		
-			max_y = self.max_y - const.UB_NEIGHBOR_DIST
+			max_y = self.max_y - const.MIN_NEIGHBOR_DIST
 			min_y = max_y - offset * 2
 			
 			if min_y < self.min_y:
 			
-				min_y = self.min_y + const.UB_NEIGHBOR_DIST
+				min_y = self.min_y + const.MIN_NEIGHBOR_DIST
 				
 		return min_x, max_x, min_y, max_y
 

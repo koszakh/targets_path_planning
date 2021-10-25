@@ -10,7 +10,7 @@
     </include>
     <!--     Terrain model -->
     <include>
-      <uri>model://hmap2</uri>
+      <uri>model://chargers_hmap</uri>
     </include>
   </world>
 </sdf>

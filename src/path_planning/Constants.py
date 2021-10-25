@@ -2,10 +2,9 @@ import random
 
 ROBOTS_COUNT = 6
 ROOT_PATH = "/root/.gazebo/models"
-CURRENT_MAP = 'hmap2'
-HEIGHTMAP_SDF_PATH = ROOT_PATH + '/' + CURRENT_MAP + '/model.sdf'
-HIGH_BOUND_HEIGHT_DIFF = 25#1
-MAX_ROUGHNESS = 20#55
+HEIGHTMAP_SDF_PATH = ROOT_PATH + '/chargers_hmap/model.sdf'
+HIGH_BOUND_HEIGHT_DIFF = 22#1
+MAX_ROUGHNESS = 18#55
 ROUGHNESS_COEF = 0.5
 HD_COEF = 0.5
 ROBOT_RADIUS = 0.5
@@ -14,16 +13,16 @@ MAP_PATH_WORDS = ['<collision', '<heightmap', '<uri']
 MAP_POS_WORDS = ['<collision', '<heightmap', '<pos']
 ORIENT_BOUND = 50
 MAX_ITER_COUNT = 500
-DES_GRID_SIZE = ROBOT_RADIUS * 2
-START_DIST_OFFSET = 25
+DES_GRID_SIZE = 1#ROBOT_RADIUS * 2
+START_DIST_OFFSET = 35
 GOAL_DIST_OFFSET = 35
 PRE_CHARGE_ORIENT_TURN = -150
 PRE_DOCK_DISTANCE = 1
 
-S_X_OFFSET = -55
-S_Y_OFFSET = -50
-G_X_OFFSET = 50
-G_Y_OFFSET = 50
+S_X_OFFSET = -35
+S_Y_OFFSET = -10
+G_X_OFFSET = 20
+G_Y_OFFSET = 10
 
 DODGE_ORIENT_BOUND = 70
 LW_ORIENT_BOUND = -55
@@ -37,34 +36,12 @@ CLOSE_RADIUS = MIN_NEIGHBOR_DIST * 1.5
 
 # HEIGHTMAP BOUNDARY INDICES
 
-COL = 423#random.randint(450, 600)
-ROW = 584#random.randint(500, 750)
+COL = 100#random.randint(0, 256)
+ROW = 46#random.randint(0, 256)
 
-COL_RANGE = [COL, COL + 7]
-ROW_RANGE = [ROW, ROW + 7]
+COL_RANGE = [COL, COL + 54]
+ROW_RANGE = [ROW, ROW + 94]
 
-# hmap2
-
-# 1
-#COL_RANGE = [530, 550]
-#ROW_RANGE = [630, 650]
-
-# 2
-#COL_RANGE = [488, 503]
-#ROW_RANGE = [552, 567]
-
-# 3
-#COL_RANGE = [456, 471]
-#ROW_RANGE = [728, 743]
-
-# 4
-#COL_RANGE = [568, 583]
-#ROW_RANGE = [648, 663]
-
-# 5
-#COL_RANGE = [416, 434]
-#ROW_RANGE = [584, 591]
-
-# 6
-#COL_RANGE = [440, 450]
-#ROW_RANGE = [552, 567]
+CHARGERS_LOG_PATH = '/root/chargers_log.txt'
+WORKERS_LOG_PATH = '/root/workers_log.txt'
+TARGETS_LOG_PATH = '/root/targets_log.txt'

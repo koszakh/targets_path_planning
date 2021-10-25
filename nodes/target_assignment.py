@@ -13,6 +13,7 @@ import rospy
 import time
 import random
 import copy
+import gazebo_communicator.GazeboCommunicator as gc
 import gazebo_communicator.GazeboConstants as gc_const
 from charge.charge import eval_distance
 from energy_check import define_charging_points, charge_alloc, sort_by_distance
@@ -192,15 +193,7 @@ def init_paths_dict():
 		paths_to_base[c_name] = []
 	return paths_to_ch_p, paths_to_base
 
-def get_points_count(w_dict):
 
-	count = 0
-
-	for key in w_dict.keys():
-	
-		count += len(w_dict[key])
-		
-	return count
 
 def get_chargers_count(ch_p_dict):
 
@@ -243,29 +236,38 @@ c_names_pub = rospy.Publisher('chargers_names', NamesList, queue_size=10)
 
 robots_count = const.WORKERS_COUNT + const.CHARGERS_COUNT
 
+rospy.set_param('real_t_count', const.TARGETS_COUNT)
+rospy.set_param('real_w_count', const.WORKERS_COUNT)
+rospy.set_param('real_c_count', const.CHARGERS_COUNT)
+
 names = ['sim_p3at' + str(i) for i in range(1, robots_count + 1)]
 w_names = get_random_els(names, const.WORKERS_COUNT)
 c_names = subtraction_of_set(names, w_names)
 old_w_names = w_names
 
 t_as = ta.TargetAssignment(w_names, c_names, const.TARGETS_COUNT)
-paths, workpoints = t_as.target_assignment()
+workpoints_was_deleted = True
 
-b_w_names = paths.keys()
+while workpoints_was_deleted:
 
-poses, orients = t_as.get_robots_pos_orient()
+	paths, workpoints = t_as.target_assignment()
 
-workpoints_was_deleted = False
-copy_wpts, workpoints_was_deleted = define_new_dict_of_workpoints(workpoints, poses, orients, workpoints_was_deleted)
+	b_w_names = paths.keys()
 
-if workpoints_was_deleted:
-	copy_wpts = filter_dict_of_workpoints(copy_wpts)
-	new_paths = calculate_new_paths(copy_wpts)
-	new_w_names = make_new_list_of_w_names(copy_wpts)
+	poses, orients = t_as.get_robots_pos_orient()
 
-	w_names = new_w_names
-	paths = new_paths
-	workpoints = copy_wpts
+	workpoints_was_deleted = False
+	copy_wpts, workpoints_was_deleted = define_new_dict_of_workpoints(workpoints, poses, orients, workpoints_was_deleted)
+
+	if workpoints_was_deleted:
+		copy_wpts = filter_dict_of_workpoints(copy_wpts)
+		new_paths = calculate_new_paths(copy_wpts)
+		new_w_names = make_new_list_of_w_names(copy_wpts)
+
+		w_names = new_w_names
+		paths = new_paths
+		workpoints = copy_wpts
+		t_as.set_new_targets_list(workpoints)
 	
 paths, flag = t_as.calc_task_paths(workpoints)
 
@@ -277,14 +279,6 @@ sorted_charging_points = sort_by_distance(charging_points)
 
 robot_allocation = charge_alloc(sorted_charging_points, c_names)
 # print("Robot allocation" + str(robot_allocation))
-
-real_t_count = get_points_count(workpoints)
-rospy.set_param('real_t_count', real_t_count)
-rospy.set_param('real_w_count', len(workpoints.keys()))
-
-real_c_count = get_chargers_count(robot_allocation)
-print('\nReal chargers count: ' + str(real_c_count))
-rospy.set_param('real_c_count', real_c_count)
 
 paths_to_ch_p, paths_to_base = init_paths_dict()
 paths_of_ch_robots_to_ch_p, paths_of_ch_robots_to_base = fullfill_paths_dicts(paths_to_ch_p, paths_to_base)
