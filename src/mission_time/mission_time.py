@@ -30,6 +30,7 @@ def eval_arrival_times_for_w(paths_w_robots, charging_points, times):
 	""" times: key - w_name, value - (ch_p, arrival_time) """
 	arrival_times = times
 	for w_name in paths_w_robots.keys():
+		#print(w_name)
 		for ch_p in charging_points[w_name]:
 			point, distance = ch_p
 			time_spent = eval_time_on_path(distance)
@@ -139,3 +140,4 @@ def write_mission_log(mission_time):
 	total_time = get_float_time(mission_time.total_seconds())
 	print(total_time)
 	f.write('T_num: ' + str(t_c) + ' | W_num: ' + str(w_c) + ' | C_num: ' + str(c_c) + ' | Mission duration: ' + str(total_time) + ' | Max_c: ' + str(max_cost) + '\n')
+	f.close()

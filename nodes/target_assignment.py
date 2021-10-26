@@ -61,7 +61,6 @@ def prepare_path_msg(path):
 	
 def prepare_point_msg(point):
 
-	#print('point: ' + str(point))
 	msg = Point()
 	msg.x = point.x
 	msg.y = point.y
@@ -200,16 +199,27 @@ def get_chargers_count(ch_p_dict):
 	count = 0
 	
 	for key in ch_p_dict:
-	
+
 		if ch_p_dict[key]:
 		
 			count += 1
 			
 	return count
 
-def fullfill_paths_dicts(paths_to_ch_p, paths_to_base):
+def delete_workpoint(w_points, p):
+
+	copy_wpoints = copy.copy(w_points)
+	
+	w_mas = w_points[p.w_name]
+	max_dist = p.trav_dist
+	new_w_mas = [el for el in w_mas if el.trav_dist < max_dist]
+
+	return copy_wpoints
+
+def fullfill_paths_dicts(paths_to_ch_p, paths_to_base, workpoints):
 	paths_of_ch_robots_to_ch_p = copy.copy(paths_to_ch_p)
 	paths_of_ch_robots_to_base = copy.copy(paths_to_base)
+	wp_deleted = False
 	for c_name in robot_allocation.keys():
 		start_id = t_as.mh.get_nearest_vertice_id(poses[c_name].x, poses[c_name].y)
 		ch_pts = robot_allocation[c_name]
@@ -220,13 +230,20 @@ def fullfill_paths_dicts(paths_to_ch_p, paths_to_base):
 
 			goal_id = t_as.mh.get_nearest_vertice_id(pre_ch_pt.x, pre_ch_pt.y)
 			ch_path, path_ids = t_as.mh.find_path(start_id, goal_id, orients[c_name])
-			paths_of_ch_robots_to_ch_p[c_name].append(ch_path)
-			
-			end_vect = ch_pt.last_vect
-			last_id = ch_pt.id
-			base_path, path_ids = t_as.mh.find_path(last_id, start_id, end_vect)
-			paths_of_ch_robots_to_base[c_name].append(base_path)
-	return paths_of_ch_robots_to_ch_p, paths_of_ch_robots_to_base
+			if ch_path:
+				end_vect = ch_pt.last_vect
+				last_id = ch_pt.id
+				base_path, path_ids = t_as.mh.find_path(last_id, start_id, end_vect)
+				if base_path:
+					paths_of_ch_robots_to_ch_p[c_name].append(ch_path)
+					paths_of_ch_robots_to_base[c_name].append(base_path)
+				else:
+					workpoints = delete_workpoint(workpoints, ch_pt)
+					wp_deleted = True
+			else:
+				workpoints = delete_workpoint(workpoints, ch_pt)
+				wp_deleted = True
+	return paths_of_ch_robots_to_ch_p, paths_of_ch_robots_to_base, workpoints, wp_deleted
 
 rospy.init_node('target_assignment')
 
@@ -250,9 +267,16 @@ workpoints_was_deleted = True
 
 while workpoints_was_deleted:
 
-	paths, workpoints = t_as.target_assignment()
-
-	b_w_names = paths.keys()
+	s_time = time.time()
+	workpoints = t_as.target_assignment()
+	
+	if not workpoints:
+	
+		print('Mission cant be completed!')
+		break
+	
+	f_time = time.time()
+	print('Target assignment duration: ' + str(f_time - s_time))
 
 	poses, orients = t_as.get_robots_pos_orient()
 
@@ -260,45 +284,33 @@ while workpoints_was_deleted:
 	copy_wpts, workpoints_was_deleted = define_new_dict_of_workpoints(workpoints, poses, orients, workpoints_was_deleted)
 
 	if workpoints_was_deleted:
+
 		copy_wpts = filter_dict_of_workpoints(copy_wpts)
-		new_paths = calculate_new_paths(copy_wpts)
 		new_w_names = make_new_list_of_w_names(copy_wpts)
 
 		w_names = new_w_names
-		paths = new_paths
 		workpoints = copy_wpts
 		t_as.set_new_targets_list(workpoints)
 	
-paths, flag = t_as.calc_task_paths(workpoints)
+	wp_deleted = True
+	
+	while wp_deleted:
+	
+		paths, flag = t_as.calc_task_paths(workpoints)
+		charging_points = define_charging_points(paths, workpoints)
+		sorted_charging_points, sorted_ch_dict = sort_by_distance(charging_points)
+		robot_allocation = charge_alloc(sorted_charging_points, c_names)
+		paths_to_ch_p, paths_to_base = init_paths_dict()
+		paths_of_ch_robots_to_ch_p, paths_of_ch_robots_to_base, workpoints, wp_deleted = fullfill_paths_dicts(paths_to_ch_p, paths_to_base, workpoints)
 
-charging_points = define_charging_points(paths, workpoints)
-# print("Charging points: " + str(charging_points) + "\n")
+if workpoints:
 
-sorted_charging_points = sort_by_distance(charging_points)
-# print("Sorted charging points: " + str(sorted_charging_points) + "\n")
+	mission_time = eval_mission_time(paths, paths_of_ch_robots_to_ch_p, paths_of_ch_robots_to_base, robot_allocation, charging_points, workpoints)
 
-robot_allocation = charge_alloc(sorted_charging_points, c_names)
-# print("Robot allocation" + str(robot_allocation))
-
-real_c_count = get_chargers_count(robot_allocation)
-print('\nReal chargers count: ' + str(real_c_count))
-
-paths_to_ch_p, paths_to_base = init_paths_dict()
-paths_of_ch_robots_to_ch_p, paths_of_ch_robots_to_base = fullfill_paths_dicts(paths_to_ch_p, paths_to_base)
-
-mission_time = eval_mission_time(paths, paths_of_ch_robots_to_ch_p, paths_of_ch_robots_to_base, robot_allocation, charging_points, workpoints)
-
-mm = MovementManager(t_as.mh, old_w_names, c_names)
-mm.prepare_robots(paths, workpoints, charging_points, robot_allocation, paths_of_ch_robots_to_ch_p, paths_of_ch_robots_to_base)
-mm.start()
-
-#mm.prepare_robots()
-
-#poses_msg = prepare_poses_msg(poses, orients)
-#poses_pub.publish(poses_msg)
-
-#names_msg = prepare_names_msg(c_names)
-#c_names_pub.publish(names_msg)
-
-#paths_msg = prepare_all_paths_msg(w_names, paths, workpoints)
-#paths_pub.publish(paths_msg)
+	wp_count = ta.get_points_count(workpoints)
+	print('Workpoints count: ' + str(wp_count))
+	real_c_count = get_chargers_count(robot_allocation)
+	print('\nReal chargers count: ' + str(real_c_count))
+	mm = MovementManager(t_as.mh, old_w_names, c_names)
+	mm.prepare_robots(paths, workpoints, sorted_ch_dict, robot_allocation, paths_of_ch_robots_to_ch_p, paths_of_ch_robots_to_base)
+	mm.start()

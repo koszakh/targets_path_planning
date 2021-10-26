@@ -80,16 +80,13 @@ class MovementManager(Thread):
 			self.robots[key].start()
 			
 	def prepare_robots(self, w_paths, w_points, w_ch_points, ch_points, to_ch_p_paths, to_base_paths):
-		
+
 		for name in self.w_names:
-		
-			if w_points.get(name):
-
-				self.robots[name].set_worker_data(w_paths[name], w_points[name], w_ch_points[name])
-				
-			else:
-
-				self.robots[name].set_worker_data([], [], [])
+			
+			r_w_paths = w_paths[name] if w_paths.get(name) else []
+			r_w_points = w_points[name] if w_points.get(name) else []
+			r_w_ch_points = w_ch_points[name] if w_ch_points.get(name) else []
+			self.robots[name].set_worker_data(r_w_paths, r_w_points, r_w_ch_points)
 			
 		for name in self.c_names:
 		

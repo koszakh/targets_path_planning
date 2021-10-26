@@ -105,6 +105,7 @@ class Point:
 		self.init_point = None
 		self.label = None
 		self.last_vect = None
+		self.trav_dist = 0
 
 	def __str__(self):
 		return str(self.x) + " " + str(self.y) + " " + str(self.z)

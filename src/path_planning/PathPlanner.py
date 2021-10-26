@@ -751,7 +751,7 @@ v1.get_distance_to(v2) #+ fabs(v1.riskiness - v2.riskiness)
 		iter_count = 0
 		current_v.dir_vect = start_orient
 
-		while not current_v.id == goal_id and iter_count < len(self.heightmap) / 3:
+		while not current_v.id == goal_id and iter_count < len(self.heightmap) / 5:
 
 			iter_count += 1
 			#print(current_v.id)
@@ -761,8 +761,7 @@ v1.get_distance_to(v2) #+ fabs(v1.riskiness - v2.riskiness)
 				v = self.heightmap[v_id]
 				vect = current_v.get_dir_vector_between_points(v)
 				angle_difference = fabs(current_v.dir_vect.get_angle_between_vectors(vect))
-				#print(v_id, angle_difference)
-				
+
 				if not v.obstacle and angle_difference < const.ORIENT_BOUND:
 
 					if not self.open.__contains__(v_id) and not self.closed.__contains__(v_id):
@@ -791,7 +790,7 @@ v1.get_distance_to(v2) #+ fabs(v1.riskiness - v2.riskiness)
 			current_v = self.heightmap[current_v_id]
 			current_neighbors = copy.copy(current_v.neighbors_list.values())
 			
-		#print('Iter count: ' + str(iter_count))
+		#print('\nIter count: ' + str(iter_count))
 		#print('Len Open: ' + str(len(self.open)))
 
 		if not goal_v.get_predecessor() == None:
@@ -809,11 +808,9 @@ v1.get_distance_to(v2) #+ fabs(v1.riskiness - v2.riskiness)
 				path.insert(0, current_v)
 				path_ids.insert(0, predecessor_id)
 
-			#path = copy.deepcopy(tmp_path)
 			path_length = get_path_length(path)
 			path_cost = goal_v.path_cost
 			path_curvature = self.get_path_curvature_ids(path_ids)
-			#print('Path cost: ' + str(path_cost))
 			#print('Path length: ' + str(path_length))
 			#print('Path curvature: ' + str(path_curvature))
 			#print('Number of vertices = ' + str(len(path)))
@@ -823,7 +820,7 @@ v1.get_distance_to(v2) #+ fabs(v1.riskiness - v2.riskiness)
 		else:
 
 			self.clear_path_costs()
-			#print('Path from ' + str(start_id) + ' to ' + str(goal_id) + ' vertex cannot be found.')
+			print('Path from ' + str(start_id) + ' to ' + str(goal_id) + ' vertex cannot be found.')
 			return None, None
 
 	def get_random_start_pos(self, x, y):

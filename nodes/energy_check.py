@@ -102,9 +102,8 @@ def define_charging_points(workers_data, workers_workpoints):
 		energy_resource = 100
 		paths = workers_data[w_name]
 		for path in paths:
-			ch_pts, energy_resource, distance = eval_charge_points(path, workers_workpoints[w_name], energy_resource, distance)
+			ch_pts, energy_resource, distance = eval_charge_points(path, workers_workpoints[w_name], energy_resource, distance, w_name)
 			for ch_pt in ch_pts:
-				
 				ch_p[w_name].append(ch_pt)
 
 	return ch_p
@@ -126,7 +125,27 @@ def sort_by_distance(charging_points):
 			data = w_name, point, distance
 			sorted_charging_points.append(data)
 	sorted_charging_points = sorted(sorted_charging_points, key=lambda (w_name, point, distance): distance)
-	return sorted_charging_points
+	sorted_ch_dict = conv_mas_to_dict(sorted_charging_points)
+
+	return sorted_charging_points, sorted_ch_dict
+	
+def conv_mas_to_dict(mas):
+
+	f_dict = {}
+
+	for el in mas:
+	
+		w_name, point, distance = el
+		point.trav_dist = distance
+		if f_dict.get(w_name):
+
+			f_dict[str(w_name)].append(point)
+			
+		else:
+		
+			f_dict[str(w_name)] = [point]
+
+	return f_dict
 
 if __name__ == "__main__":
 	rospy.init_node('energy_check')

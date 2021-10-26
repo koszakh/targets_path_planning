@@ -117,7 +117,7 @@ class Worker(Robot):
 			self.to_base_path = w_paths[len(w_paths) - 1]
 			self.workpoints = w_points
 			gc.visualise_path(self.workpoints, const.BIG_GREEN_VERTICE_PATH, self.name + '_task')
-			self.charge_points = [ch_p[0] for ch_p in w_ch_points]
+			self.charge_points = w_ch_points
 				
 			gc.visualise_path(self.charge_points, const.BLUE_VERTICE_PATH, self.name + '_ch_p_')
 
