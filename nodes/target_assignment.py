@@ -307,6 +307,8 @@ if workpoints:
 
 	mission_time = eval_mission_time(paths, paths_of_ch_robots_to_ch_p, paths_of_ch_robots_to_base, robot_allocation, charging_points, workpoints)
 
+	ch_p_count = ta.get_points_count(sorted_ch_dict)
+	print('\n\n >>> Charging points count: ' + str(ch_p_count) + '\n\n')
 	wp_count = ta.get_points_count(workpoints)
 	print('Workpoints count: ' + str(wp_count))
 	real_c_count = get_chargers_count(robot_allocation)

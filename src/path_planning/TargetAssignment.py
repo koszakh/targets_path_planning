@@ -52,7 +52,7 @@ class TargetAssignment():
 		self.start_r, self.goal_r = self.calc_start_and_goal_centers()
 		self.print_areas_dist()
 		self.trackers = get_robot_trackers(self.names)
-		self.prepare_mission_from_file(t_count)
+		self.prepare_mission(t_count)
 	
 	def prepare_mission_from_file(self, t_count):
 	
@@ -145,25 +145,31 @@ class TargetAssignment():
 
 				else:
 
-					cost = self.get_cell_cost(i, j, target_ids)
-					task_matrix[i][j] = cost
+					worker_name = self.w_names[j]
+					rt = self.trackers[worker_name]
+					last_vect = rt.last_vect
+					start_id = rt.last_p_id
+					start_p = self.mh.heightmap[start_id]
+					goal_id = target_ids[i]
+					cost, end_vect = self.get_cell_cost(start_id, goal_id, target_ids, worker_name)
+					task_matrix[i][j] = rt.path_cost + cost
 					
 		print('task_matrix:\n' + str(task_matrix))
 					
 		return task_matrix
 	
-	def get_cell_cost(self, i, j, target_ids):
+	def get_cell_cost(self, start_id, goal_id, target_ids, w_name):
 	
-		worker_name = self.w_names[j]
-		rt = self.trackers[worker_name]
-		last_vect = rt.last_vect
-		start_id = rt.last_p_id
-		start_p = self.mh.heightmap[start_id]
-		goal_id = target_ids[i]
-		path, path_cost = self.mh.find_path(start_id, goal_id, last_vect)
-		total_cost = path_cost + rt.path_cost 
+		start_p = self.get_point_pos(start_id)
+		goal_p = self.get_point_pos(goal_id)
+		dist = start_p.get_distance_to(goal_p)
+	
+		rt = self.trackers[w_name]
 		
-		return total_cost
+		path, path_cost = self.mh.find_path(start_id, goal_id, rt.last_vect)
+		end_vect = get_end_vect(path)
+	
+		return path_cost, end_vect
 	
 	def calc_start_and_goal_centers(self):
 		
@@ -374,48 +380,28 @@ class TargetAssignment():
 			#print('assigned_pairs: ' + str(assigned_pairs))
 			new_workpoints = self.get_workpoints_dict(assigned_pairs, cur_targets)
 			workpoints = supplement_dict(workpoints, new_workpoints)
-			comp_flag = self.move_robot_trackers(new_workpoints)
-			
-			if not comp_flag:
-			
-				self.clean_path_costs()
-				return None
+			self.move_robot_trackers(new_workpoints, cur_targets)
 
 		self.clean_path_costs()
 		
 		return workpoints
 
 		
-	def move_robot_trackers(self, w_points):
-	
-		comp_flag = True
+	def move_robot_trackers(self, w_points, target_ids):
 	
 		for key in w_points.keys():	
 			
 			rt = self.trackers[key]
 			wp_ids = [p.id for p in w_points[key]]
-			#print(key, wp_ids)
 			wp = w_points[key][-1]
-			#print(key, rt.last_p_id, wp.id)
 			last_id = rt.last_p_id
 			last_vect = rt.last_vect
 			start_p = self.get_point_pos(last_id)
 			dist = start_p.get_distance_to(wp)
-			#print('dist: ' + str(dist))
-			path, path_cost = self.mh.find_path(last_id, wp.id, last_vect)
-			rt.last_p_id = wp.id
+			cost, p_last_vect = self.get_cell_cost(last_id, wp.id, target_ids, key)
+			rt.last_vect = p_last_vect
 			
-			if path_cost:
-			
-				rt.path_cost += path_cost
-				rt.last_vect = get_end_vect(path)
-				
-			else:
-			
-				comp_flag = False
-				break
-		
-		return comp_flag
+			rt.path_cost += cost
 				
 		
 	def get_closest_tasks(self, rem_tasks, t_count):
